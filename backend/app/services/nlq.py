@@ -116,7 +116,7 @@ def parse_query(q: str) -> ParsedQuery:
     stop = {_norm(w) for w in (
         "busca buscar procesos proceso licitaciones licitacion abiertos abiertas activos superiores "
         "inferiores entre millones mil pesos que cierren cierre dentro los proximos dias "
-        "ultimos publicadas publicados estado valor cuantia menores mayores hasta desde despues cerca"
+        "ultimos publicadas publicados estado valor cuantia menores mayores hasta desde despues cerca para de del en con"
     ).split()}
     if p.departamento:
         for w in p.departamento.lower().replace(".", "").split():
