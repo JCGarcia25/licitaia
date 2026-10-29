@@ -7,12 +7,24 @@ import { Spinner } from "@/components/ui";
 
 type User = { id: number; email: string; full_name: string };
 
-const AuthCtx = createContext<{
+type AuthContextValue = {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName: string) => Promise<void>;
   logout: () => void;
-} | null>(null);
+};
+
+// Next.js prerenders special routes such as /_not-found outside the normal
+// client provider tree. Keep that render safe; regular app routes are still
+// wrapped by AuthProvider in app/layout.tsx.
+const fallbackAuth: AuthContextValue = {
+  user: null,
+  login: async () => { throw new Error("Autenticación no disponible"); },
+  register: async () => { throw new Error("Autenticación no disponible"); },
+  logout: () => undefined,
+};
+
+const AuthCtx = createContext<AuthContextValue>(fallbackAuth);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -53,9 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthCtx);
-  if (!ctx) throw new Error("useAuth debe usarse dentro de AuthProvider");
-  return ctx;
+  return useContext(AuthCtx);
 }
 
 export function RequireAuth({ children }: { children: ReactNode }) {
