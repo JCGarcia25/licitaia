@@ -17,10 +17,11 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post("/register", response_model=TokenOut, status_code=201)
 def register(data: RegisterIn, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == data.email).first():
+    email = str(data.email).strip().lower()
+    if db.query(User).filter(User.email == email).first():
         raise HTTPException(409, "El correo ya está registrado")
     token_ver = secrets.token_hex(16)
-    user = User(email=data.email, hashed_password=hash_password(data.password), full_name=data.full_name,
+    user = User(email=email, hashed_password=hash_password(data.password), full_name=data.full_name,
                 verification_token=token_ver)
     db.add(user)
     db.flush()
@@ -29,7 +30,7 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
     settings = get_settings()
     enviado = False
     if settings.smtp_host:
-        enviado = send_email(data.email, "Verifica tu correo en LicitaIA",
+        enviado = send_email(email, "Verifica tu correo en LicitaIA",
                              f"Tu token de verificación: {token_ver}")
     # Sin SMTP el token se devuelve en la respuesta (dev); con SMTP se envía por correo
     return TokenOut(access_token=create_access_token(user.email),
@@ -38,8 +39,15 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenOut)
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == form.username).first()
-    if not user or not verify_password(form.password, user.hashed_password):
+    email = form.username.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    try:
+        valid = bool(user and verify_password(form.password, user.hashed_password))
+    except (ValueError, TypeError):
+        # Hashes corruptos o heredados deben comportarse como credenciales
+        # inválidas, nunca tumbar el endpoint con un 500.
+        valid = False
+    if not valid:
         raise HTTPException(401, "Credenciales inválidas")
     return TokenOut(access_token=create_access_token(user.email))
 
