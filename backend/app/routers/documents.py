@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 import httpx
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
@@ -120,3 +121,11 @@ def list_documents(opportunity_id: int | None = None, user: User = Depends(get_c
         "mime_type": d.mime_type, "source_url": d.source_url, "uploaded_at": d.uploaded_at,
         "document_type": d.document_type,
     } for d in query.order_by(Document.uploaded_at.desc()).limit(100).all()]
+
+
+@router.get("/{document_id}/content")
+def document_content(document_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    doc = db.query(Document).filter(Document.id == document_id, Document.user_id == user.id).first()
+    if not doc or not os.path.exists(doc.storage_path):
+        raise HTTPException(404, "Documento no encontrado")
+    return FileResponse(doc.storage_path, media_type=doc.mime_type or "application/octet-stream", filename=doc.filename)

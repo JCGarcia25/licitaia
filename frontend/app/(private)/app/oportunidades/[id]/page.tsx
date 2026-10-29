@@ -14,7 +14,7 @@ type Requisito = {
 type Opp = {
   id: number; source: string; source_id: string; entidad: string; objeto: string; descripcion: string | null;
   modalidad: string | null; valor: number | null; estado: string; departamento: string | null;
-  fecha_publicacion: string | null; url_oficial: string | null; score: number | null; triage: string;
+  fecha_publicacion: string | null; updated_at?: string | null; fecha_cierre?: string | null; url_oficial: string | null; score: number | null; triage: string;
   reasons: Reason[]; analysis: { id: number; resumen: Record<string, any>; requisitos: Requisito[] } | null;
 };
 type Viab = {
@@ -36,6 +36,7 @@ export default function DetalleOportunidad() {
   const [archivo, setArchivo] = useState<File | null>(null);
   const [msg, setMsg] = useState("");
   const [cargando, setCargando] = useState("");
+  const [visor, setVisor] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     const data = await api<Opp>(`/api/opportunities/${id}`);
@@ -63,6 +64,15 @@ export default function DetalleOportunidad() {
     } finally {
       setCargando("");
     }
+  }
+
+  async function abrirDocumento(doc: { id: number; filename: string; mime_type?: string }) {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/documents/${doc.id}/content`, { headers: { Authorization: `Bearer ${localStorage.getItem("licitaia_token") || ""}` } });
+      if (!response.ok) throw new Error("No fue posible abrir el documento");
+      const blob = await response.blob();
+      setVisor(URL.createObjectURL(blob));
+    } catch (e) { setMsg(e instanceof Error ? e.message : "Error abriendo documento"); }
   }
 
   async function analizar() {
@@ -143,6 +153,15 @@ export default function DetalleOportunidad() {
         {opp.descripcion ? <div className="md:col-span-3"><p className="text-muted text-xs">Descripción</p><p className="mt-1 text-sm">{opp.descripcion}</p></div> : null}
       </Card>
 
+      <Card>
+        <CardHeader title="Proceso y cronograma" subtitle="Fechas disponibles en la fuente oficial" />
+        <div className="grid gap-3 p-5 text-sm md:grid-cols-3">
+          <div><p className="text-muted text-xs">Publicación</p><p className="mt-1 font-semibold">{fmtFecha(opp.fecha_publicacion)}</p></div>
+          <div><p className="text-muted text-xs">Última actualización</p><p className="mt-1 font-semibold">{fmtFecha(opp.updated_at)}</p></div>
+          <div><p className="text-muted text-xs">Cierre de ofertas</p><p className="mt-1 font-semibold">{opp.fecha_cierre ? fmtFecha(opp.fecha_cierre) : "No expuesto por SECOP"}</p></div>
+        </div>
+      </Card>
+
       {/* Razones de coincidencia */}
       {opp.reasons?.length ? (
         <Card>
@@ -174,11 +193,12 @@ export default function DetalleOportunidad() {
           </div>
           {docs.length ? (
             <ul className="text-muted space-y-1 text-xs">
-              {docs.map((d) => <li key={d.id}>📎 {d.filename}</li>)}
+              {docs.map((d) => <li key={d.id} className="flex items-center justify-between gap-2"><span>📎 {d.filename}</span><Button size="sm" variant="ghost" onClick={() => abrirDocumento(d)}>Ver</Button></li>)}
             </ul>
           ) : (
             <p className="text-muted text-xs">Aún no hay documentos cargados para este proceso.</p>
           )}
+          {visor ? <div className="rounded-lg border border-base p-2"><div className="mb-2 flex justify-end"><Button size="sm" variant="ghost" onClick={() => { URL.revokeObjectURL(visor); setVisor(null); }}>Cerrar visor</Button></div><iframe title="Visor de documento" src={visor} className="h-[620px] w-full rounded" /></div> : null}
 
           {opp.analysis ? (
             <div className="space-y-4">
