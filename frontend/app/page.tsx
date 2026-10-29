@@ -1,4 +1,3 @@
-"use client";
 /* Landing comercial de LicitaIA. */
 import Link from "next/link";
 import { Button } from "@/components/ui";
