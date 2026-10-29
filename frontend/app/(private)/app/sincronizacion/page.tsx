@@ -13,7 +13,7 @@ type Process = { id: number; source_id: string; entidad: string | null; objeto: 
 
 export default function Sincronizacion() {
   const [source, setSource] = useState("secop2_procesos");
-  const [maxPages, setMaxPages] = useState("5");
+  const [maxPages, setMaxPages] = useState("1");
   const [extraWhere, setExtraWhere] = useState("");
   const [corriendo, setCorriendo] = useState(false);
   const [resultado, setResultado] = useState<Record<string, unknown> | null>(null);
@@ -70,7 +70,7 @@ export default function Sincronizacion() {
       </div>
 
       <Card>
-        <CardHeader title="Ejecutar ingesta manual" subtitle="Paginación de 1.000 registros con upsert idempotente (sin duplicados)" />
+        <CardHeader title="Ejecutar ingesta manual" subtitle="Paginación segura con upsert idempotente (sin duplicados)" />
         <div className="grid gap-4 p-5 md:grid-cols-3">
           <Field label="Fuente">
             <Select value={source} onChange={(e) => setSource(e.target.value)}>

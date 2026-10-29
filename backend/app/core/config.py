@@ -23,7 +23,9 @@ class Settings(BaseSettings):
     # --- SECOP / Socrata (ver docs/fuentes-secop.md) ---
     secop_app_token: str = ""  # registrarlo en profile.socrata.com; header X-App-Token
     secop_domain: str = "www.datos.gov.co"
-    secop_page_size: int = 1000  # $limit máx. por defecto del portal
+    # Página conservadora para que la ingesta manual responda detrás de Nginx;
+    # las siguientes ejecuciones continúan con paginación incremental.
+    secop_page_size: int = 200
     secop_max_pages_per_run: int = 25
     secop_dataset_procesos: str = "p6dx-8zbt"   # SECOP II - Procesos de Contratación
     secop_dataset_contratos: str = "jbjy-vk9h"  # SECOP II - Contratos Electrónicos
