@@ -30,7 +30,8 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
         "modalidad": opp.modalidad, "tipo_contrato": opp.tipo_contrato,
         "unspsc_code": opp.unspsc_code, "valor": opp.valor,
         "estado": opp.estado, "fecha_publicacion": opp.fecha_publicacion,
-        "fecha_cierre": opp.fecha_cierre, "url_oficial": opp.url_oficial,
+        "fecha_cierre": opp.fecha_cierre,
+        "url_oficial": None if "binpar.cloud" in (opp.url_oficial or "").lower() else opp.url_oficial,
         "cancelled": opp.cancelled, "captured_at": opp.captured_at, "updated_at": opp.updated_at,
         "score": uo.score if uo else None,
         "triage": uo.triage if uo else "detectada",
@@ -63,11 +64,18 @@ def list_opportunities(
         stopwords = {"procesos", "proceso", "contratación", "contratacion", "pública", "publica", "superior", "millones", "pesos", "buscar", "para", "con", "los", "las", "del", "una"}
         words = [w for w in re.split(r"[^\wáéíóúñü]+", q.lower()) if len(w) > 3 and w not in stopwords][:8]
         if words:
-            matches = []
             for word in words:
                 like = f"%{word}%"
-                matches.extend([Opportunity.objeto.ilike(like), Opportunity.entidad.ilike(like), Opportunity.descripcion.ilike(like)])
-            query = query.filter(or_(*matches))
+                query = query.filter(or_(
+                    Opportunity.objeto.ilike(like), Opportunity.entidad.ilike(like), Opportunity.descripcion.ilike(like),
+                ))
+        if any(term in q.lower() for term in ("abierto", "abiertos", "publicado", "publicados")):
+            query = query.filter(
+                ~Opportunity.estado.ilike("%cancel%"),
+                ~Opportunity.estado.ilike("%cerrad%"),
+                ~Opportunity.estado.ilike("%adjudic%"),
+                ~Opportunity.estado.ilike("%terminado%"),
+            )
     if departamento:
         query = query.filter(Opportunity.departamento.ilike(f"%{departamento}%"))
     if modalidad:
