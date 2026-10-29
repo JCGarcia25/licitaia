@@ -2,6 +2,8 @@
 import os
 import re
 import uuid
+from urllib.parse import urlparse
+import httpx
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import or_
@@ -16,6 +18,50 @@ router = APIRouter(prefix="/api/documents", tags=["documentos"])
 
 ALLOWED = {".pdf", ".docx", ".xlsx"}
 MAX_SIZE = 25 * 1024 * 1024  # 25 MB
+PUBLIC_HOSTS = {"community.secop.gov.co", "www.datos.gov.co", "datos.gov.co"}
+
+
+def _public_urls(value):
+    found = []
+    if isinstance(value, dict):
+        for item in value.values(): found.extend(_public_urls(item))
+    elif isinstance(value, list):
+        for item in value: found.extend(_public_urls(item))
+    elif isinstance(value, str) and value.startswith(("http://", "https://")):
+        parsed = urlparse(value)
+        if parsed.hostname in PUBLIC_HOSTS and os.path.splitext(parsed.path.lower())[1] in ALLOWED:
+            found.append(value)
+    return list(dict.fromkeys(found))
+
+
+@router.post("/import-public/{opportunity_id}")
+def import_public_documents(opportunity_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    opp = db.query(Opportunity).filter(Opportunity.id == opportunity_id).first()
+    if not opp:
+        raise HTTPException(404, "Oportunidad no encontrada")
+    urls = _public_urls(opp.raw_json or {})
+    settings = get_settings()
+    directory = os.path.join(settings.storage_dir, str(user.id)); os.makedirs(directory, exist_ok=True)
+    imported, skipped = [], []
+    for url in urls[:20]:
+        if db.query(Document).filter(Document.user_id == user.id, Document.source_url == url).first():
+            skipped.append({"url": url, "motivo": "ya descargado"}); continue
+        try:
+            response = httpx.get(url, timeout=20, follow_redirects=True)
+            response.raise_for_status()
+            data = response.content
+            if len(data) > MAX_SIZE: raise ValueError("supera 25 MB")
+            ext = os.path.splitext(urlparse(str(response.url)).path)[1].lower()
+            if ext not in ALLOWED: skipped.append({"url": url, "motivo": "formato no soportado"}); continue
+            name = _secure_name(os.path.basename(urlparse(str(response.url)).path) or f"documento{ext}")
+            path = os.path.join(directory, f"{uuid.uuid4().hex[:8]}-{name}")
+            with open(path, "wb") as fh: fh.write(data)
+            doc = Document(user_id=user.id, company_id=user.company_id, opportunity_id=opportunity_id, filename=name, storage_path=path, mime_type=response.headers.get("content-type", ""), source_url=url, document_type="pliego" if "pliego" in name.lower() else "anexo")
+            db.add(doc); imported.append({"filename": name, "source_url": url})
+        except Exception as exc:
+            skipped.append({"url": url, "motivo": str(exc)[:160]})
+    db.commit()
+    return {"importados": imported, "omitidos": skipped, "nota": "Solo se descargan archivos públicos; documentos con sesión o captcha deben cargarse manualmente."}
 
 
 def _secure_name(name: str) -> str:

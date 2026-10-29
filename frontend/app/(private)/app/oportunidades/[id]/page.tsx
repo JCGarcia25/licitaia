@@ -79,6 +79,16 @@ export default function DetalleOportunidad() {
     }
   }
 
+  async function importarDocumentos() {
+    setCargando("importar"); setMsg("");
+    try {
+      const r = await api<{ importados: unknown[]; omitidos: unknown[] }>(`/api/documents/import-public/${id}`, { method: "POST" });
+      await cargar();
+      setMsg(`${r.importados.length} documento(s) público(s) importado(s). ${r.omitidos.length} omitido(s) por requerir acceso o carga manual.`);
+    } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible importar documentos"); }
+    finally { setCargando(""); }
+  }
+
   async function evaluar() {
     setCargando("viabilidad");
     setMsg("");
@@ -158,6 +168,7 @@ export default function DetalleOportunidad() {
         />
         <div className="space-y-4 p-5">
           <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={importarDocumentos} disabled={cargando === "importar"}>{cargando === "importar" ? "Importando…" : "Importar documentos públicos"}</Button>
             <Input type="file" accept=".pdf,.docx,.xlsx" onChange={(e) => setArchivo(e.target.files?.[0] || null)} className="max-w-sm py-1.5" />
             <Button size="sm" variant="outline" onClick={subir} disabled={!archivo || cargando === "subir"}>Subir documento</Button>
           </div>
