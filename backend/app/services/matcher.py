@@ -38,7 +38,7 @@ def _estado_abierto(estado: str | None) -> bool:
     return (estado or "").strip().lower() in ESTADOS_ABIERTOS
 
 
-def score_opportunity(profile: dict, opp: dict, profile_vector: list[float] | None = None) -> MatchResult:
+def score_opportunity(profile: dict, opp: dict, profile_vector: list[float] | None = None, learning_weights: dict | None = None) -> MatchResult:
     """Puntúa una oportunidad normalizada contra el perfil empresarial.
 
     `profile` y `opp` son dicts con los campos del modelo (compatibles con SQLAlchemy).
@@ -139,6 +139,12 @@ def score_opportunity(profile: dict, opp: dict, profile_vector: list[float] | No
     elif not _estado_abierto(opp.get("estado")):
         score *= 0.6  # procesos cerrados/adjudicados bajan de prioridad
 
+    # Fase 3: retroalimentación del usuario ajusta el peso de cada factor (tope ±10)
+    if learning_weights:
+        for r in reasons:
+            delta = learning_weights.get(r.get("factor"))
+            if delta:
+                score += max(-10.0, min(10.0, delta))
     final = max(0.0, min(100.0, score))
     if not reasons:
         reasons.append({

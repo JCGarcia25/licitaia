@@ -70,7 +70,7 @@ def daily_digest() -> dict:
         sent, skipped = 0, 0
         for prefs in db.query(AlertPrefs).filter(AlertPrefs.email_enabled.is_(True)).all():
             user = db.query(User).filter(User.id == prefs.user_id).first()
-            if not user:
+            if not user or not user.email_verified:
                 continue
             cuerpo = [
                 "Resumen diario LicitaIA",

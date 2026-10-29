@@ -77,7 +77,7 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
     reminders = alerts_service.close_reminders(db, user.id, days=(prefs.close_days if prefs else None) or [10, 5, 1])
     # resumen por correo solo si está habilitado
     sent = False
-    if prefs and prefs.email_enabled:
+    if prefs and prefs.email_enabled and user.email_verified:
         uos = db.query(UserOpportunity).filter(UserOpportunity.user_id == user.id).all()
         alta = [u for u in uos if u.score >= threshold]
         cuerpo = [

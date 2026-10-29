@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     digest_hour: int = 7  # 07:00 America/Bogota
     timezone: str = "America/Bogota"
 
+    # --- Fase 5: control comercial ---
+    allow_demo_seed: bool = True    # ALLOW_DEMO_SEED=false: cero datos simulados (producción)
+    billing_provider: str = "manual"  # manual | stripe (stripe requiere credenciales)
+    stripe_api_key: str = ""
+    quota_free_analyses: int = 20   # límite mensual de IA del plan explorador
+    quota_pro_analyses: int = 500   # límite mensual de IA del plan profesional
+    contact_email: str = "contacto@licitaia.local"
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

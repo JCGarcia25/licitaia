@@ -4,6 +4,7 @@ import re
 import uuid
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -28,6 +29,7 @@ async def upload_document(
     file: UploadFile = File(...),
     opportunity_id: int | None = Form(default=None),
     source_url: str = Form(default=""),
+    document_type: str = Form(default="otro", pattern="^(pliego|anexo|rup|rut|camara_comercio|experiencia|otro)$"),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -51,9 +53,9 @@ async def upload_document(
         fh.write(data)
 
     doc = Document(
-        user_id=user.id, opportunity_id=opportunity_id, filename=safe,
+        user_id=user.id, company_id=user.company_id, opportunity_id=opportunity_id, filename=safe,
         storage_path=rel_path, mime_type=file.content_type or "application/octet-stream",
-        source_url=source_url,
+        source_url=source_url, document_type=document_type,
     )
     db.add(doc)
     db.commit()
@@ -62,10 +64,13 @@ async def upload_document(
 
 @router.get("")
 def list_documents(opportunity_id: int | None = None, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    query = db.query(Document).filter(Document.user_id == user.id)
+    query = db.query(Document)
+    query = (query.filter(or_(Document.user_id == user.id, Document.company_id == user.company_id))
+             if user.company_id else query.filter(Document.user_id == user.id))
     if opportunity_id:
         query = query.filter(Document.opportunity_id == opportunity_id)
     return [{
         "id": d.id, "filename": d.filename, "opportunity_id": d.opportunity_id,
         "mime_type": d.mime_type, "source_url": d.source_url, "uploaded_at": d.uploaded_at,
+        "document_type": d.document_type,
     } for d in query.order_by(Document.uploaded_at.desc()).limit(100).all()]

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.security import get_current_user
 from app.db.models import Alert, AlertPrefs, Analysis, CompanyProfile, Opportunity, User, UserOpportunity
 from app.db.session import get_db
-from app.schemas import TriajeIn
+from app.schemas import FeedbackIn, TriajeIn
 from app.services import alerts as alerts_service
 from app.services import nlq
 
@@ -137,6 +137,33 @@ def set_triaje(opportunity_id: int, data: TriajeIn, user: User = Depends(get_cur
     uo.triage = data.triage
     db.commit()
     return {"id": opp.id, "triage": uo.triage}
+
+
+@router.post("/opportunities/{opportunity_id}/feedback")
+def feedback(opportunity_id: int, data: FeedbackIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Fase 3: retroalimentación del usuario — ajusta los pesos de aprendizaje del perfil
+    y mejora recomendaciones futuras al re-puntuar (POST /api/rescore)."""
+    uo = db.query(UserOpportunity).filter(
+        UserOpportunity.user_id == user.id, UserOpportunity.opportunity_id == opportunity_id
+    ).first()
+    if not uo:
+        raise HTTPException(404, "Oportunidad no puntuada para este usuario")
+    uo.feedback = data.util
+    uo.feedback_note = data.nota
+    profile = db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
+    weights = None
+    if profile is not None and uo.reasons:
+        w = dict(profile.learning_weights or {})
+        delta = 1.0 if data.util else -1.0
+        for r in uo.reasons[:5]:
+            factor = (r or {}).get("factor")
+            if factor:
+                w[factor] = round(max(-10.0, min(10.0, w.get(factor, 0.0) + delta)), 1)
+        profile.learning_weights = w
+        weights = w
+    db.commit()
+    return {"ok": True, "feedback": data.util, "learning_weights": weights,
+            "nota": "Ejecute POST /api/rescore para aplicar los nuevos pesos."}
 
 
 @router.post("/search")

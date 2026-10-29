@@ -3,6 +3,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.agents.pliegos import analizar_documento
@@ -14,7 +15,10 @@ from app.db.models import (
 from app.db.session import get_db
 from app.schemas import BorradorIn, ChecklistItemIn, CommentIn, OfferStatusIn, ViabilityIn
 from app.services import alerts as alerts_service
+from app.services.audit import log_action
+from app.services.eligibility import evaluar_elegibilidad
 from app.services.exporter import export_docx, export_pdf_matriz, export_xlsx
+from app.services.quota import check_quota, consume
 
 router = APIRouter(prefix="/api", tags=["agentes"])
 
@@ -33,13 +37,14 @@ DEFAULT_CHECKLIST = [
 
 @router.post("/opportunities/{opportunity_id}/analyze")
 def analyze(opportunity_id: int, document_id: int | None = None, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    quota = check_quota(db, user)
+    if not quota["allowed"]:
+        raise HTTPException(402, f"Límite mensual de análisis alcanzado ({quota['used']}/{quota['limit']}). Plan: {quota['plan']}. Actualice su suscripción.")
     opp = db.query(Opportunity).filter(Opportunity.id == opportunity_id).first()
     if not opp:
         raise HTTPException(404, "Oportunidad no encontrada")
-    query = db.query(Document).filter(
-        Document.user_id == user.id,
-        Document.opportunity_id == opportunity_id,
-    )
+    doc_filter = or_(Document.user_id == user.id, Document.company_id == user.company_id) if user.company_id else Document.user_id == user.id
+    query = db.query(Document).filter(doc_filter, Document.opportunity_id == opportunity_id)
     if document_id:
         query = query.filter(Document.id == document_id)
     docs = query.order_by(Document.uploaded_at.desc()).all()
@@ -79,9 +84,11 @@ def analyze(opportunity_id: int, document_id: int | None = None, user: User = De
         "Resultado orientativo generado automáticamente. Exige validación humana antes de elaborar una propuesta. "
         "Los requisitos no listados no deben asumirse ausentes: verificar el documento oficial completo."
     )
-    analysis = Analysis(opportunity_id=opp.id, user_id=user.id, resumen_ejecutivo=resumen, requisitos=requisitos[:120], estado="borrador")
+    analysis = Analysis(opportunity_id=opp.id, user_id=user.id, company_id=user.company_id, resumen_ejecutivo=resumen, requisitos=requisitos[:120], estado="borrador")
     db.add(analysis)
     db.commit()
+    consume(db, user)
+    log_action(db, user, "analizar_pliego", "opportunity", opp.id, {"requisitos": len(requisitos)})
     return {"id": analysis.id, "resumen": resumen, "total_requisitos": len(requisitos), "estado": "borrador",
             "nota": "Requiere validación humana. Estados: Cumple / No cumple / Por verificar / Información insuficiente."}
 
@@ -117,7 +124,7 @@ def viability(opportunity_id: int, data: ViabilityIn | None = None, user: User =
     pesos = (data.pesos if data else None) or {}
     resultado = evaluar_viabilidad(perfil, resumen, requisitos, pesos=pesos, dias_hasta_cierre=_dias_hasta_cierre(opp, resumen))
     row = Viability(
-        opportunity_id=opp.id, user_id=user.id, global_score=resultado.global_score,
+        opportunity_id=opp.id, user_id=user.id, company_id=user.company_id, global_score=resultado.global_score,
         factors=resultado.factors, critical_failures=resultado.critical_failures,
         fortalezas=resultado.fortalezas, debilidades=resultado.debilidades,
         docs_faltantes=resultado.docs_faltantes, riesgos=resultado.riesgos,
@@ -136,6 +143,23 @@ def viability(opportunity_id: int, data: ViabilityIn | None = None, user: User =
     }
 
 
+@router.get("/opportunities/{opportunity_id}/eligibility")
+def eligibility(opportunity_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Fase 3: elegibilidad jurídica, financiera y técnica SEPARADA de la compatibilidad comercial.
+    Sin evidencia documental la dimensión queda en 'informacion_insuficiente': nunca se declara
+    elegibilidad sin soporte (ver app/services/eligibility.py)."""
+    opp = db.query(Opportunity).filter(Opportunity.id == opportunity_id).first()
+    if not opp:
+        raise HTTPException(404, "Oportunidad no encontrada")
+    analysis = db.query(Analysis).filter(Analysis.opportunity_id == opp.id).order_by(Analysis.created_at.desc()).first()
+    from app.services.alerts import profile_dict
+
+    perfil = profile_dict(db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first())
+    resultado = evaluar_elegibilidad(perfil, analysis.requisitos if analysis else [])
+    log_action(db, user, "evaluar_elegibilidad", "opportunity", opp.id, {"resumen": resultado["resumen"]})
+    return resultado
+
+
 # ---------------- AGENTE 4: Preparador de Ofertas ----------------
 
 @router.post("/offer-projects", status_code=201)
@@ -151,7 +175,7 @@ def create_project(payload: dict, user: User = Depends(get_current_user), db: Se
             if r.get("tipo") == "documental":
                 checklist.append({"item": (r.get("descripcion") or "")[:150], "tipo": "documental", "estado": "pendiente"})
     project = OfferProject(
-        user_id=user.id, opportunity_id=opp.id,
+        user_id=user.id, company_id=user.company_id, opportunity_id=opp.id,
         name=payload.get("name") or f"Propuesta — {(opp.objeto or 'Proceso')[:80]}",
         checklist=checklist,
         cronograma=[

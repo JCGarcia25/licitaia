@@ -136,3 +136,21 @@ def test_app_token_en_headers(monkeypatch):
     monkeypatch.setattr("app.services.secop_client.httpx.get", fake_get)
     SocrataClient(app_token="token-de-prueba").query("p6dx-8zbt", {"$limit": 1})
     assert capturado.get("X-App-Token") == "token-de-prueba"
+
+
+def test_url_como_diccionario_y_valores_no_definidos():
+    """Calidad de datos verificada contra la API real: urlproceso puede llegar como dict
+    y campos como departamento_entidad llegan con 'No Definido' (evidencia E2E 2026-10-29)."""
+    fila = dict(FILA_P6DX)
+    fila["urlproceso"] = {"url": "https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID=CO1.NTC.401"}
+    fila["departamento_entidad"] = "No Definido"
+    data = normalize_row("secop2_procesos", fila)
+    assert data["url_oficial"].startswith("https://")
+    assert data["departamento"] is None
+
+
+def test_unspsc_no_estandar_se_descarta():
+    fila = dict(FILA_P6DX)
+    fila["codigo_principal_de_categoria"] = "V1.80111701"  # valor real observado, no es UNSPSC
+    data = normalize_row("secop2_procesos", fila)
+    assert data["unspsc_code"] is None

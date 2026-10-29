@@ -21,6 +21,8 @@ from datetime import datetime
 from typing import Any
 from urllib.parse import quote
 
+import re
+
 import httpx
 
 from app.core.config import get_settings
@@ -135,11 +137,13 @@ class SocrataClient:
             where_parts.append(f"{field} > '{iso}'")
         if extra_where:
             where_parts.append(extra_where)
-        params: dict[str, Any] = {
-            "$limit": self.page_size,
-            "$offset": 0,
-            "$order": mapping.get("watermark_field") or ":" + "rowid",
-        }
+        watermark = mapping.get("watermark_field")
+        params: dict[str, Any] = {"$limit": self.page_size, "$offset": 0}
+        if watermark:
+            # Primera ingesta: registros más recientes primero; incremental: ascendente por watermark
+            params["$order"] = f"{watermark} {'ASC' if since else 'DESC'}"
+        else:
+            params["$order"] = ":id"
         if where_parts:
             params["$where"] = " AND ".join(where_parts)
         max_pages = max_pages or self.max_pages
@@ -158,7 +162,7 @@ class SocrataClient:
 def _parse_date(value: str | None) -> datetime | None:
     if not value:
         return None
-    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%d"):
+    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%d"):
         try:
             return datetime.strptime(value[: len(fmt) + 3], fmt)
         except (ValueError, TypeError):
@@ -175,28 +179,48 @@ def _to_float(value: Any) -> float | None:
         return None
 
 
+def _as_str(value) -> str | None:
+    """Coacciona a texto: la fuente puede entregar dicts (p. ej. urlproceso como {'url': ...})."""
+    if isinstance(value, dict):
+        value = value.get("url") or value.get("href") or ""
+    if value in (None, ""):
+        return None
+    return str(value)
+
+
+def _clean(value) -> str | None:
+    """Texto limpio: valores centinela de la fuente ('No Definido') se normalizan a None."""
+    s = _as_str(value)
+    if s and s.strip().lower() in ("no definido", "no definida", "n/d", "-"):
+        return None
+    return s
+
+
 def normalize_row(source: str, row: dict) -> dict:
     """Normaliza una fila cruda de Socrata al modelo Opportunity."""
     m = FIELD_MAP[source]
-    estado = (row.get(m["estado"]) or "").strip()
+    estado = (_as_str(row.get(m["estado"])) or "").strip()
+    unspsc = _clean(row.get(m.get("unspsc_code", "")))
+    if unspsc and not re.fullmatch(r"\d{2,10}", unspsc):
+        unspsc = None  # la fuente a veces entrega valores no-UNSPSC (p. ej. 'V1.80111701')
     return {
         "source": source,
-        "source_id": str(row.get(m["source_id"]) or ""),
-        "entidad": row.get(m["entidad"]),
-        "nit_entidad": row.get(m.get("nit_entidad", "")) or None,
-        "departamento": row.get(m["departamento"]),
-        "ciudad": row.get(m.get("ciudad", "")) or None,
-        "objeto": row.get(m["objeto"]),
-        "descripcion": row.get(m.get("descripcion", "")) or None,
-        "modalidad": row.get(m["modalidad"]),
-        "tipo_contrato": row.get(m.get("tipo_contrato", "")) or None,
-        "unspsc_code": row.get(m.get("unspsc_code", "")) or None,
+        "source_id": _as_str(row.get(m["source_id"])) or "",
+        "entidad": _clean(row.get(m["entidad"])),
+        "nit_entidad": _clean(row.get(m.get("nit_entidad", ""))),
+        "departamento": _clean(row.get(m["departamento"])),
+        "ciudad": _clean(row.get(m.get("ciudad", ""))),
+        "objeto": _clean(row.get(m["objeto"])),
+        "descripcion": _clean(row.get(m.get("descripcion", ""))),
+        "modalidad": _clean(row.get(m["modalidad"])),
+        "tipo_contrato": _clean(row.get(m.get("tipo_contrato", ""))),
+        "unspsc_code": unspsc,
         "valor": _to_float(row.get(m["valor"])),
         "estado": estado,
-        "fecha_publicacion": _parse_date(row.get(m["fecha_publicacion"])),
+        "fecha_publicacion": _parse_date(_as_str(row.get(m["fecha_publicacion"]))),
         "fecha_cierre": None,  # no expuesta por la fuente (ver docs/fuentes-secop.md)
-        "url_oficial": row.get(m.get("url", "")) or None,
+        "url_oficial": _clean(row.get(m.get("url", ""))),
         "raw_json": row,
-        "published_at": _parse_date(row.get(m["fecha_publicacion"])),
+        "published_at": _parse_date(_as_str(row.get(m["fecha_publicacion"]))),
         "cancelled": estado.lower() in ESTADOS_CANCELADOS,
     }

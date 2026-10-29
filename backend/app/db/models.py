@@ -28,6 +28,10 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), default="")
     is_active = Column(Boolean, default=True)
+    role = Column(String(20), default="owner")              # owner | admin | analista | lector (Fase 5)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
+    email_verified = Column(Boolean, default=False)         # verificación de correo (Fase 5)
+    verification_token = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=utcnow)
     profile = relationship("CompanyProfile", back_populates="user", uselist=False)
     alert_prefs = relationship("AlertPrefs", back_populates="user", uselist=False)
@@ -55,6 +59,8 @@ class CompanyProfile(Base):
     capacidades = Column(Text, default="")
     certificaciones = Column(JSON, default=list)
     acepta_consorcios = Column(Boolean, default=False)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
+    learning_weights = Column(JSON, default=dict)           # retroalimentación del usuario (Fase 3)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
     user = relationship("User", back_populates="profile")
 
@@ -107,6 +113,8 @@ class UserOpportunity(Base):
     score = Column(Float, default=0)                        # 0-100 compatibilidad
     reasons = Column(JSON, default=list)                    # razones verificables [{factor, detalle, evidencia}]
     triage = Column(String(20), default="detectada")        # detectada|guardada|descartada|proyecto
+    feedback = Column(Boolean, nullable=True)               # retroalimentación: útil / no útil (Fase 3)
+    feedback_note = Column(String(500), default="")
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
     opportunity = relationship("Opportunity")
@@ -122,6 +130,8 @@ class Document(Base):
     storage_path = Column(String(800))                      # compatible con S3 en producción
     mime_type = Column(String(120))
     source_url = Column(String(800), default="")            # si se adjuntó desde un enlace público
+    document_type = Column(String(40), default="otro")      # pliego|anexo|rup|rut|camara_comercio|experiencia|otro
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
     uploaded_at = Column(DateTime, default=utcnow)
 
 
@@ -134,6 +144,7 @@ class Analysis(Base):
     resumen_ejecutivo = Column(JSON, default=dict)
     requisitos = Column(JSON, default=list)  # ver schemas: descripcion, tipo, estado, cita, pagina, confianza...
     estado = Column(String(30), default="borrador")         # borrador|revisado
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
     created_at = Column(DateTime, default=utcnow)
 
 
@@ -143,6 +154,7 @@ class Viability(Base):
     id = Column(Integer, primary_key=True)
     opportunity_id = Column(Integer, ForeignKey("opportunities.id"), index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
     global_score = Column(Float)
     factors = Column(JSON, default=dict)                    # {factor: {score, peso, detalle}}
     critical_failures = Column(JSON, default=list)
@@ -162,6 +174,7 @@ class OfferProject(Base):
     __tablename__ = "offer_projects"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
     opportunity_id = Column(Integer, ForeignKey("opportunities.id"), index=True)
     name = Column(String(300))
     checklist = Column(JSON, default=list)                  # [{item, tipo, estado, responsable, evidencia}]
@@ -216,3 +229,62 @@ class SyncRun(Base):
     errors = Column(Integer, default=0)
     watermark = Column(DateTime, nullable=True)             # última fecha_de_ultima_publicaci procesada
     detail = Column(JSON, default=dict)
+
+
+class Company(Base):
+    """Empresa cliente (Fase 5): aislamiento de información por tenant."""
+    __tablename__ = "companies"
+    id = Column(Integer, primary_key=True)
+    nombre = Column(String(255), nullable=False)
+    nit = Column(String(50), default="")
+    sector = Column(String(120), default="")
+    owner_user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    created_at = Column(DateTime, default=utcnow)
+
+
+class Subscription(Base):
+    """Suscripción por empresa o usuario individual (Fase 5). Estado pendiente_pago
+    hasta integrar la pasarela (requiere credenciales externas)."""
+    __tablename__ = "subscriptions"
+    id = Column(Integer, primary_key=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    plan = Column(String(30), default="explorador")          # explorador | profesional | corporativo
+    status = Column(String(30), default="activa")            # activa | pendiente_pago | cancelada
+    provider = Column(String(30), default="manual")          # manual | stripe
+    current_period_end = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utcnow)
+
+
+class UsageCounter(Base):
+    """Contador mensual de consumo de IA por usuario (Fase 5: límites por suscripción)."""
+    __tablename__ = "usage_counters"
+    __table_args__ = (UniqueConstraint("user_id", "month", name="uq_uso_mensual"),)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    month = Column(String(7))                               # YYYY-MM
+    analyses = Column(Integer, default=0)
+
+
+class AuditLog(Base):
+    """Registro de auditoría de acciones (Fase 5)."""
+    __tablename__ = "audit_logs"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
+    action = Column(String(60))                             # crear_empresa | triaje | analizar_pliego | ...
+    entity = Column(String(60))
+    entity_id = Column(Integer, nullable=True)
+    detail = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=utcnow, index=True)
+
+
+class ContactMessage(Base):
+    """Mensajes del formulario de contacto público (Fase 5)."""
+    __tablename__ = "contact_messages"
+    id = Column(Integer, primary_key=True)
+    nombre = Column(String(120))
+    email = Column(String(255))
+    mensaje = Column(Text)
+    atendido = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=utcnow)

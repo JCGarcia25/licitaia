@@ -48,7 +48,7 @@ def rescore_user(db: Session, user_id: int, limit: int = 1500) -> int:
             "tipo_contrato": opp.tipo_contrato, "unspsc_code": opp.unspsc_code,
             "departamento": opp.departamento, "valor": opp.valor, "estado": opp.estado,
             "cancelled": opp.cancelled, "_vector": vector,
-        }, profile_vector=p_vector)
+        }, profile_vector=p_vector, learning_weights=(profile.learning_weights or None))
         uo = existing.get(opp.id)
         if not uo:
             uo = UserOpportunity(user_id=user_id, opportunity_id=opp.id)

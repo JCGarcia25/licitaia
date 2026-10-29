@@ -11,6 +11,7 @@ import logging
 
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.security import hash_password
 from app.db.models import AlertPrefs, CompanyProfile, User
 from app.services.ingest import seed_sample
@@ -137,6 +138,10 @@ def seed_demo_if_empty(db: Session | None = None) -> None:
     try:
         from app.db.models import Opportunity
 
+        settings = get_settings()
+        if settings.environment == "production" or not settings.allow_demo_seed:
+            logger.info("Seed de datos de demostración desactivado (entorno=%s, ALLOW_DEMO_SEED=%s)", settings.environment, settings.allow_demo_seed)
+            return
         if db.query(Opportunity).count() > 0:
             return
         user = db.query(User).filter(User.email == DEMO_EMAIL).first()

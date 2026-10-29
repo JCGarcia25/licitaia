@@ -14,6 +14,7 @@ class RegisterIn(BaseModel):
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    verification_token: Optional[str] = None  # solo cuando SMTP no está configurado (dev)
 
 
 class UserOut(BaseModel):
@@ -21,6 +22,10 @@ class UserOut(BaseModel):
     email: EmailStr
     full_name: str
     is_active: bool
+    role: str = "owner"
+    company_id: Optional[int] = None
+    email_verified: bool = False
+    model_config = {"from_attributes": True}
 
 
 class ProfileIn(BaseModel):
@@ -41,6 +46,7 @@ class ProfileIn(BaseModel):
     capacidades: str = ""
     certificaciones: list[str] = []
     acepta_consorcios: bool = False
+    learning_weights: dict[str, float] = {}  # Fase 3: pesos de retroalimentación del usuario
 
 
 class ProfileOut(ProfileIn):
@@ -87,3 +93,38 @@ class OfferStatusIn(BaseModel):
 
 class CommentIn(BaseModel):
     texto: str = Field(min_length=1, max_length=2000)
+
+
+# --- Fase 3/5: retroalimentación, verificación, empresa, suscripción, contacto ---
+class FeedbackIn(BaseModel):
+    util: bool
+    nota: str = Field(default="", max_length=500)
+
+
+class VerifyEmailIn(BaseModel):
+    token: str = Field(min_length=8, max_length=64)
+
+
+class CompanyIn(BaseModel):
+    nombre: str = Field(min_length=2, max_length=200)
+    nit: str = ""
+    sector: str = ""
+
+
+class MemberIn(BaseModel):
+    email: EmailStr
+    role: str = Field(pattern="^(admin|analista|lector)$")
+
+
+class MemberRoleIn(BaseModel):
+    role: str = Field(pattern="^(owner|admin|analista|lector)$")
+
+
+class SubscribeIn(BaseModel):
+    plan: str = Field(pattern="^(explorador|profesional|corporativo)$")
+
+
+class ContactIn(BaseModel):
+    nombre: str = Field(min_length=2, max_length=120)
+    email: EmailStr
+    mensaje: str = Field(min_length=10, max_length=4000)
