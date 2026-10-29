@@ -30,7 +30,7 @@ def _public_urls(value):
         for item in value: found.extend(_public_urls(item))
     elif isinstance(value, str) and value.startswith(("http://", "https://")):
         parsed = urlparse(value)
-        if parsed.hostname in PUBLIC_HOSTS and os.path.splitext(parsed.path.lower())[1] in ALLOWED:
+        if parsed.hostname in PUBLIC_HOSTS:
             found.append(value)
     return list(dict.fromkeys(found))
 
@@ -53,6 +53,9 @@ def import_public_documents(opportunity_id: int, user: User = Depends(get_curren
             data = response.content
             if len(data) > MAX_SIZE: raise ValueError("supera 25 MB")
             ext = os.path.splitext(urlparse(str(response.url)).path)[1].lower()
+            content_type = response.headers.get("content-type", "").lower()
+            if ext not in ALLOWED:
+                ext = ".pdf" if "pdf" in content_type else ".docx" if "word" in content_type else ".xlsx" if "spreadsheet" in content_type or "excel" in content_type else ""
             if ext not in ALLOWED: skipped.append({"url": url, "motivo": "formato no soportado"}); continue
             name = _secure_name(os.path.basename(urlparse(str(response.url)).path) or f"documento{ext}")
             path = os.path.join(directory, f"{uuid.uuid4().hex[:8]}-{name}")

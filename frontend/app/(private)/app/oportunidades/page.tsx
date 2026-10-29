@@ -69,7 +69,8 @@ export default function Oportunidades() {
   async function crearProyecto(id: number) {
     try {
       await api("/api/offer-projects", { method: "POST", body: JSON.stringify({ opportunity_id: id }) });
-      aplicarTriage(id, "proyecto");
+      await aplicarTriage(id, "proyecto");
+      setError("Proyecto creado correctamente. Puedes abrirlo en Ofertas.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error creando el proyecto");
     }
