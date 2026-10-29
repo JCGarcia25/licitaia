@@ -22,6 +22,13 @@ def _user_scores(db: Session, user_id: int) -> dict[int, UserOpportunity]:
 
 
 def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
+    url = opp.url_oficial
+    if "binpar.cloud" in (url or "").lower():
+        url = None
+    elif "/STS/Users/Login/Index" in (url or "") and opp.source_id:
+        # Socrata occasionally returns the SECOP login landing page instead of
+        # the expediente. Rebuild the public detail URL from noticeUID.
+        url = f"https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID={opp.source_id}"
     return {
         "id": opp.id, "source": opp.source, "source_id": opp.source_id,
         "entidad": opp.entidad, "nit_entidad": opp.nit_entidad,
@@ -31,7 +38,7 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
         "unspsc_code": opp.unspsc_code, "valor": opp.valor,
         "estado": opp.estado, "fecha_publicacion": opp.fecha_publicacion,
         "fecha_cierre": opp.fecha_cierre,
-        "url_oficial": None if "binpar.cloud" in (opp.url_oficial or "").lower() else opp.url_oficial,
+        "url_oficial": url,
         "cancelled": opp.cancelled, "captured_at": opp.captured_at, "updated_at": opp.updated_at,
         "score": uo.score if uo else None,
         "triage": uo.triage if uo else "detectada",
