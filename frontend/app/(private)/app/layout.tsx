@@ -16,11 +16,18 @@ const NAV = [
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
+  return (
+    <AuthProvider>
+      <AuthenticatedLayout>{children}</AuthenticatedLayout>
+    </AuthProvider>
+  );
+}
+
+function AuthenticatedLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
   return (
-    <AuthProvider>
       <RequireAuth>
       <div className="flex min-h-screen">
         {/* Sidebar */}
@@ -74,6 +81,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
       </RequireAuth>
-    </AuthProvider>
   );
 }

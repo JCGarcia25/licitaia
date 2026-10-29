@@ -1,6 +1,6 @@
 "use client";
 /* Perfil empresarial: alimentación directa del Cazador de Oportunidades. */
-import { FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Button, Card, CardHeader, Field, Input, Select, Spinner, Textarea } from "@/components/ui";
 
@@ -24,10 +24,15 @@ export default function Perfil() {
   const [p, setP] = useState<Profile | null>(null);
   const [msg, setMsg] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [listas, setListas] = useState<Record<string, string>>({});
 
   useEffect(() => {
     api<Profile | null>("/api/profile")
-      .then((r) => setP(r || VACIO))
+    .then((r) => {
+      const perfil = r || VACIO;
+      setP(perfil);
+      setListas({ certificaciones: texto(perfil.certificaciones), keywords: texto(perfil.keywords), unspsc_codes: texto(perfil.unspsc_codes), departamentos: texto(perfil.departamentos), municipios: texto(perfil.municipios), modalidades: texto(perfil.modalidades) });
+    })
       .catch(() => setP(VACIO));
   }, []);
 
@@ -37,7 +42,8 @@ export default function Perfil() {
     setGuardando(true);
     setMsg("");
     try {
-      await api("/api/profile", { method: "PUT", body: JSON.stringify(p) });
+      const normalizadas = Object.fromEntries(Object.entries(listas).map(([key, value]) => [key, lista(value)]));
+      await api("/api/profile", { method: "PUT", body: JSON.stringify({ ...p, ...normalizadas }) });
       setMsg("Perfil guardado. Ejecuta el agente en Oportunidades para re-puntuar.");
     } catch (err) {
       setMsg(err instanceof Error ? err.message : "Error guardando");
@@ -47,6 +53,7 @@ export default function Perfil() {
   }
 
   const lista = (v: string) => v.split(",").map((s) => s.trim()).filter(Boolean);
+  const listaInput = (field: string) => ({ value: listas[field] ?? "", onChange: (e: ChangeEvent<HTMLInputElement>) => setListas((prev) => ({ ...prev, [field]: e.target.value })) });
   const texto = (arr: string[] | undefined) => (arr || []).join(", ");
   const num = (v: string) => (v === "" ? null : Number(v.replace(/[^\d.]/g, "")));
 
@@ -68,7 +75,7 @@ export default function Perfil() {
           <Field label="Sector económico"><Input value={p.sector} onChange={(e) => setP({ ...p, sector: e.target.value })} placeholder="Tecnologías de la información" /></Field>
           <div className="md:col-span-2">
             <Field label="Certificaciones" hint="Separadas por coma: ISO 9001, ISO 14001…">
-              <Input value={texto(p.certificaciones)} onChange={(e) => setP({ ...p, certificaciones: lista(e.target.value) })} />
+              <Input {...listaInput("certificaciones")} />
             </Field>
           </div>
         </div>
@@ -80,10 +87,10 @@ export default function Perfil() {
           <Field label="Actividades principales"><Textarea rows={3} value={p.actividades} onChange={(e) => setP({ ...p, actividades: e.target.value })} /></Field>
           <Field label="Productos y servicios"><Textarea rows={3} value={p.productos_servicios} onChange={(e) => setP({ ...p, productos_servicios: e.target.value })} /></Field>
           <Field label="Palabras clave" hint="Separadas por coma.">
-            <Input value={texto(p.keywords)} onChange={(e) => setP({ ...p, keywords: lista(e.target.value) })} placeholder="desarrollo de software, interoperabilidad" />
+            <Input {...listaInput("keywords")} placeholder="desarrollo de software, interoperabilidad" />
           </Field>
           <Field label="Códigos UNSPSC" hint="Separados por coma: 81101500, 81112000…">
-            <Input value={texto(p.unspsc_codes)} onChange={(e) => setP({ ...p, unspsc_codes: lista(e.target.value) })} />
+            <Input {...listaInput("unspsc_codes")} />
           </Field>
         </div>
       </Card>
@@ -92,13 +99,13 @@ export default function Perfil() {
         <CardHeader title="Dónde y cuánto" />
         <div className="grid gap-4 p-5 md:grid-cols-2">
           <Field label="Departamentos de interés" hint="Separados por coma.">
-            <Input value={texto(p.departamentos)} onChange={(e) => setP({ ...p, departamentos: lista(e.target.value) })} placeholder="Bogotá D.C., Cundinamarca" />
+            <Input {...listaInput("departamentos")} placeholder="Bogotá D.C., Cundinamarca" />
           </Field>
-          <Field label="Municipios de interés"><Input value={texto(p.municipios)} onChange={(e) => setP({ ...p, municipios: lista(e.target.value) })} /></Field>
+          <Field label="Municipios de interés"><Input {...listaInput("municipios")} /></Field>
           <Field label="Presupuesto mínimo (COP)"><Input value={p.presupuesto_min ?? ""} onChange={(e) => setP({ ...p, presupuesto_min: num(e.target.value) })} placeholder="100000000" /></Field>
           <Field label="Presupuesto máximo (COP)"><Input value={p.presupuesto_max ?? ""} onChange={(e) => setP({ ...p, presupuesto_max: num(e.target.value) })} placeholder="5000000000" /></Field>
           <Field label="Modalidades preferidas" hint="Separadas por coma.">
-            <Input value={texto(p.modalidades)} onChange={(e) => setP({ ...p, modalidades: lista(e.target.value) })} placeholder="Licitación Pública, Contratación Directa" />
+            <Input {...listaInput("modalidades")} placeholder="Licitación Pública, Contratación Directa" />
           </Field>
           <div className="flex items-end">
             <label className="flex items-center gap-2 text-sm">
