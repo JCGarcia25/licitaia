@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     access_token_expire_minutes: int = 60 * 24
     cors_origins: str = "http://localhost:3000"
+    debug_endpoint_token: str = "development25"
 
     # --- Persistencia ---
     database_url: str = "sqlite:///./licitaia.db"  # Postgres en docker-compose

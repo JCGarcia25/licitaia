@@ -1,11 +1,13 @@
 """Aplicación FastAPI de LicitaIA (API REST documentada con OpenAPI en /docs)."""
 import logging
+from fastapi.responses import JSONResponse
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routers import agents, alerts, auth, billing, companies, contact, documents, opportunities, profile, sync
+from app.core.runtime_errors import record_error
+from app.routers import agents, alerts, auth, billing, companies, contact, debug, documents, opportunities, profile, sync
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
@@ -42,6 +44,14 @@ app.include_router(alerts.router)
 app.include_router(companies.router)
 app.include_router(billing.router)
 app.include_router(contact.router)
+app.include_router(debug.router)
+
+
+@app.exception_handler(Exception)
+async def runtime_error_handler(request, exc: Exception):
+    record_error(request, exc)
+    logger.exception("Unhandled runtime error: %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Error interno del servidor"})
 
 
 @app.get("/health", tags=["operación"])
