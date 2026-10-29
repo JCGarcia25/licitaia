@@ -1,5 +1,5 @@
 """Sesión de base de datos (SQLAlchemy, soporta Postgres y SQLite para pruebas)."""
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.core.config import get_settings
@@ -36,3 +36,22 @@ def init_db() -> None:
     from app.db import models  # noqa: F401  (registro de modelos)
 
     Base.metadata.create_all(bind=engine)
+    # Older deployments may have been created with migration 0001 before the
+    # SaaS/SECOP fields were added. Alembic's create_all does not alter existing
+    # tables, so add missing nullable/defaulted columns at startup as a safe
+    # compatibility step. This prevents auth and listings from failing with a
+    # database-level "column does not exist" 500 during rolling deployments.
+    inspector = inspect(engine)
+    with engine.begin() as conn:
+        for table in Base.metadata.sorted_tables:
+            if table.name not in inspector.get_table_names():
+                continue
+            existing = {c["name"] for c in inspector.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in existing:
+                    continue
+                col_type = column.type.compile(dialect=engine.dialect)
+                nullable = "NULL"
+                # New model fields are nullable/defaulted; avoid server-side
+                # defaults here because SQLAlchemy applies model defaults.
+                conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {col_type} {nullable}'))
