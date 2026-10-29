@@ -39,7 +39,9 @@ export default function Oportunidades() {
     params.set("solo_con_score", String(soloScore));
     params.set("limit", "50");
     try {
-      const res = await api<{ total: number; items: Opp[] }>(`/api/opportunities?${params.toString()}`);
+      const res = q || nlq
+        ? await api<{ total: number; items: Opp[] }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q }) })
+        : await api<{ total: number; items: Opp[] }>(`/api/opportunities?${params.toString()}`);
       setItems(res.items);
       setTotal(res.total);
     } catch (e) {
