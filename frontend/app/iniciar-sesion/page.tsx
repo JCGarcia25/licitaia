@@ -3,7 +3,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Field, Input } from "@/components/ui";
-import { useAuth } from "@/components/auth";
+import { AuthProvider, useAuth } from "@/components/auth";
 
 export default function IniciarSesion() {
   const { login } = useAuth();
@@ -28,7 +28,8 @@ export default function IniciarSesion() {
   }
 
   return (
-    <div className="hero-grid flex min-h-screen items-center justify-center px-5">
+    <AuthProvider>
+      <div className="hero-grid flex min-h-screen items-center justify-center px-5">
       <div className="surface-card shadow-lift w-full max-w-md p-8">
         <Link href="/" className="mb-6 flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 font-bold text-white dark:bg-teal dark:text-slate-950">L</span>
@@ -53,6 +54,7 @@ export default function IniciarSesion() {
           Demostración: <code>demo@licitaia.co</code> / <code>LicitAIA2026</code> (datos de ejemplo con datos ilustrativos)
         </p>
       </div>
-    </div>
+      </div>
+    </AuthProvider>
   );
 }

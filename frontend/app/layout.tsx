@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeInitScript } from "@/components/theme";
-import { AuthProvider } from "@/components/auth";
 
 export const metadata: Metadata = {
   title: "LicitaIA — La inteligencia detrás de tu próxima licitación",
@@ -21,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeInitScript />
       </head>
       <body className="antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        {children}
       </body>
     </html>
   );

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
-import { RequireAuth, useAuth } from "@/components/auth";
+import { AuthProvider, RequireAuth, useAuth } from "@/components/auth";
 import { ThemeToggle } from "@/components/theme";
 
 const NAV = [
@@ -20,7 +20,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
 
   return (
-    <RequireAuth>
+    <AuthProvider>
+      <RequireAuth>
       <div className="flex min-h-screen">
         {/* Sidebar */}
         <aside className="hidden w-60 shrink-0 border-r border-base bg-[var(--surface)] md:block">
@@ -72,6 +73,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <main className="mx-auto max-w-6xl p-5">{children}</main>
         </div>
       </div>
-    </RequireAuth>
+      </RequireAuth>
+    </AuthProvider>
   );
 }
