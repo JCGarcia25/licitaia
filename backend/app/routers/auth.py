@@ -54,6 +54,14 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)):
+    # Users created before the role/email verification fields were added may
+    # still have NULL values in PostgreSQL. Normalize them at the API boundary
+    # so the response contract remains stable without requiring a destructive
+    # data migration.
+    if user.role is None:
+        user.role = "owner"
+    if user.email_verified is None:
+        user.email_verified = False
     return user
 
 
