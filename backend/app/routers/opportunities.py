@@ -60,11 +60,14 @@ def list_opportunities(
     if not include_cancelled:
         query = query.filter(Opportunity.cancelled.is_(False))
     if q:
-        for word in [w for w in re.split(r"[^\wáéíóúñü]+", q) if len(w) > 3][:6]:
-            like = f"%{word}%"
-            query = query.filter(or_(
-                Opportunity.objeto.ilike(like), Opportunity.entidad.ilike(like), Opportunity.descripcion.ilike(like),
-            ))
+        stopwords = {"procesos", "proceso", "contratación", "contratacion", "pública", "publica", "superior", "millones", "pesos", "buscar", "para", "con", "los", "las", "del", "una"}
+        words = [w for w in re.split(r"[^\wáéíóúñü]+", q.lower()) if len(w) > 3 and w not in stopwords][:8]
+        if words:
+            matches = []
+            for word in words:
+                like = f"%{word}%"
+                matches.extend([Opportunity.objeto.ilike(like), Opportunity.entidad.ilike(like), Opportunity.descripcion.ilike(like)])
+            query = query.filter(or_(*matches))
     if departamento:
         query = query.filter(Opportunity.departamento.ilike(f"%{departamento}%"))
     if modalidad:

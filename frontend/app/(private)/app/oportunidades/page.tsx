@@ -21,7 +21,7 @@ export default function Oportunidades() {
   const [valorMin, setValorMin] = useState("");
   const [scoreMin, setScoreMin] = useState("");
   const [triage, setTriage] = useState("");
-  const [soloScore, setSoloScore] = useState(true);
+  const [soloScore, setSoloScore] = useState(false);
   const [error, setError] = useState("");
 
   const cargar = useCallback(async (nlq?: string) => {
