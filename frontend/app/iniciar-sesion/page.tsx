@@ -3,7 +3,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Field, Input } from "@/components/ui";
-import { AuthProvider, useAuth } from "@/components/auth";
+import { useAuth } from "@/components/auth";
 
 export default function IniciarSesion() {
   const { login } = useAuth();
@@ -28,7 +28,6 @@ export default function IniciarSesion() {
   }
 
   return (
-    <AuthProvider>
       <div className="hero-grid flex min-h-screen items-center justify-center px-5">
       <div className="surface-card shadow-lift w-full max-w-md p-8">
         <Link href="/" className="mb-6 flex items-center gap-2">
@@ -55,6 +54,5 @@ export default function IniciarSesion() {
         </p>
       </div>
       </div>
-    </AuthProvider>
   );
 }
