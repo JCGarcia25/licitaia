@@ -1,6 +1,7 @@
 "use client";
 /* Sincronización SECOP: ingesta incremental y auditoría de corridas. */
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { Badge, Button, Card, CardHeader, Field, Input, Select, Spinner } from "@/components/ui";
 
@@ -8,6 +9,7 @@ type Run = {
   id: number; dataset: string; started_at: string; finished_at: string | null;
   pages: number; upserted: number; duplicates: number; errors: number; watermark: string | null;
 };
+type Process = { id: number; source_id: string; entidad: string | null; objeto: string | null; estado: string | null; modalidad: string | null; fecha_publicacion: string | null; url_oficial: string | null };
 
 export default function Sincronizacion() {
   const [source, setSource] = useState("secop2_procesos");
@@ -16,10 +18,23 @@ export default function Sincronizacion() {
   const [corriendo, setCorriendo] = useState(false);
   const [resultado, setResultado] = useState<Record<string, unknown> | null>(null);
   const [runs, setRuns] = useState<Run[] | null>(null);
+  const [procesos, setProcesos] = useState<Process[] | null>(null);
+  const [datasetActivo, setDatasetActivo] = useState<string | null>(null);
 
   const cargarRuns = useCallback(async () => {
     setRuns(await api<Run[]>("/api/sync/runs"));
   }, []);
+
+  async function verProcesos(dataset: string) {
+    setDatasetActivo(dataset);
+    setProcesos(null);
+    try {
+      const res = await api<{ items: Process[] }>(`/api/opportunities?source=${encodeURIComponent(dataset)}&solo_con_score=false&limit=50`);
+      setProcesos(res.items);
+    } catch {
+      setProcesos([]);
+    }
+  }
 
   useEffect(() => { cargarRuns().catch(() => setRuns([])); }, [cargarRuns]);
 
@@ -102,7 +117,7 @@ export default function Sincronizacion() {
                 {runs.map((r) => (
                   <tr key={r.id} className="border-b border-base">
                     <td className="px-5 py-2">{r.id}</td>
-                    <td className="px-3 py-2"><Badge tone="blue">{r.dataset}</Badge></td>
+                    <td className="px-3 py-2"><button type="button" onClick={() => verProcesos(r.dataset)} title="Ver procesos de este dataset"><Badge tone="blue">{r.dataset}</Badge></button></td>
                     <td className="px-3 py-2">{new Date(r.started_at).toLocaleString("es-CO")}</td>
                     <td className="px-3 py-2 font-medium text-teal">{r.upserted}</td>
                     <td className="px-3 py-2">{r.duplicates}</td>
@@ -113,6 +128,16 @@ export default function Sincronizacion() {
             </table>
           </div>
         )}
+        {datasetActivo ? (
+          <div className="border-t border-base p-5">
+            <h3 className="text-sm font-semibold">Procesos del dataset {datasetActivo}</h3>
+            {!procesos ? <Spinner label="Cargando procesos…" /> : procesos.length === 0 ? <p className="text-muted mt-2 text-sm">No hay procesos disponibles para este dataset.</p> : (
+              <div className="mt-3 space-y-2">
+                {procesos.map((p) => <div key={p.id} className="rounded-lg border border-base p-3 text-xs"><Link href={`/app/oportunidades/${p.id}`} className="font-semibold hover:text-teal">{p.objeto || "Proceso sin título"}</Link><p className="text-muted mt-1">{p.entidad || "Entidad no definida"} · {p.modalidad || "Modalidad no definida"} · {p.estado || "Estado no definido"}</p>{p.url_oficial ? <a href={p.url_oficial} target="_blank" rel="noreferrer" className="mt-1 inline-block text-teal hover:underline">Abrir expediente oficial en SECOP ↗</a> : <p className="text-muted mt-1">Sin enlace oficial disponible</p>}</div>)}
+              </div>
+            )}
+          </div>
+        ) : null}
       </Card>
 
       <Card className="p-5">

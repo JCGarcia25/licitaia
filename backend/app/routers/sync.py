@@ -1,5 +1,5 @@
 """Ingesta SECOP (protegida por JWT) y auditoría de sincronizaciones."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
@@ -14,7 +14,11 @@ router = APIRouter(prefix="/api/sync", tags=["secop"])
 @router.post("/secop")
 def run_sync(data: SyncIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Ejecuta una ingesta incremental del dataset solicitado (paginación + upsert idempotente)."""
-    run = sync_source(db, data.source, max_pages=data.max_pages, extra_where=data.extra_where)
+    try:
+        run = sync_source(db, data.source, max_pages=data.max_pages, extra_where=data.extra_where)
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=502, detail=f"No fue posible consultar SECOP: {str(exc)[:300]}") from exc
     return {
         "id": run.id, "dataset": run.dataset, "upserted": run.upserted,
         "duplicates": run.duplicates, "errors": run.errors,

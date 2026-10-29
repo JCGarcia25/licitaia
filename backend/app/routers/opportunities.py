@@ -43,6 +43,7 @@ def list_opportunities(
     q: str | None = None,
     departamento: str | None = None,
     modalidad: str | None = None,
+    source: str | None = None,
     estado: str | None = None,
     valor_min: float | None = None,
     valor_max: float | None = None,
@@ -68,6 +69,8 @@ def list_opportunities(
         query = query.filter(Opportunity.departamento.ilike(f"%{departamento}%"))
     if modalidad:
         query = query.filter(Opportunity.modalidad.ilike(f"%{modalidad}%"))
+    if source:
+        query = query.filter(Opportunity.source == source)
     if estado:
         query = query.filter(Opportunity.estado.ilike(f"%{estado}%"))
     if valor_min is not None:
