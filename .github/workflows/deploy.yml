@@ -1,0 +1,63 @@
+name: Deploy LicitaIA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: licitaia-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Configure SSH
+        shell: bash
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$VPS_SSH_KEY" || { echo "Missing VPS_SSH_KEY" >&2; exit 1; }
+          test -n "$VPS_KNOWN_HOSTS" || { echo "Missing VPS_KNOWN_HOSTS" >&2; exit 1; }
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KEY" > "$HOME/.ssh/licitaia_deploy"
+          chmod 600 "$HOME/.ssh/licitaia_deploy"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+
+      - name: Pull and deploy
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+          VPS_DOMAIN: ${{ secrets.VPS_DOMAIN }}
+          VPS_API_PORT: ${{ secrets.VPS_API_PORT }}
+        run: |
+          set -euo pipefail
+          : "${VPS_PORT:=22}"
+          : "${VPS_APP_DIR:=/home/administrator/licitaia}"
+          : "${VPS_API_PORT:=8001}"
+          test -n "$VPS_HOST" || { echo "Missing VPS_HOST" >&2; exit 1; }
+          test -n "$VPS_USER" || { echo "Missing VPS_USER" >&2; exit 1; }
+          test -n "$VPS_DOMAIN" || { echo "Missing VPS_DOMAIN" >&2; exit 1; }
+
+          ssh -i "$HOME/.ssh/licitaia_deploy" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" bash -s -- "$VPS_APP_DIR" "$VPS_DOMAIN" "$VPS_API_PORT" <<'REMOTE'
+          set -Eeuo pipefail
+          APP_DIR="$1"
+          DOMAIN="$2"
+          API_PORT="$3"
+          cd "$APP_DIR"
+          git pull --ff-only
+          DOMAIN="$DOMAIN" LICITAIA_API_PORT="$API_PORT" ./scripts/deploy.sh
+          REMOTE
