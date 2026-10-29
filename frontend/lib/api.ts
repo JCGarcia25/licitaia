@@ -33,7 +33,19 @@ export async function api<T = any>(path: string, opts: RequestInit = {}): Promis
     let detail = await res.text();
     try {
       const parsed = JSON.parse(detail);
-      detail = parsed.detail || JSON.stringify(parsed);
+      const raw = parsed.detail ?? parsed;
+      if (Array.isArray(raw)) {
+        detail = raw
+          .map((item) => {
+            const location = Array.isArray(item?.loc) ? item.loc[item.loc.length - 1] : "";
+            return location ? `${location}: ${item.msg || "Valor inválido"}` : (item.msg || JSON.stringify(item));
+          })
+          .join("; ");
+      } else if (typeof raw === "object" && raw !== null) {
+        detail = raw.message || JSON.stringify(raw);
+      } else {
+        detail = String(raw);
+      }
     } catch {}
     throw new Error(detail || `Error ${res.status}`);
   }
