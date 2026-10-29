@@ -27,6 +27,29 @@ docker compose up --build
 # API docs: http://localhost:8000/docs
 ```
 
+## Despliegue en VPS
+
+Para desplegar en un servidor que ya aloja otros proyectos, usa el script
+`scripts/deploy.sh`. No ejecuta `docker compose down` ni detiene contenedores
+de otros proyectos; utiliza puertos locales separados y un volumen persistente
+para documentos.
+
+```bash
+DOMAIN=licitaia.centralspike.com ./scripts/deploy.sh
+```
+
+El script crea o actualiza `.env`, genera `SECRET_KEY` y `POSTGRES_PASSWORD`
+si todavía tienen valores de ejemplo, ejecuta las migraciones y valida
+`/health`. Nginx debe dirigir `/api/` al puerto local `8001` y el resto al
+puerto local `3000`. Para usar otros puertos:
+
+```bash
+DOMAIN=licitaia.centralspike.com \
+LICITAIA_API_PORT=8001 \
+LICITAIA_FRONTEND_PORT=3001 \
+./scripts/deploy.sh
+```
+
 ## Arranque rápido (local, sin Docker)
 
 ```bash

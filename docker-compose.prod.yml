@@ -1,0 +1,17 @@
+services:
+  api:
+    ports:
+      - "127.0.0.1:${LICITAIA_API_PORT:-8001}:8000"
+    volumes:
+      - licitaia_storage:/app/storage
+
+  worker:
+    volumes:
+      - licitaia_storage:/app/storage
+
+  frontend:
+    ports:
+      - "127.0.0.1:${LICITAIA_FRONTEND_PORT:-3000}:3000"
+
+volumes:
+  licitaia_storage:
