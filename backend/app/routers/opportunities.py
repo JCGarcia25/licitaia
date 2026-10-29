@@ -50,6 +50,7 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
 def list_opportunities(
     q: str | None = None,
     departamento: str | None = None,
+    municipio: str | None = None,
     modalidad: str | None = None,
     source: str | None = None,
     estado: str | None = None,
@@ -85,6 +86,8 @@ def list_opportunities(
             )
     if departamento:
         query = query.filter(Opportunity.departamento.ilike(f"%{departamento}%"))
+    if municipio:
+        query = query.filter(Opportunity.ciudad.ilike(f"%{municipio}%"))
     if modalidad:
         query = query.filter(Opportunity.modalidad.ilike(f"%{modalidad}%"))
     if source:

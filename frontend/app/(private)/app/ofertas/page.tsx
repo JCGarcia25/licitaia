@@ -76,6 +76,13 @@ export default function Ofertas() {
     descargarBlob(blob, `oferta_${sel.id}.${formato}`);
   }
 
+  async function eliminarOferta(id: number) {
+    if (!window.confirm("¿Eliminar esta oferta del preparador? Esta acción no se puede deshacer.")) return;
+    await api(`/api/offer-projects/${id}`, { method: "DELETE" });
+    if (sel?.id === id) setSel(null);
+    await cargarLista();
+  }
+
   if (!lista) return <Spinner />;
 
   return (
@@ -98,6 +105,7 @@ export default function Ofertas() {
                   <p className="text-muted mt-1 text-[11px]">v{p.version} · {p.pendientes} pendiente(s) de checklist</p>
                   <div className="mt-2"><Badge tone={p.status === "aprobado" ? "green" : p.status === "archivado" ? "gray" : "blue"}>{p.status}</Badge></div>
                 </button>
+                <Button size="sm" variant="ghost" className="mt-2 text-red-600" onClick={() => eliminarOferta(p.id)}>Eliminar oferta</Button>
               </Card>
             ))
           )}

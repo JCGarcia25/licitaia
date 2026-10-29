@@ -222,6 +222,16 @@ def get_project(project_id: int, user: User = Depends(get_current_user), db: Ses
     }
 
 
+@router.delete("/offer-projects/{project_id}", status_code=204)
+def delete_project(project_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    p = db.query(OfferProject).filter(OfferProject.id == project_id, OfferProject.user_id == user.id).first()
+    if not p:
+        raise HTTPException(404, "Oferta no encontrada")
+    db.delete(p)
+    db.commit()
+    return Response(status_code=204)
+
+
 @router.patch("/offer-projects/{project_id}/checklist")
 def update_checklist(project_id: int, item: ChecklistItemIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     p = db.query(OfferProject).filter(OfferProject.id == project_id, OfferProject.user_id == user.id).first()

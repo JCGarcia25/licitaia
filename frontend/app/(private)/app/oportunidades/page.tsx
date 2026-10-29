@@ -11,12 +11,14 @@ type Opp = {
   estado: string; departamento: string | null; modalidad: string | null; fecha_publicacion: string | null;
   score: number | null; triage: string; reasons: Reason[]; url_oficial: string | null; cancelled: boolean;
 };
+const DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bogotá D.C.", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "Santander", "Sucre", "Tolima", "Valle del Cauca"];
 
 export default function Oportunidades() {
   const [items, setItems] = useState<Opp[] | null>(null);
   const [total, setTotal] = useState(0);
   const [q, setQ] = useState("");
   const [departamento, setDepartamento] = useState("");
+  const [municipio, setMunicipio] = useState("");
   const [modalidad, setModalidad] = useState("");
   const [valorMin, setValorMin] = useState("");
   const [scoreMin, setScoreMin] = useState("");
@@ -29,6 +31,7 @@ export default function Oportunidades() {
     const params = new URLSearchParams();
     if (nlq || q) params.set("q", nlq || q);
     if (departamento) params.set("departamento", departamento);
+    if (municipio) params.set("municipio", municipio);
     if (modalidad) params.set("modalidad", modalidad);
     if (valorMin) params.set("valor_min", valorMin.replace(/[^\d]/g, ""));
     if (scoreMin) params.set("score_min", scoreMin);
@@ -43,7 +46,7 @@ export default function Oportunidades() {
       setError(e instanceof Error ? e.message : "Error");
       setItems([]);
     }
-  }, [q, departamento, modalidad, valorMin, scoreMin, triage, soloScore]);
+  }, [q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore]);
 
   useEffect(() => {
     const inicial = new URLSearchParams(window.location.search).get("q");
@@ -84,8 +87,12 @@ export default function Oportunidades() {
             placeholder='Búsqueda: texto libre o en lenguaje natural ("procesos abiertos de software en Bogotá superiores a 200 millones")' />
           <Button onClick={() => cargar()}>Buscar</Button>
         </div>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
-          <Input value={departamento} onChange={(e) => setDepartamento(e.target.value)} placeholder="Departamento" />
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+          <Select value={departamento} onChange={(e) => { setDepartamento(e.target.value); setMunicipio(""); }}>
+            <option value="">Toda Colombia</option>
+            {DEPARTAMENTOS.map((d) => <option key={d} value={d}>{d}</option>)}
+          </Select>
+          <Input value={municipio} onChange={(e) => setMunicipio(e.target.value)} placeholder="Municipio" />
           <Select value={modalidad} onChange={(e) => setModalidad(e.target.value)}>
             <option value="">Toda modalidad</option>
             {["Licitación Pública", "Contratación Directa", "Contratación Mínima Cuantía", "Selección Abreviada", "Concurso de Méritos", "Régimen Especial", "Subasta"].map((mo) => (
