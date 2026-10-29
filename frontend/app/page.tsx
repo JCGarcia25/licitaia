@@ -3,6 +3,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme";
 
+// Keep the public landing out of the static client-provider fallback. The
+// private dashboard remains under /app and keeps its authentication guard.
+export const dynamic = "force-dynamic";
+
 const PASOS = [
   { n: "1", t: "Describe tu empresa", d: "Sector, productos, códigos UNSPSC, ubicaciones de interés, presupuesto y modalidades preferidas." },
   { n: "2", t: "El agente caza oportunidades", d: "Monitorea SECOP II de forma continua y puntúa cada proceso de 0 a 100 según su compatibilidad real con tu perfil." },
