@@ -134,7 +134,15 @@ def parse_query(q: str) -> ParsedQuery:
         w for w in re.split(r"[^\wáéíóúñü]+", resto, flags=re.IGNORECASE)
         if len(w) > 3 and _norm(w) not in stop and not re.fullmatch(r"[\d.,]+", w)
     ]
-    p.texto_libre = palabras[:8]
+    correcciones = {
+        "aplicaicones": "aplicaciones",
+        "aplicacion": "aplicaciones",
+        "mobile": "moviles",
+        "mobiles": "moviles",
+        "móvil": "movil",
+        "móviles": "moviles",
+    }
+    p.texto_libre = [correcciones.get(_norm(w), _norm(w)) for w in palabras[:8]]
     return p
 
 

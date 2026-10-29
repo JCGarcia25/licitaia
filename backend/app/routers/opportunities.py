@@ -200,8 +200,13 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         query = query.filter(Opportunity.cancelled.is_(False))
     if filtros.get("q"):
         for word in filtros["q"].split():
-            like = f"%{word}%"
-            query = query.filter(or_(Opportunity.objeto.ilike(like), Opportunity.descripcion.ilike(like)))
+            variants = [word]
+            if word in {"movil", "moviles"}: variants += ["móvil", "móviles"]
+            query = query.filter(or_(*[
+                clause for variant in variants for clause in (
+                    Opportunity.objeto.ilike(f"%{variant}%"), Opportunity.descripcion.ilike(f"%{variant}%")
+                )
+            ]))
     if filtros.get("departamento"):
         query = query.filter(Opportunity.departamento.ilike(f"%{filtros['departamento']}%"))
     if filtros.get("modalidad"):
