@@ -33,7 +33,6 @@ export default function Oportunidades() {
     if (valorMin) params.set("valor_min", valorMin.replace(/[^\d]/g, ""));
     if (scoreMin) params.set("score_min", scoreMin);
     if (triage) params.set("triage", triage);
-    if (!scoreMin && !triage) setSoloScore(true);
     params.set("solo_con_score", String(soloScore));
     params.set("limit", "50");
     try {
