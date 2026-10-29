@@ -25,10 +25,10 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
     url = opp.url_oficial
     if "binpar.cloud" in (url or "").lower():
         url = None
-    elif "/STS/Users/Login/Index" in (url or "") and opp.source_id:
-        # Socrata occasionally returns the SECOP login landing page instead of
-        # the expediente. Rebuild the public detail URL from noticeUID.
-        url = f"https://community.secop.gov.co/Public/Tendering/OpportunityDetail/Index?noticeUID={opp.source_id}"
+    elif "/STS/Users/Login/Index" in (url or ""):
+        # This is only SECOP's login landing page, not the expediente. Do not
+        # fabricate a noticeUID URL: SECOP rejects IDs that are not notices.
+        url = None
     return {
         "id": opp.id, "source": opp.source, "source_id": opp.source_id,
         "entidad": opp.entidad, "nit_entidad": opp.nit_entidad,
