@@ -7,6 +7,16 @@ import { Spinner } from "@/components/ui";
 
 type User = { id: number; email: string; full_name: string };
 
+function userFromToken(token: string | null, fallbackEmail = ""): User | null {
+  if (!token) return fallbackEmail ? { id: 0, email: fallbackEmail, full_name: "" } : null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return { id: Number(payload.sub_id || 0), email: String(payload.email || payload.sub || fallbackEmail), full_name: "" };
+  } catch {
+    return fallbackEmail ? { id: 0, email: fallbackEmail, full_name: "" } : null;
+  }
+}
+
 type AuthContextValue = {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
@@ -34,15 +44,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!getToken()) return;
     api<User>("/api/auth/me")
       .then(setUser)
-      .catch(() => setUser(null));
+      .catch(() => setUser(userFromToken(getToken())));
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     const form = new URLSearchParams({ username: email, password });
     const data = await api<{ access_token: string }>("/api/auth/login", { method: "POST", body: form.toString(), headers: { "Content-Type": "application/x-www-form-urlencoded" } });
     setToken(data.access_token);
-    const me = await api<User>("/api/auth/me");
-    setUser(me);
+    try {
+      setUser(await api<User>("/api/auth/me"));
+    } catch {
+      setUser(userFromToken(data.access_token, email.trim().toLowerCase()));
+    }
   }, []);
 
   const register = useCallback(async (email: string, password: string, fullName: string) => {
@@ -51,8 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password, full_name: fullName }),
     });
     setToken(data.access_token);
-    const me = await api<User>("/api/auth/me");
-    setUser(me);
+    try {
+      setUser(await api<User>("/api/auth/me"));
+    } catch {
+      setUser(userFromToken(data.access_token, email.trim().toLowerCase()));
+    }
   }, []);
 
   const logout = useCallback(() => {
