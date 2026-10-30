@@ -25,7 +25,7 @@ export default function Oportunidades() {
   const [valorMin, setValorMin] = useState("");
   const [scoreMin, setScoreMin] = useState("");
   const [triage, setTriage] = useState("");
-  const [soloScore, setSoloScore] = useState(false);
+  const [soloScore, setSoloScore] = useState(true);
   const [error, setError] = useState("");
   const router = useRouter();
 
@@ -43,7 +43,7 @@ export default function Oportunidades() {
     params.set("limit", "50");
     try {
       const res = q || nlq
-        ? await api<{ total: number; items: Opp[] }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q, departamento: departamento || undefined, municipio: municipio || undefined, modalidad: modalidad || undefined, valor_min: valorMin ? Number(valorMin.replace(/[^\d]/g, "")) : undefined }) })
+        ? await api<{ total: number; items: Opp[] }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q, departamento: departamento || undefined, municipio: municipio || undefined, modalidad: modalidad || undefined, valor_min: valorMin ? Number(valorMin.replace(/[^\d]/g, "")) : undefined, solo_con_score: soloScore }) })
         : await api<{ total: number; items: Opp[] }>(`/api/opportunities?${params.toString()}`);
       setItems(res.items);
       setTotal(res.total);

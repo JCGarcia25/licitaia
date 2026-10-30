@@ -244,6 +244,8 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         query = query.filter(Opportunity.fecha_publicacion >= datetime.utcnow() - timedelta(days=filtros["publicado_dias"]))
     rows = query.order_by(Opportunity.updated_at.desc()).limit(50).all()
     scores = _user_scores(db, user.id)
+    if payload.get("solo_con_score", True):
+        rows = [o for o in rows if scores.get(o.id) is not None]
     return {"filtros_interpretados": filtros, "total": len(rows),
             "items": [_serialize(o, scores.get(o.id)) for o in rows]}
 
