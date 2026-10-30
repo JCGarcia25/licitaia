@@ -25,4 +25,8 @@ def upsert_profile(data: ProfileIn, user: User = Depends(get_current_user), db: 
         setattr(profile, field, value)
     db.commit()
     db.refresh(profile)
+    # Recalcula inmediatamente las coincidencias cuando el perfil cambia, para
+    # que Oportunidades refleje las actividades recién diligenciadas.
+    from app.services.alerts import rescore_user
+    rescore_user(db, user.id)
     return profile

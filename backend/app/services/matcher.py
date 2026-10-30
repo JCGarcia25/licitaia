@@ -47,6 +47,12 @@ def score_opportunity(profile: dict, opp: dict, profile_vector: list[float] | No
     score = 0.0
 
     keywords = [k.lower() for k in (profile.get("keywords") or [])]
+    # Las actividades y productos son la señal principal del perfil. Se
+    # incorporan al componente léxico para que un perfil bien diligenciado no
+    # dependa de que el usuario repita esas palabras en "keywords".
+    for field in ("actividades", "productos_servicios", "sector", "experiencia", "capacidades"):
+        text = str(profile.get(field) or "")
+        keywords.extend(w.lower() for w in text.split() if len(w.strip(".,;:()")) >= 5)
     unspsc = set(profile.get("unspsc_codes") or [])
     depts = {d.lower() for d in (profile.get("departamentos") or [])}
     modalidades = {m.lower() for m in (profile.get("modalidades") or [])}

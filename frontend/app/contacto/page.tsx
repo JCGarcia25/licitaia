@@ -34,7 +34,7 @@ export default function Contacto() {
       <div className="mx-auto max-w-xl">
         <Link href="/" className="mb-8 flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 font-bold text-white dark:bg-teal dark:text-slate-950">L</span>
-          <span className="text-lg font-bold">LicitaIA</span>
+          <span className="text-lg font-bold">MySECOP</span>
         </Link>
         <div className="surface-card shadow-card p-8">
           <h1 className="text-xl font-bold tracking-tight">Contáctanos</h1>

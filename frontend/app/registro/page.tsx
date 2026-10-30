@@ -37,7 +37,7 @@ export default function Registro() {
       <div className="surface-card shadow-lift w-full max-w-md p-8">
         <Link href="/" className="mb-6 flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 font-bold text-white dark:bg-teal dark:text-slate-950">L</span>
-          <span className="text-lg font-bold">LicitaIA</span>
+          <span className="text-lg font-bold">MySECOP</span>
         </Link>
         <h1 className="text-xl font-bold tracking-tight">Crear cuenta gratuita</h1>
         <p className="text-muted mt-1 text-sm">Sin tarjeta de crédito. Incluye el plan Explorador.</p>

@@ -3,9 +3,9 @@ import "./globals.css";
 import { ThemeInitScript } from "@/components/theme";
 
 export const metadata: Metadata = {
-  title: "LicitaIA — La inteligencia detrás de tu próxima licitación",
+  title: "MySECOP — Inteligencia para contratación pública",
   description:
-    "LicitaIA encuentra las oportunidades de contratación pública que encajan con tu empresa, analiza sus requisitos y te ayuda a decidir dónde competir. No es una plataforma oficial del Gobierno colombiano.",
+    "MySECOP encuentra oportunidades de contratación pública que encajan con tu empresa y analiza sus requisitos. No es una plataforma oficial del Gobierno colombiano.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
