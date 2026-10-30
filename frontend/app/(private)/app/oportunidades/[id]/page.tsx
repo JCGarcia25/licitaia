@@ -196,8 +196,9 @@ export default function DetalleOportunidad() {
               {docs.map((d) => <li key={d.id} className="flex items-center justify-between gap-2"><span>📎 {d.filename}</span><Button size="sm" variant="ghost" onClick={() => abrirDocumento(d)}>Ver</Button></li>)}
             </ul>
           ) : (
-            <p className="text-muted text-xs">Aún no hay documentos cargados para este proceso.</p>
+            <p className="text-muted rounded-lg border border-dashed border-base p-3 text-xs">Aún no hay documentos cargados para este proceso. Pulsa «Importar documentos públicos» para buscar archivos abiertos en SECOP; si SECOP requiere sesión, descarga el pliego desde el expediente y súbelo aquí.</p>
           )}
+          {msg && !opp.analysis ? <p className="rounded-lg bg-teal/10 p-3 text-xs text-teal">{msg}</p> : null}
           {visor ? <div className="rounded-lg border border-base p-2"><div className="mb-2 flex justify-end"><Button size="sm" variant="ghost" onClick={() => { URL.revokeObjectURL(visor); setVisor(null); }}>Cerrar visor</Button></div><iframe title="Visor de documento" src={visor} className="h-[620px] w-full rounded" /></div> : null}
 
           {opp.analysis ? (

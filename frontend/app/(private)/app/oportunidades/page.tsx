@@ -2,6 +2,7 @@
 /* Oportunidades: filtros, búsqueda NLQ y triage. */
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { Badge, Button, Card, EmptyState, fmtCOP, fmtFecha, Input, Spinner, scoreTone, Select } from "@/components/ui";
 
@@ -25,6 +26,7 @@ export default function Oportunidades() {
   const [triage, setTriage] = useState("");
   const [soloScore, setSoloScore] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const cargar = useCallback(async (nlq?: string) => {
     setError("");
@@ -70,7 +72,7 @@ export default function Oportunidades() {
     try {
       await api("/api/offer-projects", { method: "POST", body: JSON.stringify({ opportunity_id: id }) });
       await aplicarTriage(id, "proyecto");
-      setError("Proyecto creado correctamente. Puedes abrirlo en Ofertas.");
+      router.push("/app/ofertas");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error creando el proyecto");
     }
