@@ -31,7 +31,7 @@ export default function IniciarSesion() {
       <div className="hero-grid flex min-h-screen items-center justify-center px-5">
       <div className="surface-card shadow-lift w-full max-w-md p-8">
         <Link href="/" className="mb-6 flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 font-bold text-white dark:bg-teal dark:text-slate-950">L</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 text-[10px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
           <span className="text-lg font-bold">MySECOP</span>
         </Link>
         <h1 className="text-xl font-bold tracking-tight">Iniciar sesión</h1>

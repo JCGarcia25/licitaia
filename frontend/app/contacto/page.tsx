@@ -33,7 +33,7 @@ export default function Contacto() {
     <div className="hero-grid min-h-screen px-5 py-16">
       <div className="mx-auto max-w-xl">
         <Link href="/" className="mb-8 flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 font-bold text-white dark:bg-teal dark:text-slate-950">L</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 text-[10px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
           <span className="text-lg font-bold">MySECOP</span>
         </Link>
         <div className="surface-card shadow-card p-8">

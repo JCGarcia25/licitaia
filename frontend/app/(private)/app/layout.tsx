@@ -33,7 +33,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
         {/* Sidebar */}
         <aside className="hidden w-60 shrink-0 border-r border-base bg-[var(--surface)] md:block">
           <div className="flex h-16 items-center gap-2 border-b border-base px-5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-900 text-sm font-bold text-white dark:bg-teal dark:text-slate-950">L</span>
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-900 text-[9px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
             <span className="font-bold tracking-tight">MySECOP</span>
           </div>
           <nav className="space-y-1 p-3">

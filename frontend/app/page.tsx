@@ -72,7 +72,7 @@ export default function Landing() {
       <header className="sticky top-0 z-40 border-b border-base bg-[var(--bg)]/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 font-bold text-white dark:bg-teal dark:text-slate-950">L</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 text-[10px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
             <span className="text-lg font-bold tracking-tight">LicitaIA</span>
           </Link>
           <nav className="text-muted hidden items-center gap-6 text-sm md:flex">
@@ -272,7 +272,7 @@ export default function Landing() {
         <div className="text-muted mx-auto max-w-6xl space-y-4 px-5 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <span className="flex items-center gap-2 text-sm font-bold text-[var(--text)]">
-              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-900 text-white dark:bg-teal dark:text-slate-950">L</span>
+              <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-900 text-[9px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
               LicitaIA
             </span>
             <nav className="flex flex-wrap gap-5">
