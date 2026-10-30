@@ -16,7 +16,7 @@ type Opp = {
   modalidad: string | null; valor: number | null; estado: string; departamento: string | null;
   fecha_publicacion: string | null; updated_at?: string | null; fecha_cierre?: string | null; url_oficial: string | null; score: number | null; triage: string;
   reasons: Reason[]; analysis: { id: number; resumen: Record<string, any>; requisitos: Requisito[] } | null;
-  documentos_publicos_disponibles?: number;
+  documentos_publicos_disponibles?: number; url_consulta_secop?: string;
 };
 type Viab = {
   global_score: number; factors: Record<string, { score: number; peso: number; detalle: string }>;
@@ -149,7 +149,7 @@ export default function DetalleOportunidad() {
             <a href={opp.url_oficial} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm font-semibold text-teal hover:underline">
               Ver en SECOP ↗
             </a>
-          ) : <p className="mt-1 font-semibold">N/D</p>}
+          ) : <a href={opp.url_consulta_secop || "https://www.datos.gov.co/"} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm font-semibold text-teal hover:underline">Consultar proceso en SECOP ↗</a>}
         </div>
         {opp.descripcion ? <div className="md:col-span-3"><p className="text-muted text-xs">Descripción</p><p className="mt-1 text-sm">{opp.descripcion}</p></div> : null}
       </Card>

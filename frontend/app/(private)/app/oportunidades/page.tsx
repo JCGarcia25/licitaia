@@ -11,7 +11,7 @@ type Opp = {
   id: number; entidad: string; objeto: string; descripcion: string | null; valor: number | null;
   estado: string; departamento: string | null; modalidad: string | null; fecha_publicacion: string | null;
   score: number | null; triage: string; reasons: Reason[]; url_oficial: string | null; cancelled: boolean;
-  documentos_publicos_disponibles?: number;
+  documentos_publicos_disponibles?: number; url_consulta_secop?: string;
 };
 const DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bogotá D.C.", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "Santander", "Sucre", "Tolima", "Valle del Cauca"];
 
@@ -163,9 +163,7 @@ export default function Oportunidades() {
                   <div className="flex flex-col gap-2">
                     <div className="flex gap-2">
                       <Link href={`/app/oportunidades/${o.id}`}><Button size="sm">Analizar</Button></Link>
-                      {o.url_oficial ? (
-                        <a href={o.url_oficial} target="_blank" rel="noreferrer"><Button size="sm" variant="outline">Expediente ↗</Button></a>
-                      ) : null}
+                      <a href={o.url_oficial || o.url_consulta_secop || "https://www.datos.gov.co/"} target="_blank" rel="noreferrer"><Button size="sm" variant="outline">{o.url_oficial ? "Expediente SECOP ↗" : "Consultar SECOP ↗"}</Button></a>
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => aplicarTriage(o.id, "guardada")}>Guardar</Button>
