@@ -41,10 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!getToken()) return;
+    const savedToken = getToken();
+    if (!savedToken) return;
     api<User>("/api/auth/me")
       .then(setUser)
-      .catch(() => setUser(userFromToken(getToken())));
+      .catch(() => {
+        setToken(savedToken);
+        setUser(userFromToken(savedToken));
+      });
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
@@ -54,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setUser(await api<User>("/api/auth/me"));
     } catch {
+      setToken(data.access_token);
       setUser(userFromToken(data.access_token, email.trim().toLowerCase()));
     }
   }, []);
@@ -67,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setUser(await api<User>("/api/auth/me"));
     } catch {
+      setToken(data.access_token);
       setUser(userFromToken(data.access_token, email.trim().toLowerCase()));
     }
   }, []);
