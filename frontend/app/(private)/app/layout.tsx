@@ -29,14 +29,14 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
 
   return (
       <RequireAuth>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen bg-[var(--bg)]">
         {/* Sidebar */}
-        <aside className="hidden w-60 shrink-0 border-r border-base bg-[var(--surface)] md:block">
-          <div className="flex h-16 items-center gap-2 border-b border-base px-5">
+        <aside className="hidden w-64 shrink-0 border-r border-base bg-[var(--surface)] md:block">
+          <div className="flex h-20 items-center gap-3 border-b border-base px-6">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-900 text-[9px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
             <span className="font-bold tracking-tight">MySECOP</span>
           </div>
-          <nav className="space-y-1 p-3">
+          <nav className="space-y-1.5 p-4">
             {NAV.map((n) => {
               const activo = n.href === "/app" ? pathname === "/app" : pathname.startsWith(n.href);
               return (
@@ -45,7 +45,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
                   href={n.href}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
                     activo
-                      ? "bg-brand-50 font-medium text-brand-900 dark:bg-slate-800 dark:text-teal"
+                      ? "bg-teal/10 font-semibold text-teal dark:bg-slate-800 dark:text-teal"
                       : "text-muted hover:bg-brand-50 hover:text-[var(--text)] dark:hover:bg-slate-800"
                   }`}
                 >
@@ -62,7 +62,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
 
         {/* Contenido */}
         <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-base bg-[var(--bg)]/85 px-5 backdrop-blur">
+          <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-base bg-[var(--bg)]/90 px-6 backdrop-blur">
             <div className="flex items-center gap-4 overflow-x-auto md:hidden">
               {NAV.map((n) => (
                 <Link key={n.href} href={n.href} className="text-muted whitespace-nowrap text-xs hover:text-teal">{n.label}</Link>
@@ -77,7 +77,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
               </button>
             </div>
           </header>
-          <main className="mx-auto max-w-6xl p-5">{children}</main>
+          <main className="mx-auto w-full max-w-7xl p-6 lg:p-8">{children}</main>
         </div>
       </div>
       </RequireAuth>
