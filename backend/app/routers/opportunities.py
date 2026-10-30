@@ -208,6 +208,12 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
     """Buscador en lenguaje natural → filtros estructurados + resultados."""
     parsed = nlq.parse_query(payload.get("q", ""))
     filtros = nlq.parsed_to_filters(parsed)
+    # Los selectores explícitos de la interfaz tienen prioridad sobre lo que
+    # el parser pueda inferir del texto natural.
+    for key in ("departamento", "municipio", "modalidad"):
+        if payload.get(key): filtros[key] = payload[key]
+    if payload.get("valor_min"):
+        filtros["valor_min"] = float(payload["valor_min"])
     query = db.query(Opportunity)
     if not filtros.get("estado"):
         query = query.filter(Opportunity.cancelled.is_(False))
@@ -222,6 +228,8 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
             ]))
     if filtros.get("departamento"):
         query = query.filter(Opportunity.departamento.ilike(f"%{filtros['departamento']}%"))
+    if filtros.get("municipio"):
+        query = query.filter(Opportunity.ciudad.ilike(f"%{filtros['municipio']}%"))
     if filtros.get("modalidad"):
         query = query.filter(Opportunity.modalidad.ilike(f"%{filtros['modalidad']}%"))
     if filtros.get("estado") == "abiertos":

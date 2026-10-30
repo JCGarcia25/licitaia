@@ -43,7 +43,7 @@ export default function Oportunidades() {
     params.set("limit", "50");
     try {
       const res = q || nlq
-        ? await api<{ total: number; items: Opp[] }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q }) })
+        ? await api<{ total: number; items: Opp[] }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q, departamento: departamento || undefined, municipio: municipio || undefined, modalidad: modalidad || undefined, valor_min: valorMin ? Number(valorMin.replace(/[^\d]/g, "")) : undefined }) })
         : await api<{ total: number; items: Opp[] }>(`/api/opportunities?${params.toString()}`);
       setItems(res.items);
       setTotal(res.total);
