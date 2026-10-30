@@ -19,7 +19,30 @@ router = APIRouter(prefix="/api/billing", tags=["suscripciones"])
 
 @router.get("/plans")
 def plans():
-    return [{"plan": p, "analyses_por_mes": limit} for p, limit in get_plan_limits().items()]
+    limits = get_plan_limits()
+    return [
+        {
+            "plan": "explorador",
+            "nombre": "MySECOP Free",
+            "precio_cop_mes": 0,
+            "analyses_por_mes": limits["explorador"],
+            "funcionalidades": ["Búsqueda de oportunidades", "Compatibilidad básica", "Guardar oportunidades"],
+        },
+        {
+            "plan": "profesional",
+            "nombre": "MySECOP Pro",
+            "precio_cop_mes": 59900,
+            "analyses_por_mes": limits["profesional"],
+            "funcionalidades": ["Todo Free", "Análisis de pliegos", "Evaluación de viabilidad", "Alertas por correo", "Preparador y exportación de ofertas", "Importación de documentos públicos"],
+        },
+        {
+            "plan": "corporativo",
+            "nombre": "MySECOP Pro Equipo",
+            "precio_cop_mes": 149900,
+            "analyses_por_mes": limits["corporativo"],
+            "funcionalidades": ["Todo Pro", "Usuarios y auditoría de empresa", "Mayor capacidad mensual"],
+        },
+    ]
 
 
 @router.get("")
@@ -28,6 +51,9 @@ def current(user: User = Depends(get_current_user), db: Session = Depends(get_db
     quota = check_quota(db, user)
     return {
         "plan": sub.plan,
+        "nombre": "MySECOP Pro" if sub.plan in {"profesional", "corporativo"} and sub.status == "activa" else "MySECOP Free",
+        "es_pro": sub.plan in {"profesional", "corporativo"} and sub.status == "activa",
+        "precio_cop_mes": 59900 if sub.plan == "profesional" else (149900 if sub.plan == "corporativo" else 0),
         "status": sub.status,
         "provider": sub.provider,
         "usage": quota,

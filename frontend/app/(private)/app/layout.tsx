@@ -2,9 +2,10 @@
 /* Estructura de la aplicación privada (barra lateral + topbar). */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { AuthProvider, RequireAuth, useAuth } from "@/components/auth";
 import { ThemeToggle } from "@/components/theme";
+import { api } from "@/lib/api";
 
 const NAV = [
   { href: "/app", label: "Dashboard", icon: "▤" },
@@ -26,6 +27,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 function AuthenticatedLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [plan, setPlan] = useState<{ nombre: string; es_pro: boolean; status: string } | null>(null);
+
+  useEffect(() => {
+    api<{ nombre: string; es_pro: boolean; status: string }>("/api/billing")
+      .then(setPlan)
+      .catch(() => setPlan({ nombre: "MySECOP Free", es_pro: false, status: "activa" }));
+  }, []);
 
   return (
       <RequireAuth>
@@ -71,7 +79,10 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
             <div className="hidden md:block" />
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              <span className="text-muted hidden text-xs sm:inline">{user?.email}</span>
+              <Link href="/app/plan" className={`hidden rounded-full border px-3 py-1 text-[11px] font-semibold sm:inline ${plan?.es_pro ? "border-teal/40 bg-teal/10 text-teal" : "border-amber-300/60 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200"}`}>
+                {plan?.nombre || "MySECOP Free"}
+              </Link>
+              <span className="text-muted hidden text-xs lg:inline">{user?.email}</span>
               <button onClick={logout} className="border-base rounded-lg border px-3 py-1.5 text-xs font-medium transition hover:text-red-600">
                 Salir
               </button>
