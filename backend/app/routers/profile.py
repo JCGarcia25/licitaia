@@ -12,7 +12,13 @@ router = APIRouter(prefix="/api/profile", tags=["perfil"])
 
 @router.get("", response_model=ProfileOut | None)
 def get_profile(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
+    profile = db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
+    if profile:
+        for field in ("keywords", "unspsc_codes", "departamentos", "municipios", "modalidades", "certificaciones"):
+            if getattr(profile, field, None) is None: setattr(profile, field, [])
+        if profile.learning_weights is None: profile.learning_weights = {}
+        db.commit()
+    return profile
 
 
 @router.put("", response_model=ProfileOut)
