@@ -57,6 +57,10 @@ class Settings(BaseSettings):
     quota_free_analyses: int = 20   # límite mensual de IA del plan explorador
     quota_pro_analyses: int = 500   # límite mensual de IA del plan profesional
     contact_email: str = "contacto@licitaia.local"
+    # Protección contra picos: evita que el pool de workers/CPU se agote y que
+    # el proxy termine mostrando 502 por upstream saturado.
+    max_concurrent_requests: int = 32
+    overload_wait_seconds: float = 0.05
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

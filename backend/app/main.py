@@ -1,9 +1,11 @@
 """Aplicación FastAPI de LicitaIA (API REST documentada con OpenAPI en /docs)."""
+import asyncio
 import logging
 from fastapi.responses import JSONResponse
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request
 
 from app.core.config import get_settings
 from app.core.runtime_errors import record_error
@@ -25,6 +27,29 @@ app = FastAPI(
     docs_url="/docs",
     openapi_url="/openapi.json",
 )
+
+# Backpressure a nivel de aplicación: cuando el API está ocupado, rechazamos
+# de forma explícita y recuperable en lugar de acumular trabajo hasta provocar
+# timeouts del proxy (502). El endpoint de salud siempre queda disponible.
+_request_slots = asyncio.Semaphore(max(1, settings.max_concurrent_requests))
+
+
+@app.middleware("http")
+async def overload_guard(request: Request, call_next):
+    if request.url.path == "/health":
+        return await call_next(request)
+    try:
+        await asyncio.wait_for(_request_slots.acquire(), timeout=settings.overload_wait_seconds)
+    except asyncio.TimeoutError:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Servicio temporalmente ocupado. Intenta de nuevo en unos segundos."},
+            headers={"Retry-After": "2", "X-MySECOP-Overload": "1"},
+        )
+    try:
+        return await call_next(request)
+    finally:
+        _request_slots.release()
 
 app.add_middleware(
     CORSMiddleware,

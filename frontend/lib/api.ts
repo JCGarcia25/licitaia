@@ -23,7 +23,22 @@ export async function api<T = any>(path: string, opts: RequestInit = {}): Promis
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${API}${path}`, { ...opts, headers });
+  let res: Response | undefined;
+  let lastError: unknown;
+  // Los 502/503/504 pueden ser transitorios durante un reinicio o pico de
+  // carga. Reintentamos poco y con backoff para no multiplicar la presión.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      res = await fetch(`${API}${path}`, { ...opts, headers });
+      if (![502, 503, 504].includes(res.status) || attempt === 2) break;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    } catch (error) {
+      lastError = error;
+      if (attempt === 2) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+  }
+  if (!res) throw lastError || new Error("No fue posible conectar con el servidor");
   if (res.status === 401) {
     clearToken();
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/iniciar-sesion")) {
