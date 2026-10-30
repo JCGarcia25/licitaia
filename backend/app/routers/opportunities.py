@@ -41,8 +41,7 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
         # This is only SECOP's login landing page, not the expediente. Do not
         # fabricate a noticeUID URL: SECOP rejects IDs that are not notices.
         url = None
-    dataset = {"secop2_procesos": "p6dx-8zbt", "secop2_contratos": "jbjy-vk9h", "secop1": "e985-4d7e"}.get(opp.source)
-    consulta = f"https://www.datos.gov.co/dataset/SECOP-II-Procesos-de-Contrataci-n/{dataset}" if dataset == "p6dx-8zbt" else f"https://www.datos.gov.co/" 
+    consulta = "https://community.secop.gov.co/Public/Tendering/ContractNoticeManagement/Index?currentLanguage=es-CO&Page=login&Country=CO&SkinName=CCE"
     return {
         "id": opp.id, "source": opp.source, "source_id": opp.source_id,
         "entidad": opp.entidad, "nit_entidad": opp.nit_entidad,
