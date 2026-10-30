@@ -139,7 +139,7 @@ export default function DetalleOportunidad() {
       {/* Datos del proceso */}
       <Card className="grid gap-4 p-5 md:grid-cols-3">
         <div><p className="text-muted text-xs">Valor estimado</p><p className="mt-1 font-semibold">{fmtCOP(opp.valor)}</p></div>
-        <div><p className="text-muted text-xs">Estado</p><p className="mt-1 font-semibold">{opp.estado || "N/D"}{opp.source_id ? ` · ${opp.source_id}` : ""}</p></div>
+        <div><p className="text-muted text-xs">Estado · Nº de proceso SECOP</p><p className="mt-1 font-semibold">{opp.estado || "N/D"}{opp.source_id && !opp.source_id.includes("DEMO") ? ` · ${opp.source_id}` : " · Número oficial no disponible"}</p></div>
         <div><p className="text-muted text-xs">Fecha de publicación (fuente)</p><p className="mt-1 font-semibold">{fmtFecha(opp.fecha_publicacion)}</p></div>
         <div><p className="text-muted text-xs">Departamento</p><p className="mt-1 font-semibold">{opp.departamento || "N/D"}</p></div>
         <div><p className="text-muted text-xs">Modalidad</p><p className="mt-1 font-semibold">{opp.modalidad || "N/D"}</p></div>
