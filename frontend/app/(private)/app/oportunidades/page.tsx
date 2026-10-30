@@ -11,6 +11,7 @@ type Opp = {
   id: number; entidad: string; objeto: string; descripcion: string | null; valor: number | null;
   estado: string; departamento: string | null; modalidad: string | null; fecha_publicacion: string | null;
   score: number | null; triage: string; reasons: Reason[]; url_oficial: string | null; cancelled: boolean;
+  documentos_publicos_disponibles?: number;
 };
 const DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bogotá D.C.", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "Santander", "Sucre", "Tolima", "Valle del Cauca"];
 
@@ -141,6 +142,7 @@ export default function Oportunidades() {
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge tone={scoreTone(o.score)}>{o.score !== null ? `${Math.round(o.score)}% de compatibilidad` : "sin puntuar"}</Badge>
                       {o.cancelled ? <Badge tone="red">Cancelado en la fuente</Badge> : <Badge tone="blue">{o.estado || "N/D"}</Badge>}
+                      <Badge tone={o.documentos_publicos_disponibles ? "teal" : "gray"}>{o.documentos_publicos_disponibles ? `${o.documentos_publicos_disponibles} documento(s) público(s)` : "Documentos: carga manual"}</Badge>
                       {o.triage !== "detectada" ? <Badge tone={o.triage === "descartada" ? "gray" : "purple"}>{o.triage}</Badge> : null}
                     </div>
                     <Link href={`/app/oportunidades/${o.id}`} className="mt-2 block text-sm font-semibold hover:text-teal">

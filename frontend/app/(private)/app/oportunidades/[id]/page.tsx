@@ -16,6 +16,7 @@ type Opp = {
   modalidad: string | null; valor: number | null; estado: string; departamento: string | null;
   fecha_publicacion: string | null; updated_at?: string | null; fecha_cierre?: string | null; url_oficial: string | null; score: number | null; triage: string;
   reasons: Reason[]; analysis: { id: number; resumen: Record<string, any>; requisitos: Requisito[] } | null;
+  documentos_publicos_disponibles?: number;
 };
 type Viab = {
   global_score: number; factors: Record<string, { score: number; peso: number; detalle: string }>;
@@ -196,7 +197,7 @@ export default function DetalleOportunidad() {
               {docs.map((d) => <li key={d.id} className="flex items-center justify-between gap-2"><span>📎 {d.filename}</span><Button size="sm" variant="ghost" onClick={() => abrirDocumento(d)}>Ver</Button></li>)}
             </ul>
           ) : (
-            <p className="text-muted rounded-lg border border-dashed border-base p-3 text-xs">Aún no hay documentos cargados para este proceso. Pulsa «Importar documentos públicos» para buscar archivos abiertos en SECOP; si SECOP requiere sesión, descarga el pliego desde el expediente y súbelo aquí.</p>
+            <p className="text-muted rounded-lg border border-dashed border-base p-3 text-xs">{opp.documentos_publicos_disponibles ? `SECOP reporta ${opp.documentos_publicos_disponibles} documento(s) público(s) para importar.` : "SECOP no reporta documentos públicos descargables para este proceso."} Pulsa «Importar documentos públicos» para comprobarlos; si SECOP requiere sesión, descarga el pliego desde el expediente y súbelo aquí.</p>
           )}
           {msg && !opp.analysis ? <p className="rounded-lg bg-teal/10 p-3 text-xs text-teal">{msg}</p> : null}
           {visor ? <div className="rounded-lg border border-base p-2"><div className="mb-2 flex justify-end"><Button size="sm" variant="ghost" onClick={() => { URL.revokeObjectURL(visor); setVisor(null); }}>Cerrar visor</Button></div><iframe title="Visor de documento" src={visor} className="h-[620px] w-full rounded" /></div> : null}

@@ -16,6 +16,18 @@ from app.services import nlq
 router = APIRouter(prefix="/api", tags=["dashboard"])
 
 
+def _public_document_count(value) -> int:
+    if isinstance(value, dict):
+        return sum(_public_document_count(v) for v in value.values())
+    if isinstance(value, list):
+        return sum(_public_document_count(v) for v in value)
+    if isinstance(value, str) and value.startswith(("http://", "https://")):
+        low = value.lower()
+        if any(host in low for host in ("secop.gov.co", "datos.gov.co", "colombiacompra.gov.co")) and any(ext in low for ext in (".pdf", ".docx", ".xlsx", "document", "anexo", "pliego")):
+            return 1
+    return 0
+
+
 def _user_scores(db: Session, user_id: int) -> dict[int, UserOpportunity]:
     rows = db.query(UserOpportunity).filter(UserOpportunity.user_id == user_id).all()
     return {r.opportunity_id: r for r in rows}
@@ -39,6 +51,7 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
         "estado": opp.estado, "fecha_publicacion": opp.fecha_publicacion,
         "fecha_cierre": opp.fecha_cierre,
         "url_oficial": url,
+        "documentos_publicos_disponibles": _public_document_count(opp.raw_json or {}),
         "cancelled": opp.cancelled, "captured_at": opp.captured_at, "updated_at": opp.updated_at,
         "score": uo.score if uo else None,
         "triage": uo.triage if uo else "detectada",
