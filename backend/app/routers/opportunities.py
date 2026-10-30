@@ -1,7 +1,6 @@
 """Dashboard y oportunidades: filtros, buscador de lenguaje natural, triage, métricas."""
 from datetime import datetime, timedelta
 import re
-from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_
@@ -43,7 +42,7 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
         # fabricate a noticeUID URL: SECOP rejects IDs that are not notices.
         url = None
     dataset = {"secop2_procesos": "p6dx-8zbt", "secop2_contratos": "jbjy-vk9h", "secop1": "e985-4d7e"}.get(opp.source)
-    consulta = f"https://www.datos.gov.co/resource/{dataset}.json?$where=id_del_proceso='{quote(opp.source_id)}'" if dataset and opp.source_id else "https://www.datos.gov.co/"
+    consulta = f"https://www.datos.gov.co/dataset/SECOP-II-Procesos-de-Contrataci-n/{dataset}" if dataset == "p6dx-8zbt" else f"https://www.datos.gov.co/" 
     return {
         "id": opp.id, "source": opp.source, "source_id": opp.source_id,
         "entidad": opp.entidad, "nit_entidad": opp.nit_entidad,
