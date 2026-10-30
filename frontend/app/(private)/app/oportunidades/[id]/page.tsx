@@ -149,7 +149,7 @@ export default function DetalleOportunidad() {
             <a href={opp.url_oficial} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm font-semibold text-teal hover:underline">
               Ver en SECOP ↗
             </a>
-          ) : <a href={opp.url_consulta_secop || "https://www.datos.gov.co/"} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm font-semibold text-teal hover:underline">Consultar proceso en SECOP ↗</a>}
+          ) : <a href={opp.url_consulta_secop || "https://www.datos.gov.co/"} target="_blank" rel="noreferrer" className="mt-1 inline-block text-sm font-semibold text-teal hover:underline">Consultar registro oficial ↗</a>}
         </div>
         {opp.descripcion ? <div className="md:col-span-3"><p className="text-muted text-xs">Descripción</p><p className="mt-1 text-sm">{opp.descripcion}</p></div> : null}
       </Card>

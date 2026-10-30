@@ -163,7 +163,7 @@ export default function Oportunidades() {
                   <div className="flex flex-col gap-2">
                     <div className="flex gap-2">
                       <Link href={`/app/oportunidades/${o.id}`}><Button size="sm">Analizar</Button></Link>
-                      <a href={o.url_oficial || o.url_consulta_secop || "https://www.datos.gov.co/"} target="_blank" rel="noreferrer"><Button size="sm" variant="outline">{o.url_oficial ? "Expediente SECOP ↗" : "Consultar SECOP ↗"}</Button></a>
+                      <a href={o.url_oficial || o.url_consulta_secop || "https://www.datos.gov.co/"} target="_blank" rel="noreferrer"><Button size="sm" variant="outline">{o.url_oficial ? "Expediente SECOP ↗" : "Consultar registro ↗"}</Button></a>
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => aplicarTriage(o.id, "guardada")}>Guardar</Button>
