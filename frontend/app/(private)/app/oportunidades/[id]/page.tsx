@@ -38,12 +38,14 @@ export default function DetalleOportunidad() {
   const [msg, setMsg] = useState("");
   const [cargando, setCargando] = useState("");
   const [visor, setVisor] = useState<string | null>(null);
+  const [analisisValidado, setAnalisisValidado] = useState(false);
   const [arrastrando, setArrastrando] = useState(false);
   const archivoInput = useRef<HTMLInputElement | null>(null);
 
   const cargar = useCallback(async () => {
     const data = await api<Opp>(`/api/opportunities/${id}`);
     setOpp(data);
+    setAnalisisValidado(Boolean(data.analysis));
     const d = await api<{ id: number; filename: string }[]>(`/api/documents?opportunity_id=${id}`);
     setDocs(d);
   }, [id]);
@@ -109,9 +111,11 @@ export default function DetalleOportunidad() {
   async function analizar() {
     setCargando("analizar");
     setMsg("");
+    setAnalisisValidado(false);
     try {
       await api(`/api/opportunities/${id}/analyze`, { method: "POST" });
       await cargar();
+      setAnalisisValidado(true);
       setMsg("Análisis de pliegos generado. Recuerda: es orientativo y requiere validación humana.");
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Error en el análisis");
@@ -240,7 +244,6 @@ export default function DetalleOportunidad() {
           ) : (
             <p className={`rounded-lg border p-3 text-xs ${opp.documentos_publicos_disponibles ? "border-teal/30 text-teal" : "border-amber-500/30 text-amber-700"}`}>{opp.documentos_publicos_disponibles ? `Pliegos disponibles para importar: ${opp.documentos_publicos_disponibles}.` : "Pliegos no expuestos para descarga automática: consultar en SECOP."} Pulsa «Importar documentos públicos» para comprobarlos; si SECOP requiere sesión, descarga el pliego desde el expediente y súbelo aquí.</p>
           )}
-          {msg && !opp.analysis ? <p className="rounded-lg bg-teal/10 p-3 text-xs text-teal">{msg}</p> : null}
           {visor ? <div className="rounded-lg border border-base p-2"><div className="mb-2 flex justify-end"><Button size="sm" variant="ghost" onClick={() => { URL.revokeObjectURL(visor); setVisor(null); }}>Cerrar visor</Button></div><iframe title="Visor de documento" src={visor} className="h-[620px] w-full rounded" /></div> : null}
 
           {opp.analysis ? (
@@ -303,7 +306,7 @@ export default function DetalleOportunidad() {
         <CardHeader
           title="Agente 3 · Evaluador de Viabilidad"
           subtitle="¿Vale la pena participar? Pesos configurables, distintos de toda probabilidad de adjudicación"
-          action={<Button size="sm" onClick={evaluar} disabled={cargando === "viabilidad"}>{cargando === "viabilidad" ? "Evaluando…" : "Evaluar viabilidad"}</Button>}
+          action={<Button size="sm" onClick={evaluar} disabled={!analisisValidado || cargando === "viabilidad"}>{cargando === "viabilidad" ? "Evaluando…" : "Evaluar viabilidad"}</Button>}
         />
         <div className="space-y-4 p-5">
           {viab ? (
@@ -350,7 +353,16 @@ export default function DetalleOportunidad() {
         </div>
       </Card>
 
-      {msg ? <p className="text-muted text-xs">{msg}</p> : null}
+      {msg ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4" role="dialog" aria-modal="true" aria-label="Mensaje del sistema">
+          <div className="w-full max-w-md rounded-2xl border border-base bg-[var(--surface)] p-6 text-center shadow-2xl">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-teal/15 text-3xl text-teal">✓</div>
+            <h2 className="text-lg font-semibold">Información del proceso</h2>
+            <p className="text-muted mt-2 text-sm">{msg}</p>
+            <Button className="mt-5 w-full" onClick={() => setMsg("")}>Continuar en MySECOP</Button>
+          </div>
+        </div>
+      ) : null}
       <div className="flex gap-2">
         <Button variant="outline" onClick={crearProyecto}>Crear proyecto de propuesta (Agente 4)</Button>
       </div>

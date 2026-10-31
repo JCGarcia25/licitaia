@@ -19,6 +19,8 @@ from app.services.audit import log_action
 from app.services.eligibility import evaluar_elegibilidad
 from app.services.exporter import export_docx, export_pdf_matriz, export_xlsx
 from app.services.quota import check_quota, consume, require_pro
+from app.agents.pliegos import extract_text
+import re
 
 router = APIRouter(prefix="/api", tags=["agentes"])
 
@@ -31,6 +33,25 @@ DEFAULT_CHECKLIST = [
     {"item": "Pólizas y garantías exigidas", "tipo": "jurídico", "estado": "pendiente"},
     {"item": "Experiencia acreditada (contratos similares)", "tipo": "experiencia", "estado": "pendiente"},
 ]
+
+_PALABRAS_COMUNES = {"para", "del", "las", "los", "una", "uno", "con", "por", "de", "en", "y", "el", "la", "que", "servicios", "adquisicion", "adquisición", "contratacion", "contratación", "proceso"}
+
+
+def _documento_corresponde(doc: Document, opp: Opportunity, data: bytes) -> bool:
+    """Comprueba que el texto del archivo mencione el proceso seleccionado.
+
+    Se exige coincidencia de dos términos distintivos del objeto o una coincidencia
+    de entidad + objeto. Así se evita analizar accidentalmente un pliego ajeno.
+    """
+    texto = " ".join(t for _, t in extract_text(doc.filename, data)).lower()
+    if not texto.strip():
+        return False
+    referencia = f"{opp.objeto or ''} {opp.entidad or ''} {opp.source_id or ''}".lower()
+    tokens = {t for t in re.findall(r"[a-záéíóúñü0-9]{5,}", referencia) if t not in _PALABRAS_COMUNES}
+    presentes = {t for t in tokens if t in texto}
+    objeto_tokens = {t for t in re.findall(r"[a-záéíóúñü0-9]{5,}", (opp.objeto or '').lower()) if t not in _PALABRAS_COMUNES}
+    entidad_tokens = {t for t in re.findall(r"[a-záéíóúñü0-9]{5,}", (opp.entidad or '').lower()) if t not in _PALABRAS_COMUNES}
+    return len(presentes) >= 2 or (bool(objeto_tokens & presentes) and bool(entidad_tokens & presentes))
 
 
 # ---------------- AGENTE 2: Analista de Pliegos ----------------
@@ -62,7 +83,11 @@ def analyze(opportunity_id: int, document_id: int | None = None, user: User = De
         try:
             with open(doc.storage_path, "rb") as fh:
                 data = fh.read()
+            if not _documento_corresponde(doc, opp, data):
+                raise ValueError(f"El documento '{doc.filename}' no parece pertenecer al proceso seleccionado")
             analisis = analizar_documento(doc.filename, data, perfil)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
         except FileNotFoundError:
             continue
         docs_analizados += 1
