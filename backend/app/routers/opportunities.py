@@ -14,6 +14,7 @@ from app.services import alerts as alerts_service
 from app.services import nlq
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
+PROFILE_MATCH_MIN_SCORE = 40
 
 
 def _public_document_count(value) -> int:
@@ -85,6 +86,23 @@ def list_opportunities(
     db: Session = Depends(get_db),
 ):
     query = db.query(Opportunity)
+    profile = db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
+    # Al abrir Oportunidades, el perfil es el filtro de entrada. Los filtros
+    # escritos por el usuario tienen prioridad para permitir explorar después.
+    if solo_con_score and profile:
+        departamentos = [x for x in (profile.departamentos or []) if x and "toda" not in x.lower()]
+        municipios = [x for x in (profile.municipios or []) if x and "todo" not in x.lower()]
+        modalidades = [x for x in (profile.modalidades or []) if x and "toda" not in x.lower()]
+        if not departamento and departamentos:
+            query = query.filter(or_(*[Opportunity.departamento.ilike(f"%{x}%") for x in departamentos]))
+        if not municipio and municipios:
+            query = query.filter(or_(*[Opportunity.ciudad.ilike(f"%{x}%") for x in municipios]))
+        if not modalidad and modalidades:
+            query = query.filter(or_(*[Opportunity.modalidad.ilike(f"%{x}%") for x in modalidades]))
+        if valor_min is None and profile.presupuesto_min is not None:
+            query = query.filter(Opportunity.valor >= profile.presupuesto_min)
+        if valor_max is None and profile.presupuesto_max is not None:
+            query = query.filter(Opportunity.valor <= profile.presupuesto_max)
     if not include_cancelled:
         query = query.filter(Opportunity.cancelled.is_(False))
     if q:
@@ -124,7 +142,7 @@ def list_opportunities(
     items = []
     for opp in rows:
         uo = scores.get(opp.id)
-        if solo_con_score and (not uo or (uo.score or 0) <= 0):
+        if solo_con_score and (not uo or (uo.score or 0) < PROFILE_MATCH_MIN_SCORE):
             continue
         if triage and (not uo or uo.triage != triage):
             continue
@@ -141,7 +159,7 @@ def list_opportunities(
                 continue
             if score_min is not None and (not uo or uo.score < score_min):
                 continue
-            if solo_con_score and (not uo or (uo.score or 0) <= 0):
+            if solo_con_score and (not uo or (uo.score or 0) < PROFILE_MATCH_MIN_SCORE):
                 continue
             filtered.append(opp)
         total = len(filtered)
@@ -249,7 +267,7 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
     rows = query.order_by(Opportunity.updated_at.desc()).limit(50).all()
     scores = _user_scores(db, user.id)
     if payload.get("solo_con_score", True):
-        rows = [o for o in rows if scores.get(o.id) is not None and (scores[o.id].score or 0) > 0]
+        rows = [o for o in rows if scores.get(o.id) is not None and (scores[o.id].score or 0) >= PROFILE_MATCH_MIN_SCORE]
     return {"filtros_interpretados": filtros, "total": len(rows),
             "items": [_serialize(o, scores.get(o.id)) for o in rows]}
 
