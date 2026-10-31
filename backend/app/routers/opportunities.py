@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
@@ -100,16 +100,23 @@ def list_opportunities(
         departamentos = [x for x in (profile.departamentos or []) if x and "toda" not in x.lower()]
         municipios = [x for x in (profile.municipios or []) if x and "todo" not in x.lower()]
         modalidades = [x for x in (profile.modalidades or []) if x and "toda" not in x.lower()]
+        profile_conditions = []
         if not departamento and departamentos:
-            query = query.filter(or_(*[Opportunity.departamento.ilike(f"%{x}%") for x in departamentos]))
+            profile_conditions.append(or_(*[Opportunity.departamento.ilike(f"%{x}%") for x in departamentos]))
         if not municipio and municipios:
-            query = query.filter(or_(*[Opportunity.ciudad.ilike(f"%{x}%") for x in municipios]))
+            profile_conditions.append(or_(*[Opportunity.ciudad.ilike(f"%{x}%") for x in municipios]))
         if not modalidad and modalidades:
-            query = query.filter(or_(*[Opportunity.modalidad.ilike(f"%{x}%") for x in modalidades]))
+            profile_conditions.append(or_(*[Opportunity.modalidad.ilike(f"%{x}%") for x in modalidades]))
         if valor_min is None and profile.presupuesto_min is not None:
-            query = query.filter(Opportunity.valor >= profile.presupuesto_min)
+            profile_conditions.append(Opportunity.valor >= profile.presupuesto_min)
         if valor_max is None and profile.presupuesto_max is not None:
-            query = query.filter(Opportunity.valor <= profile.presupuesto_max)
+            profile_conditions.append(Opportunity.valor <= profile.presupuesto_max)
+        if profile_conditions:
+            preserved_ids = [row.opportunity_id for row in db.query(UserOpportunity.opportunity_id).filter(
+                UserOpportunity.user_id == user.id, UserOpportunity.triage.in_(["guardada", "proyecto"])
+            ).all()]
+            match_condition = and_(*profile_conditions)
+            query = query.filter(or_(match_condition, Opportunity.id.in_(preserved_ids))) if preserved_ids else query.filter(match_condition)
     if not include_cancelled:
         query = query.filter(Opportunity.cancelled.is_(False))
     if q:
