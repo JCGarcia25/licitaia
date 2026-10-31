@@ -47,7 +47,6 @@ export default function DetalleOportunidad() {
   const cargar = useCallback(async () => {
     const data = await api<Opp>(`/api/opportunities/${id}`);
     setOpp(data);
-    setAnalisisValidado(Boolean(data.analysis));
     const d = await api<{ id: number; filename: string }[]>(`/api/documents?opportunity_id=${id}`);
     setDocs(d);
     setDocsSeleccionados((seleccionados) => seleccionados.filter((docId) => d.some((doc) => doc.id === docId)));
