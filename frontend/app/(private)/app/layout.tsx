@@ -33,6 +33,12 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
     api<{ nombre: string; es_pro: boolean; status: string }>("/api/billing")
       .then(setPlan)
       .catch(() => setPlan({ nombre: "MySECOP Free", es_pro: false, status: "activa" }));
+    const onPlanUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ nombre: string; es_pro: boolean; status: string }>).detail;
+      if (detail) setPlan(detail);
+    };
+    window.addEventListener("mysecop:billing-updated", onPlanUpdated);
+    return () => window.removeEventListener("mysecop:billing-updated", onPlanUpdated);
   }, []);
 
   return (
@@ -59,6 +65,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
                 >
                   <span className="w-4 text-center">{n.icon}</span>
                   {n.label}
+                  {["/app/ofertas", "/app/alertas", "/app/sincronizacion"].includes(n.href) && !plan?.es_pro && <span className="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">PRO</span>}
                 </Link>
               );
             })}
@@ -88,7 +95,13 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
               </button>
             </div>
           </header>
-          <main className="mx-auto w-full max-w-7xl p-6 lg:p-8">{children}</main>
+          <main className="mx-auto w-full max-w-7xl p-6 lg:p-8">
+            {plan && !plan.es_pro && <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/50 bg-amber-50/80 px-4 py-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/25 dark:text-amber-100">
+              <span><strong>MySECOP Free:</strong> análisis de pliegos, alertas por correo, sincronización avanzada y preparador de ofertas están identificados como funciones Pro.</span>
+              <Link href="/app/plan" className="font-bold underline underline-offset-2">Ver MySECOP Pro</Link>
+            </div>}
+            {children}
+          </main>
         </div>
       </div>
       </RequireAuth>

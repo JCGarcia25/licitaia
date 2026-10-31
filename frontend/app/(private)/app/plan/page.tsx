@@ -25,6 +25,7 @@ export default function PlanPage() {
         const next = await api<Billing>(`/api/billing/refresh${suffix}`, { method: "POST" });
         setBilling((previous) => {
           if (!previous?.es_pro && next.es_pro) setShowWelcome(true);
+          window.dispatchEvent(new CustomEvent("mysecop:billing-updated", { detail: next }));
           return next;
         });
         if (next.es_pro) window.clearInterval(timer);
@@ -43,6 +44,7 @@ export default function PlanPage() {
       }
       setMsg(result.status === "pendiente_pago" ? "Solicitud registrada. El acceso Pro se activa al confirmar el pago." : "Plan actualizado.");
       const next = await api<Billing>("/api/billing"); setBilling(next);
+      window.dispatchEvent(new CustomEvent("mysecop:billing-updated", { detail: next }));
     } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible iniciar la suscripción."); }
   }
   return <div className="space-y-6">
