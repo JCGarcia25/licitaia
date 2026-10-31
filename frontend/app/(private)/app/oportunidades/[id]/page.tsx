@@ -40,6 +40,7 @@ export default function DetalleOportunidad() {
   const [cargando, setCargando] = useState("");
   const [visor, setVisor] = useState<string | null>(null);
   const [analisisValidado, setAnalisisValidado] = useState(false);
+  const [validacionDocumentos, setValidacionDocumentos] = useState<{ documento: string; pertenece_al_proceso: boolean }[]>([]);
   const [arrastrando, setArrastrando] = useState(false);
   const archivoInput = useRef<HTMLInputElement | null>(null);
 
@@ -129,12 +130,17 @@ export default function DetalleOportunidad() {
     setCargando("analizar");
     setMsg("");
     setAnalisisValidado(false);
+    setValidacionDocumentos([]);
     try {
-      await api(`/api/opportunities/${id}/analyze`, { method: "POST" });
+      const resultado = await api<{ documentos?: { documento: string; pertenece_al_proceso: boolean }[] }>(`/api/opportunities/${id}/analyze`, { method: "POST" });
+      setValidacionDocumentos(resultado.documentos || []);
       await cargar();
       setAnalisisValidado(true);
       setMsg("Análisis de pliegos generado. Recuerda: es orientativo y requiere validación humana.");
     } catch (e) {
+      const payload = (e as Error & { payload?: { detail?: { message?: string; documentos?: { documento: string; pertenece_al_proceso: boolean }[] } } }).payload;
+      if (payload?.detail?.documentos) setValidacionDocumentos(payload.detail.documentos);
+      if (payload?.detail?.message) setMsg(payload.detail.message);
       setMsg(e instanceof Error ? e.message : "Error en el análisis");
     } finally {
       setCargando("");
@@ -268,6 +274,8 @@ export default function DetalleOportunidad() {
             <p className={`rounded-lg border p-3 text-xs ${opp.documentos_publicos_disponibles ? "border-teal/30 text-teal" : "border-amber-500/30 text-amber-700"}`}>{opp.documentos_publicos_disponibles ? `Pliegos disponibles para importar: ${opp.documentos_publicos_disponibles}.` : "Pliegos no expuestos para descarga automática: consultar en SECOP."} Pulsa «Importar documentos públicos» para comprobarlos; si SECOP requiere sesión, descarga el pliego desde el expediente y súbelo aquí.</p>
           )}
           {visor ? <div className="rounded-lg border border-base p-2"><div className="mb-2 flex justify-end"><Button size="sm" variant="ghost" onClick={() => { URL.revokeObjectURL(visor); setVisor(null); }}>Cerrar visor</Button></div><iframe title="Visor de documento" src={visor} className="h-[620px] w-full rounded" /></div> : null}
+
+          {validacionDocumentos.length ? <div className="rounded-lg border border-base p-3 text-xs"><p className="font-medium">Validación de documentos</p><ul className="text-muted mt-2 space-y-1">{validacionDocumentos.map((d) => <li key={d.documento}><span className={d.pertenece_al_proceso ? "text-emerald-500" : "text-red-400"}>{d.pertenece_al_proceso ? "✓" : "!"}</span> {d.documento}: {d.pertenece_al_proceso ? "corresponde al proceso seleccionado" : "no parece corresponder al proceso seleccionado"}</li>)}</ul></div> : null}
 
           {opp.analysis ? (
             <div className="space-y-4">

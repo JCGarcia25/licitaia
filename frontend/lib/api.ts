@@ -48,8 +48,10 @@ export async function api<T = any>(path: string, opts: RequestInit = {}): Promis
   }
   if (!res.ok) {
     let detail = await res.text();
+    let payload: unknown;
     try {
       const parsed = JSON.parse(detail);
+      payload = parsed;
       const raw = parsed.detail ?? parsed;
       if (Array.isArray(raw)) {
         detail = raw
@@ -64,7 +66,9 @@ export async function api<T = any>(path: string, opts: RequestInit = {}): Promis
         detail = String(raw);
       }
     } catch {}
-    throw new Error(detail || `Error ${res.status}`);
+    const error = new Error(detail || `Error ${res.status}`);
+    (error as Error & { payload?: unknown }).payload = payload;
+    throw error;
   }
   const ct = res.headers.get("content-type") || "";
   return (ct.includes("application/json") ? res.json() : res.blob()) as Promise<T>;

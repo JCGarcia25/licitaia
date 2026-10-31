@@ -79,16 +79,21 @@ def analyze(opportunity_id: int, document_id: int | None = None, user: User = De
     resumen: dict = {}
     requisitos: list[dict] = []
     docs_analizados = 0
+    validacion_documentos: list[dict] = []
+    documentos_invalidos: list[str] = []
     for doc in docs:
         try:
             with open(doc.storage_path, "rb") as fh:
                 data = fh.read()
-            if not _documento_corresponde(doc, opp, data):
-                raise ValueError(f"El documento '{doc.filename}' no parece pertenecer al proceso seleccionado")
+            corresponde = _documento_corresponde(doc, opp, data)
+            validacion_documentos.append({"documento": doc.filename, "pertenece_al_proceso": corresponde})
+            if not corresponde:
+                documentos_invalidos.append(doc.filename)
+                continue
             analisis = analizar_documento(doc.filename, data, perfil)
-        except ValueError as exc:
-            raise HTTPException(422, str(exc))
         except FileNotFoundError:
+            validacion_documentos.append({"documento": doc.filename, "pertenece_al_proceso": False, "motivo": "No se encontró el archivo almacenado"})
+            documentos_invalidos.append(doc.filename)
             continue
         docs_analizados += 1
         if not resumen:
@@ -104,6 +109,11 @@ def analyze(opportunity_id: int, document_id: int | None = None, user: User = De
                 "observaciones": r.observaciones, "nivel_confianza": r.nivel_confianza,
                 "es_excluyente": r.es_excluyente,
             })
+    if documentos_invalidos:
+        raise HTTPException(422, detail={
+            "message": "Algunos documentos no parecen pertenecer al proceso seleccionado. Por favor, carga únicamente los pliegos y anexos oficiales de este proceso.",
+            "documentos": validacion_documentos,
+        })
     if not docs_analizados:
         raise HTTPException(400, "No fue posible leer los documentos almacenados")
     resumen["descargo"] = (
@@ -115,7 +125,7 @@ def analyze(opportunity_id: int, document_id: int | None = None, user: User = De
     db.commit()
     consume(db, user)
     log_action(db, user, "analizar_pliego", "opportunity", opp.id, {"requisitos": len(requisitos)})
-    return {"id": analysis.id, "resumen": resumen, "total_requisitos": len(requisitos), "estado": "borrador",
+    return {"id": analysis.id, "resumen": resumen, "total_requisitos": len(requisitos), "estado": "borrador", "documentos": validacion_documentos,
             "nota": "Requiere validación humana. Estados: Cumple / No cumple / Por verificar / Información insuficiente."}
 
 
