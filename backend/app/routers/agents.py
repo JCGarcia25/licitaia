@@ -51,7 +51,8 @@ def _documento_corresponde(doc: Document, opp: Opportunity, data: bytes) -> bool
     presentes = {t for t in tokens if t in texto}
     objeto_tokens = {t for t in re.findall(r"[a-záéíóúñü0-9]{5,}", (opp.objeto or '').lower()) if t not in _PALABRAS_COMUNES}
     entidad_tokens = {t for t in re.findall(r"[a-záéíóúñü0-9]{5,}", (opp.entidad or '').lower()) if t not in _PALABRAS_COMUNES}
-    return len(presentes) >= 2 or (bool(objeto_tokens & presentes) and bool(entidad_tokens & presentes))
+    coincidencia_fuerte = any(len(token) >= 8 for token in (objeto_tokens & presentes))
+    return len(presentes) >= 2 or coincidencia_fuerte or (bool(objeto_tokens & presentes) and bool(entidad_tokens & presentes))
 
 
 # ---------------- AGENTE 2: Analista de Pliegos ----------------
