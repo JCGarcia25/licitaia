@@ -18,7 +18,7 @@ from app.services import alerts as alerts_service
 from app.services.audit import log_action
 from app.services.eligibility import evaluar_elegibilidad
 from app.services.exporter import export_docx, export_pdf_matriz, export_xlsx
-from app.services.quota import check_quota, consume
+from app.services.quota import check_quota, consume, require_pro
 
 router = APIRouter(prefix="/api", tags=["agentes"])
 
@@ -37,6 +37,7 @@ DEFAULT_CHECKLIST = [
 
 @router.post("/opportunities/{opportunity_id}/analyze")
 def analyze(opportunity_id: int, document_id: int | None = None, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    require_pro(db, user)
     quota = check_quota(db, user)
     if not quota["allowed"]:
         raise HTTPException(402, f"Límite mensual de análisis alcanzado ({quota['used']}/{quota['limit']}). Plan: {quota['plan']}. Actualice su suscripción.")
@@ -112,6 +113,7 @@ def _dias_hasta_cierre(opp: Opportunity, resumen: dict) -> int | None:
 
 @router.post("/opportunities/{opportunity_id}/viability")
 def viability(opportunity_id: int, data: ViabilityIn | None = None, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    require_pro(db, user)
     opp = db.query(Opportunity).filter(Opportunity.id == opportunity_id).first()
     if not opp:
         raise HTTPException(404, "Oportunidad no encontrada")
@@ -164,6 +166,7 @@ def eligibility(opportunity_id: int, user: User = Depends(get_current_user), db:
 
 @router.post("/offer-projects", status_code=201)
 def create_project(payload: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    require_pro(db, user)
     opp_id = int(payload.get("opportunity_id", 0))
     opp = db.query(Opportunity).filter(Opportunity.id == opp_id).first()
     if not opp:

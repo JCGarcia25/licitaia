@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
 
 from app.core.config import get_settings
 from app.db.models import Subscription, UsageCounter, User
@@ -65,6 +66,14 @@ def check_quota(db: Session, user: User) -> dict:
         "limit": limit,
         "allowed": used < limit,
     }
+
+
+def require_pro(db: Session, user: User) -> Subscription:
+    """Bloquea capacidades de alto valor para cuentas Free."""
+    sub = get_subscription(db, user)
+    if sub.plan not in {"profesional", "corporativo"} or sub.status != "activa":
+        raise HTTPException(402, "Esta función es exclusiva de MySECOP Pro. Actualiza tu plan para continuar.")
+    return sub
 
 
 def consume(db: Session, user: User, kind: str = "analyses", amount: int = 1) -> None:

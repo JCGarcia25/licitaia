@@ -124,7 +124,7 @@ def list_opportunities(
     items = []
     for opp in rows:
         uo = scores.get(opp.id)
-        if solo_con_score and not uo:
+        if solo_con_score and (not uo or (uo.score or 0) <= 0):
             continue
         if triage and (not uo or uo.triage != triage):
             continue
@@ -141,7 +141,7 @@ def list_opportunities(
                 continue
             if score_min is not None and (not uo or uo.score < score_min):
                 continue
-            if solo_con_score and not uo:
+            if solo_con_score and (not uo or (uo.score or 0) <= 0):
                 continue
             filtered.append(opp)
         total = len(filtered)
@@ -249,7 +249,7 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
     rows = query.order_by(Opportunity.updated_at.desc()).limit(50).all()
     scores = _user_scores(db, user.id)
     if payload.get("solo_con_score", True):
-        rows = [o for o in rows if scores.get(o.id) is not None]
+        rows = [o for o in rows if scores.get(o.id) is not None and (scores[o.id].score or 0) > 0]
     return {"filtros_interpretados": filtros, "total": len(rows),
             "items": [_serialize(o, scores.get(o.id)) for o in rows]}
 

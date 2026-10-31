@@ -14,6 +14,7 @@ from app.core.config import get_settings
 from app.core.security import get_current_user
 from app.db.models import Document, Opportunity, User
 from app.db.session import get_db
+from app.services.quota import require_pro
 
 router = APIRouter(prefix="/api/documents", tags=["documentos"])
 
@@ -37,6 +38,7 @@ def _public_urls(value):
 
 @router.post("/import-public/{opportunity_id}")
 def import_public_documents(opportunity_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    require_pro(db, user)
     opp = db.query(Opportunity).filter(Opportunity.id == opportunity_id).first()
     if not opp:
         raise HTTPException(404, "Oportunidad no encontrada")
@@ -83,6 +85,7 @@ async def upload_document(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    require_pro(db, user)
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in ALLOWED:
         raise HTTPException(415, f"Formato no soportado ({ext}). Permitidos: PDF, DOCX, XLSX.")

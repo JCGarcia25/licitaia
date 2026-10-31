@@ -19,6 +19,7 @@ const VACIO: Profile = {
 
 const DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bogotá D.C.", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "Santander", "Sucre", "Tolima", "Valle del Cauca"];
 const MODALIDADES = ["Licitación Pública", "Contratación Directa", "Contratación Mínima Cuantía", "Selección Abreviada", "Concurso de Méritos", "Régimen Especial", "Subasta", "Acuerdo Marco de Precio"];
+const MUNICIPIOS = ["Bogotá D.C.", "Medellín", "Cali", "Barranquilla", "Cartagena", "Bucaramanga", "Pereira", "Manizales", "Armenia", "Ibagué", "Villavicencio", "Neiva", "Santa Marta", "Valledupar", "Pasto", "Tunja", "Popayán", "Montería", "Sincelejo", "Cúcuta", "Envigado", "Itagüí", "Soacha", "Palmira", "Buenaventura", "Apartadó", "Yopal", "Riohacha", "Quibdó", "Florencia", "Leticia", "San Andrés"];
 
 export default function Perfil() {
   const [p, setP] = useState<Profile | null>(null);
@@ -54,6 +55,15 @@ export default function Perfil() {
 
   const lista = (v: string) => v.split(",").map((s) => s.trim()).filter(Boolean);
   const listaInput = (field: string) => ({ value: listas[field] ?? "", onChange: (e: ChangeEvent<HTMLInputElement>) => setListas((prev) => ({ ...prev, [field]: e.target.value })) });
+  const listaSelect = (field: string, options: string[], emptyLabel: string) => (
+    <Select multiple value={lista(listas[field] ?? "")} onChange={(e) => {
+      const values = Array.from(e.target.selectedOptions).map((option) => option.value).filter(Boolean);
+      setListas((prev) => ({ ...prev, [field]: values.join(", ") }));
+    }} className="min-h-24">
+      <option value="">{emptyLabel}</option>
+      {options.map((option) => <option key={option} value={option}>{option}</option>)}
+    </Select>
+  );
   const texto = (arr: string[] | undefined) => (arr || []).join(", ");
   const num = (v: string) => (v === "" ? null : Number(v.replace(/[^\d.]/g, "")));
 
@@ -98,14 +108,14 @@ export default function Perfil() {
       <Card>
         <CardHeader title="Dónde y cuánto" />
         <div className="grid gap-4 p-5 md:grid-cols-2">
-          <Field label="Departamentos de interés" hint="Separados por coma.">
-            <Input {...listaInput("departamentos")} placeholder="Bogotá D.C., Cundinamarca" />
+          <Field label="Departamentos de interés" hint="Selecciona uno o varios. Usa Ctrl/Cmd para elegir más de uno.">
+            {listaSelect("departamentos", DEPARTAMENTOS, "Toda Colombia")}
           </Field>
-          <Field label="Municipios de interés"><Input {...listaInput("municipios")} /></Field>
+          <Field label="Municipios de interés" hint="Selecciona uno o varios municipios.">{listaSelect("municipios", MUNICIPIOS, "Todos los municipios")}</Field>
           <Field label="Presupuesto mínimo (COP)"><Input value={p.presupuesto_min ?? ""} onChange={(e) => setP({ ...p, presupuesto_min: num(e.target.value) })} placeholder="100000000" /></Field>
           <Field label="Presupuesto máximo (COP)"><Input value={p.presupuesto_max ?? ""} onChange={(e) => setP({ ...p, presupuesto_max: num(e.target.value) })} placeholder="5000000000" /></Field>
-          <Field label="Modalidades preferidas" hint="Separadas por coma.">
-            <Input {...listaInput("modalidades")} placeholder="Licitación Pública, Contratación Directa" />
+          <Field label="Modalidades preferidas" hint="Selecciona una o varias modalidades.">
+            {listaSelect("modalidades", MODALIDADES, "Todas las modalidades")}
           </Field>
           <div className="flex items-end">
             <label className="flex items-center gap-2 text-sm">

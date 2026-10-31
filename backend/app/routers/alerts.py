@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app.schemas import AlertPrefsIn
 from app.services import alerts as alerts_service
 from app.services.notifier import send_email
+from app.services.quota import require_pro
 
 router = APIRouter(prefix="/api/alerts", tags=["alertas"])
 
@@ -71,6 +72,7 @@ def put_prefs(data: AlertPrefsIn, user: User = Depends(get_current_user), db: Se
 @router.post("/digest")
 def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Ejecuta el ciclo de alertas ahora (alta compatibilidad, recordatorios, resumen)."""
+    require_pro(db, user)
     prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user.id).first()
     threshold = prefs.high_score_threshold if prefs else 70
     created = alerts_service.create_alerts_for_user(db, user.id, high_score=threshold)

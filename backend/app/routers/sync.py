@@ -7,6 +7,7 @@ from app.db.models import SyncRun, User
 from app.db.session import get_db
 from app.schemas import SyncIn
 from app.services.ingest import sync_source
+from app.services.quota import require_pro
 
 router = APIRouter(prefix="/api/sync", tags=["secop"])
 
@@ -14,6 +15,7 @@ router = APIRouter(prefix="/api/sync", tags=["secop"])
 @router.post("/secop")
 def run_sync(data: SyncIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Ejecuta una ingesta incremental del dataset solicitado (paginación + upsert idempotente)."""
+    require_pro(db, user)
     try:
         run = sync_source(db, data.source, max_pages=data.max_pages, extra_where=data.extra_where)
     except Exception as exc:
