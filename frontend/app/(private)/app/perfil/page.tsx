@@ -55,15 +55,24 @@ export default function Perfil() {
 
   const lista = (v: string) => v.split(",").map((s) => s.trim()).filter(Boolean);
   const listaInput = (field: string) => ({ value: listas[field] ?? "", onChange: (e: ChangeEvent<HTMLInputElement>) => setListas((prev) => ({ ...prev, [field]: e.target.value })) });
-  const listaSelect = (field: string, options: string[], emptyLabel: string) => (
-    <Select multiple value={lista(listas[field] ?? "")} onChange={(e) => {
-      const values = Array.from(e.target.selectedOptions).map((option) => option.value).filter(Boolean);
-      setListas((prev) => ({ ...prev, [field]: values.join(", ") }));
-    }} className="min-h-24">
-      <option value="">{emptyLabel}</option>
-      {options.map((option) => <option key={option} value={option}>{option}</option>)}
-    </Select>
-  );
+  const listaSelect = (field: string, options: string[], emptyLabel: string) => {
+    const selected = lista(listas[field] ?? "");
+    const allSelected = selected.length === 0;
+    function toggle(option: string) {
+      const next = selected.includes(option) ? selected.filter((item) => item !== option) : [...selected, option];
+      setListas((prev) => ({ ...prev, [field]: next.join(", ") }));
+    }
+    return <div className="max-h-40 overflow-y-auto rounded-lg border border-base bg-transparent p-2">
+      <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-teal/10">
+        <input type="checkbox" checked={allSelected} onChange={() => setListas((prev) => ({ ...prev, [field]: "" }))} className="accent-teal" />
+        <span>{emptyLabel}</span>
+      </label>
+      {options.map((option) => <label key={option} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-teal/10">
+        <input type="checkbox" checked={selected.includes(option)} onChange={() => toggle(option)} className="accent-teal" />
+        <span>{option}</span>
+      </label>)}
+    </div>;
+  };
   const texto = (arr: string[] | undefined) => (arr || []).join(", ");
   const num = (v: string) => (v === "" ? null : Number(v.replace(/[^\d.]/g, "")));
 
@@ -108,13 +117,13 @@ export default function Perfil() {
       <Card>
         <CardHeader title="Dónde y cuánto" />
         <div className="grid gap-4 p-5 md:grid-cols-2">
-          <Field label="Departamentos de interés" hint="Selecciona uno o varios. Usa Ctrl/Cmd para elegir más de uno.">
+          <Field label="Departamentos de interés" hint="Marca uno, varios o Toda Colombia.">
             {listaSelect("departamentos", DEPARTAMENTOS, "Toda Colombia")}
           </Field>
-          <Field label="Municipios de interés" hint="Selecciona uno o varios municipios.">{listaSelect("municipios", MUNICIPIOS, "Todos los municipios")}</Field>
+          <Field label="Municipios de interés" hint="Marca uno, varios o Todos los municipios.">{listaSelect("municipios", MUNICIPIOS, "Todos los municipios")}</Field>
           <Field label="Presupuesto mínimo (COP)"><Input value={p.presupuesto_min ?? ""} onChange={(e) => setP({ ...p, presupuesto_min: num(e.target.value) })} placeholder="100000000" /></Field>
           <Field label="Presupuesto máximo (COP)"><Input value={p.presupuesto_max ?? ""} onChange={(e) => setP({ ...p, presupuesto_max: num(e.target.value) })} placeholder="5000000000" /></Field>
-          <Field label="Modalidades preferidas" hint="Selecciona una o varias modalidades.">
+          <Field label="Modalidades preferidas" hint="Marca una, varias o Todas las modalidades.">
             {listaSelect("modalidades", MODALIDADES, "Todas las modalidades")}
           </Field>
           <div className="flex items-end">
