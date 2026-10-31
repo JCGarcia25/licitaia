@@ -34,7 +34,7 @@ export default function DetalleOportunidad() {
   const [opp, setOpp] = useState<Opp | null>(null);
   const [viab, setViab] = useState<Viab | null>(null);
   const [docs, setDocs] = useState<{ id: number; filename: string }[]>([]);
-  const [archivo, setArchivo] = useState<File | null>(null);
+  const [archivos, setArchivos] = useState<File[]>([]);
   const [msg, setMsg] = useState("");
   const [cargando, setCargando] = useState("");
   const [visor, setVisor] = useState<string | null>(null);
@@ -51,17 +51,20 @@ export default function DetalleOportunidad() {
   useEffect(() => { cargar().catch((e) => setMsg(e.message)); }, [cargar]);
 
   async function subir() {
-    if (!archivo) return;
+    if (!archivos.length) return;
     setCargando("subir");
     setMsg("");
     try {
-      const form = new FormData();
-      form.append("file", archivo);
-      form.append("opportunity_id", String(id));
-      await api("/api/documents", { method: "POST", body: form });
-      setArchivo(null);
+      for (const archivo of archivos) {
+        const form = new FormData();
+        form.append("file", archivo);
+        form.append("opportunity_id", String(id));
+        await api("/api/documents", { method: "POST", body: form });
+      }
+      const total = archivos.length;
+      setArchivos([]);
       await cargar();
-      setMsg("Documento cargado correctamente.");
+      setMsg(`${total} documento(s) cargado(s) correctamente.`);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Error subiendo el documento");
     } finally {
@@ -69,13 +72,29 @@ export default function DetalleOportunidad() {
     }
   }
 
-  function aceptarArchivo(file: File | undefined) {
-    if (!file) return;
-    const permitido = /\.(pdf|docx|xlsx)$/i.test(file.name);
-    if (!permitido) { setMsg("Formato no soportado. Usa PDF, DOCX o XLSX."); return; }
-    if (file.size > 25 * 1024 * 1024) { setMsg("El archivo supera el límite de 25 MB."); return; }
-    setArchivo(file);
-    setMsg("");
+  function aceptarArchivos(seleccionados: FileList | File[] | undefined) {
+    if (!seleccionados) return;
+    const validos: File[] = [];
+    const errores: string[] = [];
+    Array.from(seleccionados).forEach((file) => {
+      if (!/\.(pdf|docx|xlsx)$/i.test(file.name)) errores.push(`${file.name}: formato no soportado`);
+      else if (file.size > 25 * 1024 * 1024) errores.push(`${file.name}: supera 25 MB`);
+      else validos.push(file);
+    });
+    setArchivos((actuales) => {
+      const nombres = new Set(actuales.map((file) => file.name));
+      return [...actuales, ...validos.filter((file) => !nombres.has(file.name))];
+    });
+    setMsg(errores.length ? errores.join(". ") : "");
+  }
+
+  async function eliminarDocumento(documentId: number) {
+    if (!window.confirm("¿Eliminar este documento? Esta acción no se puede deshacer.")) return;
+    try {
+      await api(`/api/documents/${documentId}`, { method: "DELETE" });
+      await cargar();
+      setMsg("Documento eliminado.");
+    } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible eliminar el documento"); }
   }
 
   async function abrirDocumento(doc: { id: number; filename: string; mime_type?: string }) {
@@ -200,22 +219,23 @@ export default function DetalleOportunidad() {
         <div className="space-y-4 p-5">
           <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" variant="outline" onClick={importarDocumentos} disabled={cargando === "importar"}>{cargando === "importar" ? "Importando…" : "Importar documentos públicos"}</Button>
-            <input ref={archivoInput} type="file" accept=".pdf,.docx,.xlsx" className="hidden" onChange={(e) => aceptarArchivo(e.target.files?.[0])} />
+            <input ref={archivoInput} type="file" multiple accept=".pdf,.docx,.xlsx" className="hidden" onChange={(e) => aceptarArchivos(e.target.files || undefined)} />
             <div
               className={`min-w-[280px] flex-1 rounded-xl border-2 border-dashed px-4 py-4 text-center text-xs transition ${arrastrando ? "border-teal bg-teal/10 text-teal" : "border-base text-muted hover:border-teal/60"}`}
               onDragOver={(e) => { e.preventDefault(); setArrastrando(true); }}
               onDragLeave={() => setArrastrando(false)}
-              onDrop={(e) => { e.preventDefault(); setArrastrando(false); aceptarArchivo(e.dataTransfer.files?.[0]); }}
+              onDrop={(e) => { e.preventDefault(); setArrastrando(false); aceptarArchivos(e.dataTransfer.files); }}
             >
-              <p className="font-medium">{archivo ? `📎 ${archivo.name}` : "Arrastra aquí el pliego o anexo"}</p>
+              <p className="font-medium">{archivos.length ? `📎 ${archivos.length} archivo(s) seleccionado(s)` : "Arrastra aquí los pliegos o anexos"}</p>
               <p className="mt-1">PDF, DOCX o XLSX · máximo 25 MB</p>
               <Button size="sm" variant="ghost" onClick={() => archivoInput.current?.click()} className="mt-2">Buscar archivo</Button>
             </div>
-            <Button size="sm" variant="outline" onClick={subir} disabled={!archivo || cargando === "subir"}>{cargando === "subir" ? "Subiendo…" : "Subir documento"}</Button>
+            <Button size="sm" variant="outline" onClick={subir} disabled={!archivos.length || cargando === "subir"}>{cargando === "subir" ? "Subiendo…" : `Subir ${archivos.length || ""} documento(s)`}</Button>
           </div>
+          {archivos.length ? <ul className="text-muted flex flex-wrap gap-2 text-xs">{archivos.map((file, index) => <li key={`${file.name}-${index}`} className="rounded-full border border-base px-2 py-1">{file.name} <button type="button" className="ml-1 text-red-400" onClick={() => setArchivos((actuales) => actuales.filter((_, i) => i !== index))} aria-label={`Quitar ${file.name}`}>×</button></li>)}</ul> : null}
           {docs.length ? (
             <ul className="text-muted space-y-1 text-xs">
-              {docs.map((d) => <li key={d.id} className="flex items-center justify-between gap-2"><span>📎 {d.filename}</span><Button size="sm" variant="ghost" onClick={() => abrirDocumento(d)}>Ver</Button></li>)}
+              {docs.map((d) => <li key={d.id} className="flex items-center justify-between gap-2"><span>📎 {d.filename}</span><span className="flex gap-1"><Button size="sm" variant="ghost" onClick={() => abrirDocumento(d)}>Ver</Button><Button size="sm" variant="ghost" onClick={() => eliminarDocumento(d.id)}>Eliminar</Button></span></li>)}
             </ul>
           ) : (
             <p className={`rounded-lg border p-3 text-xs ${opp.documentos_publicos_disponibles ? "border-teal/30 text-teal" : "border-amber-500/30 text-amber-700"}`}>{opp.documentos_publicos_disponibles ? `Pliegos disponibles para importar: ${opp.documentos_publicos_disponibles}.` : "Pliegos no expuestos para descarga automática: consultar en SECOP."} Pulsa «Importar documentos públicos» para comprobarlos; si SECOP requiere sesión, descarga el pliego desde el expediente y súbelo aquí.</p>

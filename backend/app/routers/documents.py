@@ -135,3 +135,16 @@ def document_content(document_id: int, user: User = Depends(get_current_user), d
     if not doc or not os.path.exists(doc.storage_path):
         raise HTTPException(404, "Documento no encontrado")
     return FileResponse(doc.storage_path, media_type=doc.mime_type or "application/octet-stream", filename=doc.filename)
+
+
+@router.delete("/{document_id}")
+def delete_document(document_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Elimina un documento propio y su archivo almacenado."""
+    doc = db.query(Document).filter(Document.id == document_id, Document.user_id == user.id).first()
+    if not doc:
+        raise HTTPException(404, "Documento no encontrado")
+    if doc.storage_path and os.path.isfile(doc.storage_path):
+        os.remove(doc.storage_path)
+    db.delete(doc)
+    db.commit()
+    return {"ok": True, "id": document_id}
