@@ -58,6 +58,7 @@ BILLING_PROVIDER=mercadopago
 MERCADOPAGO_ACCESS_TOKEN=APP_USR-...
 MERCADOPAGO_PUBLIC_KEY=APP_USR-...
 MERCADOPAGO_WEBHOOK_SECRET=
+MERCADOPAGO_TEST_PAYER_EMAIL=
 MERCADOPAGO_BACK_URL=https://licitaia.centralspike.com/app/plan
 ```
 
@@ -72,6 +73,10 @@ https://licitaia.centralspike.com/api/billing/mercadopago/webhook
 
 El plan Pro solo se activa cuando el webhook verifica que la suscripción está en
 estado `authorized`.
+
+En sandbox, `MERCADOPAGO_TEST_PAYER_EMAIL` puede contener el correo del usuario
+de prueba comprador creado en Mercado Pago. Si queda vacío, se usa el correo del
+usuario de MySECOP.
 
 Para producción se deben reemplazar las credenciales de prueba por credenciales
 de producción y revisar la cuenta comercial, impuestos, términos y política de

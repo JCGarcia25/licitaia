@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     mercadopago_access_token: str = ""
     mercadopago_public_key: str = ""
     mercadopago_webhook_secret: str = ""
+    mercadopago_test_payer_email: str = ""
     mercadopago_back_url: str = "https://licitaia.centralspike.com/app/plan"
     quota_free_analyses: int = 20   # límite mensual de IA del plan explorador
     quota_pro_analyses: int = 500   # límite mensual de IA del plan profesional

@@ -1,6 +1,8 @@
 """Suscripciones y planes, con integración segura de Mercado Pago."""
+import hashlib
+import hmac
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -74,7 +76,7 @@ def subscribe(data: SubscribeIn, user: User = Depends(get_current_user), db: Ses
         payload = {
             "reason": "MySECOP Pro",
             "external_reference": f"mysecop-user-{user.id}",
-            "payer_email": user.email,
+            "payer_email": settings.mercadopago_test_payer_email or user.email,
             "back_url": settings.mercadopago_back_url,
             "auto_recurring": {"frequency": 1, "frequency_type": "months", "transaction_amount": 59900, "currency_id": "COP"},
             "status": "pending",
@@ -107,7 +109,10 @@ def subscribe(data: SubscribeIn, user: User = Depends(get_current_user), db: Ses
 
 
 @router.post("/mercadopago/webhook")
-def mercadopago_webhook(payload: dict | None = None, type: str | None = None, data_id: str | None = None,
+def mercadopago_webhook(payload: dict | None = None, type: str | None = None,
+                        data_id: str | None = Query(default=None, alias="data.id"),
+                        x_signature: str | None = Header(default=None),
+                        x_request_id: str | None = Header(default=None),
                         db: Session = Depends(get_db)):
     settings = get_settings()
     if settings.billing_provider != "mercadopago" or not settings.mercadopago_access_token:
@@ -115,6 +120,22 @@ def mercadopago_webhook(payload: dict | None = None, type: str | None = None, da
     body = payload or {}
     event_type = type or body.get("type") or body.get("action")
     remote_id = data_id or (body.get("data") or {}).get("id")
+    # Mercado Pago firma cada webhook como ts=...,v1=... usando el template
+    # documentado. En producción una firma ausente o inválida nunca puede
+    # cambiar el plan de un usuario.
+    if settings.environment == "production" and not settings.mercadopago_webhook_secret:
+        raise HTTPException(503, "Falta configurar MERCADOPAGO_WEBHOOK_SECRET.")
+    if settings.mercadopago_webhook_secret and x_signature:
+        parts = dict(item.split("=", 1) for item in x_signature.split(",") if "=" in item)
+        ts, received = parts.get("ts"), parts.get("v1")
+        if not ts or not received or not x_request_id or not remote_id:
+            raise HTTPException(401, "Firma de webhook inválida")
+        template = f"id:{str(remote_id).lower()};request-id:{x_request_id};ts:{ts};"
+        expected = hmac.new(settings.mercadopago_webhook_secret.encode(), template.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, received):
+            raise HTTPException(401, "Firma de webhook inválida")
+    elif settings.environment == "production":
+        raise HTTPException(401, "Firma de webhook ausente")
     if event_type not in {"subscription_preapproval", "subscription_authorized_payment", "preapproval"} or not remote_id:
         return {"ok": True, "ignored": True}
     try:
