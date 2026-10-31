@@ -16,7 +16,8 @@ export default function PlanPage() {
   useEffect(() => { api<Billing>("/api/billing").then(setBilling).catch(() => undefined); }, []);
   async function solicitarPro() {
     try {
-      const result = await api<{ status: string }>("/api/billing/subscribe", { method: "POST", body: JSON.stringify({ plan: "profesional" }) });
+      const result = await api<{ status: string; checkout_url?: string }>("/api/billing/subscribe", { method: "POST", body: JSON.stringify({ plan: "profesional" }) });
+      if (result.checkout_url) { window.location.href = result.checkout_url; return; }
       setMsg(result.status === "pendiente_pago" ? "Solicitud registrada. El acceso Pro se activa al confirmar el pago." : "Plan actualizado.");
       const next = await api<Billing>("/api/billing"); setBilling(next);
     } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible iniciar la suscripción."); }

@@ -252,6 +252,8 @@ class Subscription(Base):
     plan = Column(String(30), default="explorador")          # explorador | profesional | corporativo
     status = Column(String(30), default="activa")            # activa | pendiente_pago | cancelada
     provider = Column(String(30), default="manual")          # manual | stripe
+    external_id = Column(String(120), nullable=True, index=True)
+    checkout_url = Column(String(1000), nullable=True)
     current_period_end = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utcnow)
 

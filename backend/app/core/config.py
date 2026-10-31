@@ -52,8 +52,12 @@ class Settings(BaseSettings):
 
     # --- Fase 5: control comercial ---
     allow_demo_seed: bool = True    # ALLOW_DEMO_SEED=false: cero datos simulados (producción)
-    billing_provider: str = "manual"  # manual | stripe (stripe requiere credenciales)
+    billing_provider: str = "manual"  # manual | mercadopago | stripe
     stripe_api_key: str = ""
+    mercadopago_access_token: str = ""
+    mercadopago_public_key: str = ""
+    mercadopago_webhook_secret: str = ""
+    mercadopago_back_url: str = "https://licitaia.centralspike.com/app/plan"
     quota_free_analyses: int = 20   # límite mensual de IA del plan explorador
     quota_pro_analyses: int = 500   # límite mensual de IA del plan profesional
     contact_email: str = "contacto@licitaia.local"
