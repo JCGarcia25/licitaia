@@ -1,10 +1,10 @@
 "use client";
 /* Detalle de oportunidad: Agentes 2 (pliegos) y 3 (viabilidad). */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
-import { Badge, Button, Card, CardHeader, EmptyState, fmtCOP, fmtFecha, Input, scoreTone, Select, Spinner } from "@/components/ui";
+import { Badge, Button, Card, CardHeader, EmptyState, fmtCOP, fmtFecha, scoreTone, Select, Spinner } from "@/components/ui";
 
 type Reason = { factor: string; detalle: string; evidencia: string };
 type Requisito = {
@@ -38,6 +38,8 @@ export default function DetalleOportunidad() {
   const [msg, setMsg] = useState("");
   const [cargando, setCargando] = useState("");
   const [visor, setVisor] = useState<string | null>(null);
+  const [arrastrando, setArrastrando] = useState(false);
+  const archivoInput = useRef<HTMLInputElement | null>(null);
 
   const cargar = useCallback(async () => {
     const data = await api<Opp>(`/api/opportunities/${id}`);
@@ -65,6 +67,15 @@ export default function DetalleOportunidad() {
     } finally {
       setCargando("");
     }
+  }
+
+  function aceptarArchivo(file: File | undefined) {
+    if (!file) return;
+    const permitido = /\.(pdf|docx|xlsx)$/i.test(file.name);
+    if (!permitido) { setMsg("Formato no soportado. Usa PDF, DOCX o XLSX."); return; }
+    if (file.size > 25 * 1024 * 1024) { setMsg("El archivo supera el límite de 25 MB."); return; }
+    setArchivo(file);
+    setMsg("");
   }
 
   async function abrirDocumento(doc: { id: number; filename: string; mime_type?: string }) {
@@ -187,10 +198,20 @@ export default function DetalleOportunidad() {
           action={<Button size="sm" onClick={analizar} disabled={cargando === "analizar"}>{cargando === "analizar" ? "Analizando…" : "Analizar documentos"}</Button>}
         />
         <div className="space-y-4 p-5">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button size="sm" variant="outline" onClick={importarDocumentos} disabled={cargando === "importar"}>{cargando === "importar" ? "Importando…" : "Importar documentos públicos"}</Button>
-            <Input type="file" accept=".pdf,.docx,.xlsx" onChange={(e) => setArchivo(e.target.files?.[0] || null)} className="max-w-sm py-1.5" />
-            <Button size="sm" variant="outline" onClick={subir} disabled={!archivo || cargando === "subir"}>Subir documento</Button>
+            <input ref={archivoInput} type="file" accept=".pdf,.docx,.xlsx" className="hidden" onChange={(e) => aceptarArchivo(e.target.files?.[0])} />
+            <div
+              className={`min-w-[280px] flex-1 rounded-xl border-2 border-dashed px-4 py-4 text-center text-xs transition ${arrastrando ? "border-teal bg-teal/10 text-teal" : "border-base text-muted hover:border-teal/60"}`}
+              onDragOver={(e) => { e.preventDefault(); setArrastrando(true); }}
+              onDragLeave={() => setArrastrando(false)}
+              onDrop={(e) => { e.preventDefault(); setArrastrando(false); aceptarArchivo(e.dataTransfer.files?.[0]); }}
+            >
+              <p className="font-medium">{archivo ? `📎 ${archivo.name}` : "Arrastra aquí el pliego o anexo"}</p>
+              <p className="mt-1">PDF, DOCX o XLSX · máximo 25 MB</p>
+              <Button size="sm" variant="ghost" onClick={() => archivoInput.current?.click()} className="mt-2">Buscar archivo</Button>
+            </div>
+            <Button size="sm" variant="outline" onClick={subir} disabled={!archivo || cargando === "subir"}>{cargando === "subir" ? "Subiendo…" : "Subir documento"}</Button>
           </div>
           {docs.length ? (
             <ul className="text-muted space-y-1 text-xs">
