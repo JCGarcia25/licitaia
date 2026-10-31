@@ -47,12 +47,21 @@ export default function PlanPage() {
       window.dispatchEvent(new CustomEvent("mysecop:billing-updated", { detail: next }));
     } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible iniciar la suscripción."); }
   }
+  async function cancelarSuscripcion() {
+    if (!window.confirm("¿Quieres dar de baja tu suscripción Pro? Perderás el acceso a las funciones Pro al confirmar.")) return;
+    try {
+      const next = await api<Billing>("/api/billing/cancel", { method: "POST" });
+      setBilling(next);
+      setMsg("Tu suscripción fue cancelada. Ahora tienes el plan MySECOP Free.");
+      window.dispatchEvent(new CustomEvent("mysecop:billing-updated", { detail: next }));
+    } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible cancelar la suscripción."); }
+  }
   return <div className="space-y-6">
     <div><Link href="/app" className="text-sm text-teal hover:underline">← Volver al dashboard</Link><h1 className="mt-3 text-2xl font-bold">Tu plan MySECOP</h1><p className="text-muted mt-1">Empieza gratis y desbloquea el flujo completo cuando estés listo para competir.</p></div>
     {billing && <Card className="border-teal/30"><CardHeader title={billing.nombre} subtitle={`Consumo de análisis: ${billing.usage.used}/${billing.usage.limit} este mes · Estado: ${billing.status}`} /></Card>}
     <div className="grid gap-5 md:grid-cols-2">
       <Card><CardHeader title="MySECOP Free" subtitle="Para descubrir oportunidades y crear el hábito." /><ul className="mt-4 space-y-2 text-sm">{free.map(x => <li key={x}>✓ {x}</li>)}</ul></Card>
-      <Card className="border-teal shadow-lg shadow-teal/10"><CardHeader title="MySECOP Pro · $59.900/mes" subtitle="Para analizar, decidir y preparar propuestas más rápido." /><ul className="mt-4 space-y-2 text-sm">{pro.map(x => <li key={x} className="text-teal">✓ <span className="text-[var(--text)]">{x}</span></li>)}</ul><Button className="mt-6 w-full" onClick={solicitarPro}>{billing?.es_pro ? "Plan Pro activo" : "Desbloquear MySECOP Pro"}</Button>{msg && <p className="mt-3 text-xs text-muted">{msg}</p>}</Card>
+      <Card className="border-teal shadow-lg shadow-teal/10"><CardHeader title="MySECOP Pro · $59.900/mes" subtitle="Para analizar, decidir y preparar propuestas más rápido." /><ul className="mt-4 space-y-2 text-sm">{pro.map(x => <li key={x} className="text-teal">✓ <span className="text-[var(--text)]">{x}</span></li>)}</ul><Button className="mt-6 w-full" onClick={solicitarPro} disabled={billing?.es_pro}>{billing?.es_pro ? "Plan Pro activo" : "Desbloquear MySECOP Pro"}</Button>{billing?.es_pro ? <Button variant="outline" className="mt-2 w-full text-red-300" onClick={cancelarSuscripcion}>Dar de baja la suscripción</Button> : null}{msg && <p className="mt-3 text-xs text-muted">{msg}</p>}</Card>
     </div>
     <p className="text-muted text-xs">El pago se procesa en una ventana segura de Mercado Pago. MySECOP nunca presenta ofertas automáticamente en SECOP.</p>
     {showWelcome && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" role="presentation">

@@ -136,6 +136,32 @@ def subscribe(data: SubscribeIn, user: User = Depends(get_current_user), db: Ses
     }
 
 
+@router.post("/cancel")
+def cancel_subscription(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Da de baja la suscripción activa y cancela la renovación en Mercado Pago."""
+    settings = get_settings()
+    sub = get_subscription(db, user)
+    if sub.plan not in {"profesional", "corporativo"} or sub.status != "activa":
+        raise HTTPException(400, "No tienes una suscripción Pro activa para cancelar.")
+    if sub.provider == "mercadopago" and sub.external_id:
+        try:
+            response = httpx.put(
+                f"https://api.mercadopago.com/preapproval/{sub.external_id}",
+                json={"status": "cancelled"},
+                headers={"Authorization": f"Bearer {settings.mercadopago_access_token}"},
+                timeout=15,
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise HTTPException(502, "No fue posible cancelar la suscripción en Mercado Pago. Intenta nuevamente.") from exc
+    sub.plan = "explorador"
+    sub.status = "cancelada"
+    sub.checkout_url = None
+    db.commit()
+    log_action(db, user, "cancelar_suscripcion", "subscription", sub.id, {"provider": sub.provider})
+    return {"plan": sub.plan, "status": sub.status, "nombre": "MySECOP Free", "es_pro": False}
+
+
 @router.post("/mercadopago/webhook")
 def mercadopago_webhook(payload: dict | None = None, type: str | None = None,
                         data_id: str | None = Query(default=None, alias="data.id"),
