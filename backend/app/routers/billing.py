@@ -89,7 +89,11 @@ def subscribe(data: SubscribeIn, user: User = Depends(get_current_user), db: Ses
         except (httpx.HTTPError, ValueError) as exc:
             raise HTTPException(502, "Mercado Pago no pudo crear la suscripción de prueba.") from exc
         sub.plan, sub.status, sub.provider = "profesional", "pendiente_pago", "mercadopago"
-        sub.external_id, sub.checkout_url = remote.get("id"), remote.get("init_point") or remote.get("sandbox_init_point")
+        # Con credenciales de prueba siempre usamos el checkout sandbox. Si se
+        # usa init_point en lugar de sandbox_init_point, Mercado Pago puede
+        # mostrar "Algo salió mal" al combinarlo con una tarjeta de prueba.
+        checkout_url = (remote.get("sandbox_init_point") or remote.get("init_point")) if settings.mercadopago_sandbox else remote.get("init_point")
+        sub.external_id, sub.checkout_url = remote.get("id"), checkout_url
         db.commit()
         log_action(db, user, "iniciar_suscripcion", "subscription", sub.id, {"provider_id": sub.external_id})
         return {"plan": sub.plan, "status": sub.status, "checkout_url": sub.checkout_url, "external_id": sub.external_id}
