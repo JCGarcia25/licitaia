@@ -13,11 +13,32 @@ const pro = ["Todo lo incluido en Free", "Análisis de pliegos y anexos", "Evalu
 export default function PlanPage() {
   const [billing, setBilling] = useState<Billing | null>(null);
   const [msg, setMsg] = useState("");
+  const [checkoutStarted, setCheckoutStarted] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
   useEffect(() => { api<Billing>("/api/billing").then(setBilling).catch(() => undefined); }, []);
+  useEffect(() => {
+    if (!checkoutStarted || billing?.es_pro) return;
+    const timer = window.setInterval(async () => {
+      try {
+        const next = await api<Billing>("/api/billing");
+        setBilling((previous) => {
+          if (!previous?.es_pro && next.es_pro) setShowWelcome(true);
+          return next;
+        });
+        if (next.es_pro) window.clearInterval(timer);
+      } catch { /* el usuario puede seguir pagando en la otra ventana */ }
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [checkoutStarted, billing?.es_pro]);
   async function solicitarPro() {
     try {
       const result = await api<{ status: string; checkout_url?: string }>("/api/billing/subscribe", { method: "POST", body: JSON.stringify({ plan: "profesional" }) });
-      if (result.checkout_url) { window.location.href = result.checkout_url; return; }
+      if (result.checkout_url) {
+        const paymentWindow = window.open(result.checkout_url, "mysecop-mercadopago", "popup,width=520,height=760,resizable=yes,scrollbars=yes");
+        setCheckoutStarted(true);
+        setMsg(paymentWindow ? "Mercado Pago se abrió en otra ventana. Puedes volver aquí; te avisaremos cuando el pago sea confirmado." : "Tu navegador bloqueó la ventana de pago. Permite ventanas emergentes para continuar.");
+        return;
+      }
       setMsg(result.status === "pendiente_pago" ? "Solicitud registrada. El acceso Pro se activa al confirmar el pago." : "Plan actualizado.");
       const next = await api<Billing>("/api/billing"); setBilling(next);
     } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible iniciar la suscripción."); }
@@ -29,6 +50,14 @@ export default function PlanPage() {
       <Card><CardHeader title="MySECOP Free" subtitle="Para descubrir oportunidades y crear el hábito." /><ul className="mt-4 space-y-2 text-sm">{free.map(x => <li key={x}>✓ {x}</li>)}</ul></Card>
       <Card className="border-teal shadow-lg shadow-teal/10"><CardHeader title="MySECOP Pro · $59.900/mes" subtitle="Para analizar, decidir y preparar propuestas más rápido." /><ul className="mt-4 space-y-2 text-sm">{pro.map(x => <li key={x} className="text-teal">✓ <span className="text-[var(--text)]">{x}</span></li>)}</ul><Button className="mt-6 w-full" onClick={solicitarPro}>{billing?.es_pro ? "Plan Pro activo" : "Desbloquear MySECOP Pro"}</Button>{msg && <p className="mt-3 text-xs text-muted">{msg}</p>}</Card>
     </div>
-    <p className="text-muted text-xs">El pago se procesa mediante la pasarela configurada por el administrador. MySECOP nunca presenta ofertas automáticamente en SECOP.</p>
+    <p className="text-muted text-xs">El pago se procesa en una ventana segura de Mercado Pago. MySECOP nunca presenta ofertas automáticamente en SECOP.</p>
+    {showWelcome && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" role="presentation">
+      <div className="surface-card w-full max-w-md p-7 text-center" role="dialog" aria-modal="true" aria-labelledby="pro-welcome-title">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal/15 text-3xl text-teal">✓</div>
+        <h2 id="pro-welcome-title" className="mt-4 text-xl font-bold">¡Bienvenido, ahora eres Pro!</h2>
+        <p className="text-muted mt-2 text-sm">Disfruta todas las funcionalidades de MySECOP Pro.</p>
+        <Button className="mt-6 w-full" onClick={() => setShowWelcome(false)}>Continuar en MySECOP</Button>
+      </div>
+    </div>}
   </div>;
 }
