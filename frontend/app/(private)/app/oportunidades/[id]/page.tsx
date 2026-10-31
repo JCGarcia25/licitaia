@@ -34,6 +34,7 @@ export default function DetalleOportunidad() {
   const [opp, setOpp] = useState<Opp | null>(null);
   const [viab, setViab] = useState<Viab | null>(null);
   const [docs, setDocs] = useState<{ id: number; filename: string }[]>([]);
+  const [docsSeleccionados, setDocsSeleccionados] = useState<number[]>([]);
   const [archivos, setArchivos] = useState<File[]>([]);
   const [msg, setMsg] = useState("");
   const [cargando, setCargando] = useState("");
@@ -48,6 +49,7 @@ export default function DetalleOportunidad() {
     setAnalisisValidado(Boolean(data.analysis));
     const d = await api<{ id: number; filename: string }[]>(`/api/documents?opportunity_id=${id}`);
     setDocs(d);
+    setDocsSeleccionados((seleccionados) => seleccionados.filter((docId) => d.some((doc) => doc.id === docId)));
   }, [id]);
 
   useEffect(() => { cargar().catch((e) => setMsg(e.message)); }, [cargar]);
@@ -94,9 +96,24 @@ export default function DetalleOportunidad() {
     if (!window.confirm("¿Eliminar este documento? Esta acción no se puede deshacer.")) return;
     try {
       await api(`/api/documents/${documentId}`, { method: "DELETE" });
+      setDocsSeleccionados((seleccionados) => seleccionados.filter((docId) => docId !== documentId));
       await cargar();
       setMsg("Documento eliminado.");
     } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible eliminar el documento"); }
+  }
+
+  async function eliminarDocumentosSeleccionados() {
+    if (!docsSeleccionados.length) return;
+    if (!window.confirm(`¿Eliminar ${docsSeleccionados.length} documento(s)? Esta acción no se puede deshacer.`)) return;
+    setCargando("eliminar");
+    try {
+      await Promise.all(docsSeleccionados.map((docId) => api(`/api/documents/${docId}`, { method: "DELETE" })));
+      const total = docsSeleccionados.length;
+      setDocsSeleccionados([]);
+      await cargar();
+      setMsg(`${total} documento(s) eliminado(s).`);
+    } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible eliminar los documentos seleccionados"); }
+    finally { setCargando(""); }
   }
 
   async function abrirDocumento(doc: { id: number; filename: string; mime_type?: string }) {
@@ -238,9 +255,15 @@ export default function DetalleOportunidad() {
           </div>
           {archivos.length ? <ul className="text-muted flex flex-wrap gap-2 text-xs">{archivos.map((file, index) => <li key={`${file.name}-${index}`} className="rounded-full border border-base px-2 py-1">{file.name} <button type="button" className="ml-1 text-red-400" onClick={() => setArchivos((actuales) => actuales.filter((_, i) => i !== index))} aria-label={`Quitar ${file.name}`}>×</button></li>)}</ul> : null}
           {docs.length ? (
-            <ul className="text-muted space-y-1 text-xs">
-              {docs.map((d) => <li key={d.id} className="flex items-center justify-between gap-2"><span>📎 {d.filename}</span><span className="flex gap-1"><Button size="sm" variant="ghost" onClick={() => abrirDocumento(d)}>Ver</Button><Button size="sm" variant="ghost" onClick={() => eliminarDocumento(d.id)}>Eliminar</Button></span></li>)}
-            </ul>
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-base pb-2 text-xs">
+                <label className="text-muted flex items-center gap-2"><input type="checkbox" checked={docsSeleccionados.length === docs.length} onChange={(e) => setDocsSeleccionados(e.target.checked ? docs.map((d) => d.id) : [])} /> Seleccionar todos</label>
+                <Button size="sm" variant="outline" disabled={!docsSeleccionados.length || cargando === "eliminar"} onClick={eliminarDocumentosSeleccionados}>{cargando === "eliminar" ? "Eliminando…" : `Eliminar seleccionados (${docsSeleccionados.length})`}</Button>
+              </div>
+              <ul className="text-muted space-y-1 text-xs">
+                {docs.map((d) => <li key={d.id} className="flex items-center justify-between gap-2"><label className="flex min-w-0 items-center gap-2"><input type="checkbox" checked={docsSeleccionados.includes(d.id)} onChange={(e) => setDocsSeleccionados((seleccionados) => e.target.checked ? [...seleccionados, d.id] : seleccionados.filter((docId) => docId !== d.id))} /><span className="truncate">📎 {d.filename}</span></label><span className="flex shrink-0 gap-1"><Button size="sm" variant="ghost" onClick={() => abrirDocumento(d)}>Ver</Button><Button size="sm" variant="ghost" onClick={() => eliminarDocumento(d.id)}>Eliminar</Button></span></li>)}
+              </ul>
+            </div>
           ) : (
             <p className={`rounded-lg border p-3 text-xs ${opp.documentos_publicos_disponibles ? "border-teal/30 text-teal" : "border-amber-500/30 text-amber-700"}`}>{opp.documentos_publicos_disponibles ? `Pliegos disponibles para importar: ${opp.documentos_publicos_disponibles}.` : "Pliegos no expuestos para descarga automática: consultar en SECOP."} Pulsa «Importar documentos públicos» para comprobarlos; si SECOP requiere sesión, descarga el pliego desde el expediente y súbelo aquí.</p>
           )}
