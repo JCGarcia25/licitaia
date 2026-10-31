@@ -56,9 +56,33 @@ def current(user: User = Depends(get_current_user), db: Session = Depends(get_db
         "status": sub.status,
         "provider": sub.provider,
         "checkout_url": sub.checkout_url,
+        "external_id": sub.external_id,
         "usage": quota,
         "nota": "El acceso Pro solo se activa cuando Mercado Pago confirma la suscripción.",
     }
+
+
+@router.post("/refresh")
+def refresh_subscription(external_id: str | None = None, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Reconcilia el retorno del checkout con el estado oficial de Mercado Pago."""
+    settings = get_settings()
+    sub = get_subscription(db, user)
+    provider_id = external_id or sub.external_id
+    if provider_id and sub.external_id != provider_id:
+        sub.external_id = provider_id
+        sub.provider = "mercadopago"
+        sub.plan = "profesional"
+        sub.status = "pendiente_pago"
+        db.commit()
+    if settings.billing_provider != "mercadopago" or not provider_id:
+        return current(user, db)
+    from app.workers.tasks import sync_mercadopago_subscription
+    try:
+        sync_mercadopago_subscription(str(provider_id))
+    except Exception as exc:
+        raise HTTPException(502, "No fue posible verificar todavía el pago con Mercado Pago.") from exc
+    db.expire_all()
+    return current(user, db)
 
 
 @router.post("/subscribe")

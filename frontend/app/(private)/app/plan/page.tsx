@@ -11,16 +11,18 @@ const free = ["Búsqueda en SECOP y filtros", "Compatibilidad básica con tu per
 const pro = ["Todo lo incluido en Free", "Análisis de pliegos y anexos", "Evaluación de viabilidad", "Alertas y resumen por correo", "Preparador de ofertas y exportación", "Importación de documentos públicos"];
 
 export default function PlanPage() {
+  const returnedSubscription = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("preapproval_id") : null;
   const [billing, setBilling] = useState<Billing | null>(null);
   const [msg, setMsg] = useState("");
-  const [checkoutStarted, setCheckoutStarted] = useState(false);
+  const [checkoutStarted, setCheckoutStarted] = useState(Boolean(returnedSubscription));
   const [showWelcome, setShowWelcome] = useState(false);
   useEffect(() => { api<Billing>("/api/billing").then(setBilling).catch(() => undefined); }, []);
   useEffect(() => {
     if (!checkoutStarted || billing?.es_pro) return;
     const timer = window.setInterval(async () => {
       try {
-        const next = await api<Billing>("/api/billing");
+        const suffix = returnedSubscription ? `?external_id=${encodeURIComponent(returnedSubscription)}` : "";
+        const next = await api<Billing>(`/api/billing/refresh${suffix}`, { method: "POST" });
         setBilling((previous) => {
           if (!previous?.es_pro && next.es_pro) setShowWelcome(true);
           return next;
@@ -29,7 +31,7 @@ export default function PlanPage() {
       } catch { /* el usuario puede seguir pagando en la otra ventana */ }
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [checkoutStarted, billing?.es_pro]);
+  }, [checkoutStarted, billing?.es_pro, returnedSubscription]);
   async function solicitarPro() {
     try {
       const result = await api<{ status: string; checkout_url?: string }>("/api/billing/subscribe", { method: "POST", body: JSON.stringify({ plan: "profesional" }) });
