@@ -142,21 +142,8 @@ def mercadopago_webhook(payload: dict | None = None, type: str | None = None,
         raise HTTPException(401, "Firma de webhook ausente")
     if event_type not in {"subscription_preapproval", "subscription_authorized_payment", "preapproval"} or not remote_id:
         return {"ok": True, "ignored": True}
-    try:
-        response = httpx.get(f"https://api.mercadopago.com/preapproval/{remote_id}",
-                            headers={"Authorization": f"Bearer {settings.mercadopago_access_token}"}, timeout=15)
-        response.raise_for_status(); remote = response.json()
-    except (httpx.HTTPError, ValueError) as exc:
-        raise HTTPException(502, "No fue posible verificar el evento en Mercado Pago.") from exc
-    reference = str(remote.get("external_reference") or "")
-    user_id = reference.removeprefix("mysecop-user-")
-    sub = db.query(Subscription).filter(Subscription.external_id == str(remote_id)).first()
-    if not sub and user_id.isdigit():
-        sub = db.query(Subscription).filter(Subscription.user_id == int(user_id)).order_by(Subscription.created_at.desc()).first()
-    if not sub:
-        return {"ok": True, "ignored": True}
-    status = remote.get("status")
-    sub.status = "activa" if status == "authorized" else ("cancelada" if status in {"cancelled", "paused"} else "pendiente_pago")
-    sub.plan = "profesional" if sub.status == "activa" else sub.plan
-    db.commit()
-    return {"ok": True, "subscription_id": sub.id, "status": sub.status}
+    from app.workers.celery_app import run_or_delay
+    from app.workers.tasks import sync_mercadopago_subscription
+    task = run_or_delay("app.workers.tasks.sync_mercadopago_subscription_task",
+                        sync_mercadopago_subscription, str(remote_id))
+    return {"ok": True, "queued": task, "message": "Actualización de suscripción programada."}

@@ -2,9 +2,52 @@
 from __future__ import annotations
 
 import logging
+import httpx
 from datetime import datetime
 
 logger = logging.getLogger("licitaia.tasks")
+
+
+def sync_mercadopago_subscription(external_id: str) -> dict:
+    """Consulta Mercado Pago y refleja el estado autorizado/cancelado en DB.
+
+    Es idempotente: los reintentos del webhook solo vuelven a escribir el
+    mismo estado y nunca conceden Pro sin confirmación oficial.
+    """
+    from app.core.config import get_settings
+    from app.db.models import Subscription
+    from app.db.session import SessionLocal
+    from app.services.audit import log_action
+
+    settings = get_settings()
+    if not settings.mercadopago_access_token:
+        raise RuntimeError("MERCADOPAGO_ACCESS_TOKEN no configurado")
+    response = httpx.get(
+        f"https://api.mercadopago.com/preapproval/{external_id}",
+        headers={"Authorization": f"Bearer {settings.mercadopago_access_token}"}, timeout=15,
+    )
+    response.raise_for_status()
+    remote = response.json()
+    db = SessionLocal()
+    try:
+        sub = db.query(Subscription).filter(Subscription.external_id == str(external_id)).first()
+        if not sub:
+            return {"ok": True, "ignored": True, "reason": "subscription_not_found"}
+        remote_status = remote.get("status")
+        new_status = "activa" if remote_status == "authorized" else (
+            "cancelada" if remote_status in {"cancelled", "paused"} else "pendiente_pago"
+        )
+        sub.status = new_status
+        if new_status == "activa":
+            sub.plan = "profesional"
+        db.commit()
+        user = getattr(sub, "user", None)
+        if user:
+            log_action(db, user, "sincronizar_pago_mercadopago", "subscription", sub.id,
+                       {"external_id": str(external_id), "status": new_status})
+        return {"ok": True, "subscription_id": sub.id, "status": new_status}
+    finally:
+        db.close()
 
 
 def sync_secop() -> dict:
@@ -96,5 +139,6 @@ try:
     celery_app.task(name="app.workers.tasks.rescore_all_task")(rescore_all)
     celery_app.task(name="app.workers.tasks.close_reminders_task")(close_reminders_all)
     celery_app.task(name="app.workers.tasks.daily_digest_task")(daily_digest)
+    celery_app.task(name="app.workers.tasks.sync_mercadopago_subscription_task")(sync_mercadopago_subscription)
 except Exception:
     pass
