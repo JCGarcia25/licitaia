@@ -1,5 +1,6 @@
 """Endpoints de autenticación (registro, login JWT, perfil actual)."""
 import secrets
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
@@ -13,6 +14,7 @@ from app.schemas import RegisterIn, TokenOut, UserOut, VerifyEmailIn
 from app.services.notifier import send_email
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+logger = logging.getLogger("licitaia.auth")
 
 
 @router.post("/register", response_model=TokenOut, status_code=201)
@@ -43,9 +45,10 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     user = db.query(User).filter(User.email == email).first()
     try:
         valid = bool(user and verify_password(form.password, user.hashed_password))
-    except (ValueError, TypeError):
+    except Exception as exc:
         # Hashes corruptos o heredados deben comportarse como credenciales
         # inválidas, nunca tumbar el endpoint con un 500.
+        logger.warning("No fue posible verificar la contraseña para %s: %s", email, type(exc).__name__)
         valid = False
     if not valid:
         raise HTTPException(401, "Credenciales inválidas")
