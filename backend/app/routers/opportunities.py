@@ -1,6 +1,7 @@
 """Dashboard y oportunidades: filtros, buscador de lenguaje natural, triage, métricas."""
 from datetime import datetime, timedelta
 import re
+from itertools import combinations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, func, or_
@@ -259,17 +260,23 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         # La búsqueda manual es flexible: basta con que el proceso coincida
         # con al menos un término relevante. Exigir todos los términos hacía
         # que consultas naturales razonables terminaran siempre sin resultados.
-        clauses = []
+        term_clauses = []
         for word in filtros["q"].split():
             variants = [word]
             if word in {"movil", "moviles"}: variants += ["móvil", "móviles"]
-            clauses.extend([
+            term_clauses.append(or_(*[
                 clause for variant in variants for clause in (
                     Opportunity.objeto.ilike(f"%{variant}%"), Opportunity.descripcion.ilike(f"%{variant}%")
                 )
-            ])
-        if clauses:
-            query = query.filter(or_(*clauses))
+            ]))
+        if term_clauses:
+            # Términos genéricos por sí solos generan falsos positivos. Con
+            # 3+ términos exigimos al menos 2 coincidencias independientes;
+            # con 1-2 exigimos todas las coincidencias disponibles.
+            required = len(term_clauses) if len(term_clauses) < 3 else 2
+            query = query.filter(or_(*[
+                and_(*group) for group in combinations(term_clauses, required)
+            ]))
     if filtros.get("departamento"):
         query = query.filter(Opportunity.departamento.ilike(f"%{filtros['departamento']}%"))
     if filtros.get("municipio"):
