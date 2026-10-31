@@ -27,9 +27,10 @@ export default function Oportunidades() {
   const [triage, setTriage] = useState("");
   const [soloScore, setSoloScore] = useState(true);
   const [error, setError] = useState("");
+  const [perfilRequerido, setPerfilRequerido] = useState(false);
   const router = useRouter();
 
-  const cargar = useCallback(async (nlq?: string) => {
+  const cargar = useCallback(async (nlq?: string, usarPerfil = false) => {
     setError("");
     const params = new URLSearchParams();
     if (nlq || q) params.set("q", nlq || q);
@@ -43,8 +44,9 @@ export default function Oportunidades() {
     params.set("limit", "50");
     try {
       const res = q || nlq
-        ? await api<{ total: number; items: Opp[] }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q, departamento: departamento || undefined, municipio: municipio || undefined, modalidad: modalidad || undefined, valor_min: valorMin ? Number(valorMin.replace(/[^\d]/g, "")) : undefined, solo_con_score: soloScore }) })
-        : await api<{ total: number; items: Opp[] }>(`/api/opportunities?${params.toString()}`);
+        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q, departamento: departamento || undefined, municipio: municipio || undefined, modalidad: modalidad || undefined, valor_min: valorMin ? Number(valorMin.replace(/[^\d]/g, "")) : undefined, solo_con_score: soloScore }) })
+        : await api<{ total: number; items: Opp[]; profile_required?: boolean }>(`/api/opportunities?${params.toString()}&profile_match=${usarPerfil}`);
+      setPerfilRequerido(Boolean(res.profile_required));
       setItems(res.items);
       setTotal(res.total);
     } catch (e) {
@@ -57,9 +59,9 @@ export default function Oportunidades() {
     const inicial = new URLSearchParams(window.location.search).get("q");
     if (inicial) {
       setQ(inicial);
-      cargar(inicial);
+      cargar(inicial, false);
     } else {
-      cargar();
+      cargar(undefined, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -126,6 +128,7 @@ export default function Oportunidades() {
       </Card>
 
       {error ? <p className="text-xs text-red-600">{error}</p> : null}
+      {perfilRequerido ? <Card className="border-amber-300/60 bg-amber-50/70 dark:bg-amber-950/20"><p className="text-sm font-semibold">Completa primero el perfil de tu empresa</p><p className="text-muted mt-1 text-xs">Necesitamos tus actividades, productos o servicios y ubicación de interés para mostrar oportunidades relevantes.</p><Link href="/app/perfil" className="mt-3 inline-block text-sm font-semibold text-teal underline">Ir al perfil de empresa →</Link></Card> : null}
 
       {!items ? (
         <Spinner label="Consultando oportunidades…" />

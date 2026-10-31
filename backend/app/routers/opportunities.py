@@ -82,6 +82,7 @@ def list_opportunities(
     limit: int = Query(default=25, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     solo_con_score: bool = False,
+    profile_match: bool = False,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -89,7 +90,13 @@ def list_opportunities(
     profile = db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
     # Al abrir Oportunidades, el perfil es el filtro de entrada. Los filtros
     # escritos por el usuario tienen prioridad para permitir explorar después.
-    if solo_con_score and profile:
+    profile_configured = bool(profile and any([
+        (profile.sector or "").strip(), (profile.actividades or "").strip(),
+        (profile.productos_servicios or "").strip(), profile.keywords,
+    ]))
+    if profile_match and not profile_configured:
+        return {"total": 0, "items": [], "profile_configured": False, "profile_required": True}
+    if profile_match and profile:
         departamentos = [x for x in (profile.departamentos or []) if x and "toda" not in x.lower()]
         municipios = [x for x in (profile.municipios or []) if x and "todo" not in x.lower()]
         modalidades = [x for x in (profile.modalidades or []) if x and "toda" not in x.lower()]
@@ -142,7 +149,7 @@ def list_opportunities(
     items = []
     for opp in rows:
         uo = scores.get(opp.id)
-        if solo_con_score and (not uo or (uo.score or 0) < PROFILE_MATCH_MIN_SCORE):
+        if (solo_con_score or profile_match) and (not uo or (uo.score or 0) < (PROFILE_MATCH_MIN_SCORE if profile_match else 1)):
             continue
         if triage and (not uo or uo.triage != triage):
             continue
@@ -159,12 +166,12 @@ def list_opportunities(
                 continue
             if score_min is not None and (not uo or uo.score < score_min):
                 continue
-            if solo_con_score and (not uo or (uo.score or 0) < PROFILE_MATCH_MIN_SCORE):
+            if (solo_con_score or profile_match) and (not uo or (uo.score or 0) < (PROFILE_MATCH_MIN_SCORE if profile_match else 1)):
                 continue
             filtered.append(opp)
         total = len(filtered)
         items = [_serialize(o, scores.get(o.id)) for o in filtered[offset:offset + limit]]
-    return {"total": total, "items": items}
+    return {"total": total, "items": items, "profile_configured": profile_configured, "profile_required": False}
 
 
 @router.get("/opportunities/{opportunity_id}")
