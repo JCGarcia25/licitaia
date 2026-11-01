@@ -59,5 +59,7 @@ jobs:
           API_PORT="$3"
           cd "$APP_DIR"
           git pull --ff-only
+          docker builder prune -af
+          docker image prune -af
           DOMAIN="$DOMAIN" LICITAIA_API_PORT="$API_PORT" ./scripts/deploy.sh
           REMOTE

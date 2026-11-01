@@ -49,6 +49,11 @@ set_env LICITAIA_FRONTEND_PORT "$FRONTEND_PORT"
 info "Validando configuración Compose"
 "${COMPOSE[@]}" config --quiet
 
+info "Liberando caché e imágenes no utilizadas"
+# No se eliminan volúmenes: contienen la base de datos y el almacenamiento.
+docker builder prune -af
+docker image prune -af
+
 info "Iniciando únicamente la infraestructura de LicitaIA"
 "${COMPOSE[@]}" up -d db redis
 
@@ -57,6 +62,10 @@ info "Ejecutando migraciones"
 
 info "Construyendo y levantando LicitaIA"
 "${COMPOSE[@]}" up -d --build api worker beat frontend
+
+info "Limpiando caché e imágenes antiguas"
+docker builder prune -af
+docker image prune -af
 
 info "Esperando healthcheck de la API"
 for _ in {1..30}; do
