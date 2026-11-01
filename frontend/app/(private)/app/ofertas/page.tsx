@@ -54,6 +54,19 @@ export default function Ofertas() {
     }
   }
 
+  async function proyectarPropuesta() {
+    if (!sel) return;
+    const valor = window.prompt("¿Cuál es el valor de la propuesta a presentar en COP?", "");
+    if (!valor) return;
+    const numero = Number(valor.replace(/[^0-9.,]/g, "").replace(/\./g, "").replace(",", "."));
+    if (!Number.isFinite(numero) || numero <= 0) { setMsg("Indica un valor de propuesta válido y mayor que cero."); return; }
+    try {
+      const blob = await api<Blob>(`/api/offer-projects/${sel.id}/proyectar-propuesta`, { method: "POST", body: JSON.stringify({ valor_propuesta: numero }) });
+      descargarBlob(blob, `propuesta_proyectada_${sel.id}.docx`);
+      setMsg("Propuesta proyectada descargada. Revísala, complétala y apruébala antes de presentarla en SECOP.");
+    } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible proyectar la propuesta."); }
+  }
+
   async function cambiarEstado(status: string) {
     if (!sel) return;
     const r = await api<{ approved_by: string }>(`/api/offer-projects/${sel.id}/status`, {
@@ -178,6 +191,7 @@ export default function Ofertas() {
                   action={
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => generarBorrador("carta_presentacion")}>Carta de presentación</Button>
+                      <Button size="sm" variant="outline" onClick={proyectarPropuesta}>Proyectar propuesta</Button>
                       <Button size="sm" variant="outline" onClick={() => generarBorrador("matriz_cumplimiento")}>Matriz</Button>
                       <Button size="sm" variant="outline" onClick={() => generarBorrador("respuestas_tecnicas")}>Respuestas técnicas</Button>
                     </div>
@@ -200,7 +214,7 @@ export default function Ofertas() {
                     onChange={(e) => setComentario(e.target.value)}
                   />
                   <p className="text-muted text-[11px]">
-                    Nota: LicitaIA nunca genera certificaciones, experiencia ni firmas. La presentación en SECOP es manual.
+                    Nota: MySECOP nunca genera certificaciones, experiencia ni firmas. La presentación en SECOP es manual.
                   </p>
                 </div>
               </Card>

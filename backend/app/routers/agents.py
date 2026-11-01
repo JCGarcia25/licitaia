@@ -309,8 +309,8 @@ def add_borrador(project_id: int, data: BorradorIn, user: User = Depends(get_cur
             f"En calidad de representante legal de {nombre}, me permito presentar nuestra propuesta "
             f"para el proceso de referencia, la cual cumple con los requisitos habilitantes exigidos "
             f"en los pliegos de condiciones.\n\n"
-            f"NOTA: Borrador generado por LicitaIA. Debe ser revisado, completado y firmado por una "
-            f"persona autorizada antes de su presentación. LicitaIA no firma ni presenta propuestas."
+            f"NOTA: Borrador generado por MySECOP. Debe ser revisado, completado y firmado por una "
+            f"persona autorizada antes de su presentación. MySECOP no firma ni presenta propuestas."
         )
     elif data.tipo == "matriz_cumplimiento":
         analysis = db.query(Analysis).filter(Analysis.opportunity_id == p.opportunity_id).order_by(Analysis.created_at.desc()).first()
@@ -319,7 +319,7 @@ def add_borrador(project_id: int, data: BorradorIn, user: User = Depends(get_cur
             filas.append([str(i), (r.get("descripcion") or "")[:200], "Por verificar", "", r.get("referencia") or ""])
         contenido = "\n".join(" | ".join(fila) for fila in filas) if filas else "Sin análisis previo."
     else:  # respuestas_tecnicas
-        raise HTTPException(400, "Las respuestas técnicas requieren contenido proporcionado por el cliente (campo 'contenido'). LicitaIA no las inventa.")
+        raise HTTPException(400, "Las respuestas técnicas requieren contenido proporcionado por el cliente (campo 'contenido'). MySECOP no las inventa.")
     borradores = list(p.borradores or [])
     version = max([b.get("version", 1) for b in borradores if b.get("tipo") == data.tipo], default=0) + 1
     borradores.append({"tipo": data.tipo, "contenido": contenido, "version": version, "fecha": datetime.utcnow().isoformat(timespec="seconds")})
@@ -328,6 +328,43 @@ def add_borrador(project_id: int, data: BorradorIn, user: User = Depends(get_cur
     p.history = list(p.history or []) + [{"version": p.version, "accion": f"borrador {data.tipo} v{version}", "fecha": datetime.utcnow().isoformat(timespec="seconds")}]
     db.commit()
     return {"borradores": p.borradores}
+
+
+@router.post("/offer-projects/{project_id}/proyectar-propuesta")
+def proyectar_propuesta(project_id: int, payload: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Genera un Word editable con una propuesta económica proyectada."""
+    require_pro(db, user)
+    p = db.query(OfferProject).filter(OfferProject.id == project_id, OfferProject.user_id == user.id).first()
+    if not p:
+        raise HTTPException(404, "Proyecto no encontrado")
+    try:
+        valor = float(payload.get("valor_propuesta"))
+        if valor <= 0: raise ValueError
+    except (TypeError, ValueError):
+        raise HTTPException(422, "Indica un valor de propuesta válido y mayor que cero.")
+    documentos = db.query(Document).filter(Document.opportunity_id == p.opportunity_id, Document.user_id == user.id).count()
+    analisis = db.query(Analysis).filter(Analysis.opportunity_id == p.opportunity_id).order_by(Analysis.created_at.desc()).first()
+    if documentos == 0 or not analisis:
+        raise HTTPException(400, "Para proyectar la propuesta primero debes cargar y analizar los documentos del proceso desde el detalle de la oportunidad.")
+    opp = db.query(Opportunity).filter(Opportunity.id == p.opportunity_id).first()
+    perfil = db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
+    filas = [
+        ["PROYECCIÓN DE PROPUESTA ECONÓMICA — BORRADOR EDITABLE"],
+        ["Nota de revisión humana: este documento es una proyección y debe ser completado, verificado y aprobado por una persona autorizada antes de presentarlo en SECOP."],
+        ["Entidad contratante", opp.entidad if opp else "N/D"],
+        ["Objeto del proceso", opp.objeto if opp else "N/D"],
+        ["Número de proceso", opp.source_id if opp else "N/D"],
+        ["Proponente", (perfil.nombre_comercial if perfil else None) or "Completar"],
+        ["NIT", (perfil.nit if perfil else None) or "Completar"],
+        ["Valor total proyectado (COP)", f"${valor:,.0f}"],
+        ["Alcance y metodología", "Completar con base en las especificaciones técnicas y obligaciones del pliego."],
+        ["Experiencia y equipo", "Completar con información verificable de la empresa."],
+        ["Vigencia de la propuesta", "Completar según el pliego."],
+        ["Firma y aceptación", "Completar por el representante legal autorizado."],
+    ]
+    content = export_docx("Proyección de propuesta — MySECOP", [("Propuesta proyectada", filas)])
+    return Response(content=content, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    headers={"Content-Disposition": f'attachment; filename="propuesta_proyectada_{project_id}.docx"'})
 
 
 @router.post("/offer-projects/{project_id}/comentarios")
