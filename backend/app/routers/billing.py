@@ -159,7 +159,7 @@ def cancel_subscription(user: User = Depends(get_current_user), db: Session = De
     sub.checkout_url = None
     db.commit()
     log_action(db, user, "cancelar_suscripcion", "subscription", sub.id, {"provider": sub.provider})
-    return {"plan": sub.plan, "status": sub.status, "nombre": "MySECOP Free", "es_pro": False}
+    return current(user, db)
 
 
 @router.post("/mercadopago/webhook")

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { Button, Card, CardHeader } from "@/components/ui";
 
-type Billing = { plan: string; nombre: string; es_pro: boolean; status: string; usage: { used: number; limit: number } };
+type Billing = { plan: string; nombre: string; es_pro: boolean; status: string; usage?: { used: number; limit: number } };
 
 const free = ["Búsqueda en SECOP y filtros", "Compatibilidad básica con tu perfil", "Guardar y descartar oportunidades"];
 const pro = ["Todo lo incluido en Free", "Análisis de pliegos y anexos", "Evaluación de viabilidad", "Alertas y resumen por correo", "Preparador de ofertas y exportación", "Importación de documentos públicos"];
@@ -58,7 +58,7 @@ export default function PlanPage() {
   }
   return <div className="space-y-6">
     <div><Link href="/app" className="text-sm text-teal hover:underline">← Volver al dashboard</Link><h1 className="mt-3 text-2xl font-bold">Tu plan MySECOP</h1><p className="text-muted mt-1">Empieza gratis y desbloquea el flujo completo cuando estés listo para competir.</p></div>
-    {billing && <Card className="border-teal/30"><CardHeader title={billing.nombre} subtitle={`Consumo de análisis: ${billing.usage.used}/${billing.usage.limit} este mes · Estado: ${billing.status}`} /></Card>}
+    {billing && <Card className="border-teal/30"><CardHeader title={billing.nombre} subtitle={`Consumo de análisis: ${billing.usage?.used ?? 0}/${billing.usage?.limit ?? 0} este mes · Estado: ${billing.status}`} /></Card>}
     <div className="grid gap-5 md:grid-cols-2">
       <Card><CardHeader title="MySECOP Free" subtitle="Para descubrir oportunidades y crear el hábito." /><ul className="mt-4 space-y-2 text-sm">{free.map(x => <li key={x}>✓ {x}</li>)}</ul></Card>
       <Card className="border-teal shadow-lg shadow-teal/10"><CardHeader title="MySECOP Pro · $59.900/mes" subtitle="Para analizar, decidir y preparar propuestas más rápido." /><ul className="mt-4 space-y-2 text-sm">{pro.map(x => <li key={x} className="text-teal">✓ <span className="text-[var(--text)]">{x}</span></li>)}</ul><Button className="mt-6 w-full" onClick={solicitarPro} disabled={billing?.es_pro}>{billing?.es_pro ? "Plan Pro activo" : "Desbloquear MySECOP Pro"}</Button>{billing?.es_pro ? <Button variant="outline" className="mt-2 w-full text-red-300" onClick={cancelarSuscripcion}>Dar de baja la suscripción</Button> : null}{msg && <p className="mt-3 text-xs text-muted">{msg}</p>}</Card>
