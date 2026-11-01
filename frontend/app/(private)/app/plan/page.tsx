@@ -61,7 +61,7 @@ export default function PlanPage() {
     {billing && <Card className="border-teal/30"><CardHeader title={billing.nombre} subtitle={`Consumo de análisis: ${billing.usage?.used ?? 0}/${billing.usage?.limit ?? 0} este mes · Estado: ${billing.status}`} /></Card>}
     <div className="grid gap-5 md:grid-cols-2">
       <Card><CardHeader title="MySECOP Free" subtitle="Para descubrir oportunidades y crear el hábito." /><ul className="mt-4 space-y-2 text-sm">{free.map(x => <li key={x}>✓ {x}</li>)}</ul></Card>
-      <Card className="border-teal shadow-lg shadow-teal/10"><CardHeader title="MySECOP Pro · $59.900/mes" subtitle="Para analizar, decidir y preparar propuestas más rápido." /><ul className="mt-4 space-y-2 text-sm">{pro.map(x => <li key={x} className="text-teal">✓ <span className="text-[var(--text)]">{x}</span></li>)}</ul><Button className="mt-6 w-full" onClick={solicitarPro} disabled={billing?.es_pro}>{billing?.es_pro ? "Plan Pro activo" : "Desbloquear MySECOP Pro"}</Button>{billing?.es_pro ? <Button variant="outline" className="mt-2 w-full text-red-300" onClick={cancelarSuscripcion}>Dar de baja la suscripción</Button> : null}{msg && <p className="mt-3 text-xs text-muted">{msg}</p>}</Card>
+      <Card className="border-teal shadow-lg shadow-teal/10"><CardHeader title="MySECOP Pro · $59.900/mes" subtitle="Para analizar, decidir y preparar propuestas más rápido." /><ul className="mt-4 space-y-2 text-sm">{pro.map(x => <li key={x} className="text-teal">✓ <span className="text-[var(--text)]">{x}</span></li>)}</ul><Button className="mt-6 w-full" onClick={solicitarPro} disabled={billing?.es_pro}>{billing?.es_pro ? "Plan Pro activo" : "Desbloquear MySECOP Pro"}</Button>{billing?.es_pro ? <Button variant="outline" className="mt-2 w-full text-red-300" onClick={cancelarSuscripcion}>Dar de baja la suscripción</Button> : null}</Card>
     </div>
     <p className="text-muted text-xs">El pago se procesa en una ventana segura de Mercado Pago. MySECOP nunca presenta ofertas automáticamente en SECOP.</p>
     {showWelcome && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" role="presentation">
@@ -70,6 +70,14 @@ export default function PlanPage() {
         <h2 id="pro-welcome-title" className="mt-4 text-xl font-bold">¡Bienvenido, ahora eres Pro!</h2>
         <p className="text-muted mt-2 text-sm">Disfruta todas las funcionalidades de MySECOP Pro.</p>
         <Button className="mt-6 w-full" onClick={() => setShowWelcome(false)}>Continuar en MySECOP</Button>
+      </div>
+    </div>}
+    {msg && !showWelcome && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" role="presentation">
+      <div className="surface-card w-full max-w-md p-7 text-center" role="dialog" aria-modal="true" aria-labelledby="plan-message-title">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal/15 text-3xl text-teal">✓</div>
+        <h2 id="plan-message-title" className="mt-4 text-xl font-bold">Actualización de tu suscripción</h2>
+        <p className="text-muted mt-2 text-sm">{msg}</p>
+        <Button className="mt-6 w-full" onClick={() => setMsg("")}>Continuar en MySECOP</Button>
       </div>
     </div>}
   </div>;
