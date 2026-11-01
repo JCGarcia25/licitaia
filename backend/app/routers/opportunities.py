@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import cast, func, or_, Text
+from sqlalchemy import and_, cast, func, or_, Text
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user

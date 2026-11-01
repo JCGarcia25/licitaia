@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     mercadopago_back_url: str = "https://licitaia.centralspike.com/app/plan"
     quota_free_analyses: int = 20   # límite mensual de IA del plan explorador
     quota_pro_analyses: int = 500   # límite mensual de IA del plan profesional
-    contact_email: str = "contacto@licitaia.local"
+    contact_email: str = "jorge@zorbagames.com"
     # Protección contra picos: evita que el pool de workers/CPU se agote y que
     # el proxy termine mostrando 502 por upstream saturado.
     max_concurrent_requests: int = 32
