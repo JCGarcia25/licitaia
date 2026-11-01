@@ -342,10 +342,13 @@ def proyectar_propuesta(project_id: int, payload: dict, user: User = Depends(get
         if valor <= 0: raise ValueError
     except (TypeError, ValueError):
         raise HTTPException(422, "Indica un valor de propuesta válido y mayor que cero.")
-    documentos = db.query(Document).filter(Document.opportunity_id == p.opportunity_id, Document.user_id == user.id).count()
+    documentos = db.query(Document).filter(
+        Document.opportunity_id == p.opportunity_id,
+        (Document.user_id == user.id) | (Document.company_id == user.company_id),
+    ).count()
     analisis = db.query(Analysis).filter(Analysis.opportunity_id == p.opportunity_id).order_by(Analysis.created_at.desc()).first()
     if documentos == 0 or not analisis:
-        raise HTTPException(400, "Para proyectar la propuesta primero debes cargar y analizar los documentos del proceso desde el detalle de la oportunidad.")
+        raise HTTPException(400, "Para generar el Word, primero debes cargar los documentos del proceso en la oportunidad y analizarlos. Ve al detalle de la oportunidad, carga los pliegos y anexos oficiales y pulsa «Analizar documentos».")
     opp = db.query(Opportunity).filter(Opportunity.id == p.opportunity_id).first()
     perfil = db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
     filas = [
