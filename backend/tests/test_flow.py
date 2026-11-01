@@ -26,6 +26,13 @@ def test_flujo_integral(client, db):
     assert r.status_code == 201, r.text
     headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
 
+    # El flujo integral cubre funcionalidades Pro; activar la suscripción
+    # explícitamente evita depender del estado por defecto de una cuenta nueva.
+    from app.db.models import User, Subscription
+    flow_user = db.query(User).filter(User.email == "flow@licitaia.co").one()
+    db.add(Subscription(user_id=flow_user.id, plan="profesional", status="activa", provider="test"))
+    db.commit()
+
     r = client.put("/api/profile", json={
         "nombre_comercial": "TechSoft Andina", "razon_social": "TechSoft Andina S.A.S.",
         "nit": "901.234.567-8", "sector": "Tecnologías de la información",

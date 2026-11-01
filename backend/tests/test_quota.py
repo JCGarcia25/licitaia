@@ -34,11 +34,13 @@ def test_cuota_inicial_cambio_plan_y_consumo(client, db):
 
 
 def test_402_cuota_agotada_bloquea_analisis(client, db, auth_headers):
-    from app.db.models import User
+    from app.db.models import User, Subscription
 
     me = client.get("/api/auth/me", headers=auth_headers).json()
     u = db.query(User).filter(User.id == me["id"]).first()
-    for _ in range(get_plan_limits()["explorador"]):
+    db.add(Subscription(user_id=u.id, plan="profesional", status="activa", provider="test"))
+    db.commit()
+    for _ in range(get_plan_limits()["profesional"]):
         consume(db, u)
     estado = check_quota(db, u)
     assert estado["allowed"] is False
