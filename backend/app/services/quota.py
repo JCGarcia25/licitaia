@@ -47,6 +47,15 @@ def get_subscription(db: Session, user: User) -> Subscription:
     return sub
 
 
+def subscription_is_pro(sub: Subscription) -> bool:
+    """Pro permanece activo hasta el fin del periodo ya pagado."""
+    if sub.plan not in {"profesional", "corporativo"}:
+        return False
+    if sub.status == "activa":
+        return True
+    return sub.status == "cancelada_pendiente" and sub.current_period_end is not None and sub.current_period_end > datetime.utcnow()
+
+
 def check_quota(db: Session, user: User) -> dict:
     """Estado de consumo del mes. No consume: solo consulta."""
     sub = get_subscription(db, user)
@@ -71,7 +80,7 @@ def check_quota(db: Session, user: User) -> dict:
 def require_pro(db: Session, user: User) -> Subscription:
     """Bloquea capacidades de alto valor para cuentas Free."""
     sub = get_subscription(db, user)
-    if sub.plan not in {"profesional", "corporativo"} or sub.status != "activa":
+    if not subscription_is_pro(sub):
         raise HTTPException(402, "Esta función es exclusiva de MySECOP Pro. Actualiza tu plan para continuar.")
     return sub
 

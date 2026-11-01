@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { Button, Card, CardHeader } from "@/components/ui";
 
-type Billing = { plan: string; nombre: string; es_pro: boolean; status: string; usage?: { used: number; limit: number } };
+type Billing = { plan: string; nombre: string; es_pro: boolean; status: string; periodo_hasta?: string | null; mensaje_cancelacion?: string; usage?: { used: number; limit: number } };
 
 const free = ["Búsqueda en SECOP y filtros", "Compatibilidad básica con tu perfil", "Guardar y descartar oportunidades"];
 const pro = ["Todo lo incluido en Free", "Análisis de pliegos y anexos", "Evaluación de viabilidad", "Alertas y resumen por correo", "Preparador de ofertas y exportación", "Importación de documentos públicos"];
@@ -52,7 +52,7 @@ export default function PlanPage() {
     try {
       const next = await api<Billing>("/api/billing/cancel", { method: "POST" });
       setBilling(next);
-      setMsg("Tu suscripción fue cancelada. Ahora tienes el plan MySECOP Free.");
+      setMsg(next.mensaje_cancelacion || "La renovación fue cancelada. Tu acceso Pro seguirá activo hasta finalizar el periodo pagado.");
       window.dispatchEvent(new CustomEvent("mysecop:billing-updated", { detail: next }));
     } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible cancelar la suscripción."); }
   }

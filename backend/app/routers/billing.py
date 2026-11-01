@@ -2,6 +2,7 @@
 import hashlib
 import hmac
 import httpx
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -11,7 +12,7 @@ from app.db.models import Subscription, User
 from app.db.session import get_db
 from app.schemas import SubscribeIn
 from app.services.audit import log_action
-from app.services.quota import check_quota, get_plan_limits, get_subscription
+from app.services.quota import check_quota, get_plan_limits, get_subscription, subscription_is_pro
 
 router = APIRouter(prefix="/api/billing", tags=["suscripciones"])
 
@@ -50,8 +51,8 @@ def current(user: User = Depends(get_current_user), db: Session = Depends(get_db
     quota = check_quota(db, user)
     return {
         "plan": sub.plan,
-        "nombre": "MySECOP Pro" if sub.plan in {"profesional", "corporativo"} and sub.status == "activa" else "MySECOP Free",
-        "es_pro": sub.plan in {"profesional", "corporativo"} and sub.status == "activa",
+        "nombre": "MySECOP Pro" if subscription_is_pro(sub) else "MySECOP Free",
+        "es_pro": subscription_is_pro(sub),
         "precio_cop_mes": 59900 if sub.plan == "profesional" else (149900 if sub.plan == "corporativo" else 0),
         "status": sub.status,
         "provider": sub.provider,
@@ -59,6 +60,7 @@ def current(user: User = Depends(get_current_user), db: Session = Depends(get_db
         "external_id": sub.external_id,
         "usage": quota,
         "nota": "El acceso Pro solo se activa cuando Mercado Pago confirma la suscripción.",
+        "periodo_hasta": sub.current_period_end.isoformat() if subscription_is_pro(sub) and sub.current_period_end else None,
     }
 
 
@@ -154,12 +156,15 @@ def cancel_subscription(user: User = Depends(get_current_user), db: Session = De
             response.raise_for_status()
         except httpx.HTTPError as exc:
             raise HTTPException(502, "No fue posible cancelar la suscripción en Mercado Pago. Intenta nuevamente.") from exc
-    sub.plan = "explorador"
-    sub.status = "cancelada"
+    sub.status = "cancelada_pendiente"
+    if not sub.current_period_end or sub.current_period_end <= datetime.utcnow():
+        sub.current_period_end = datetime.utcnow() + timedelta(days=30)
     sub.checkout_url = None
     db.commit()
     log_action(db, user, "cancelar_suscripcion", "subscription", sub.id, {"provider": sub.provider})
-    return current(user, db)
+    result = current(user, db)
+    result["mensaje_cancelacion"] = f"Tu suscripción seguirá activa hasta el {sub.current_period_end:%d/%m/%Y}. Después de esa fecha pasarás automáticamente a MySECOP Free."
+    return result
 
 
 @router.post("/mercadopago/webhook")

@@ -1,4 +1,4 @@
-/* Landing comercial de LicitaIA. */
+/* Landing comercial de MySECOP. */
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme";
@@ -21,7 +21,7 @@ const BENEFICIOS = [
 ];
 
 const COMPARACION = [
-  ["Búsqueda manual en SECOP", "Búsqueda asistida con LicitaIA"],
+  ["Búsqueda manual en SECOP", "Búsqueda asistida con MySECOP"],
   ["Revisión periódica manual de portales", "Monitoreo automático cada 30 minutos"],
   ["Lectura completa de cientos de procesos", "Ranking de compatibilidad 0-100 con razones"],
   ["Interpretación humana de pliegos extensos", "Matriz de requisitos con citas y nivel de confianza"],
