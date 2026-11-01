@@ -1,10 +1,9 @@
 """Dashboard y oportunidades: filtros, buscador de lenguaje natural, triage, métricas."""
 from datetime import datetime, timedelta
 import re
-from itertools import combinations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, func, or_
+from sqlalchemy import cast, func, or_, Text
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
@@ -266,17 +265,14 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
             if word in {"movil", "moviles"}: variants += ["móvil", "móviles"]
             term_clauses.append(or_(*[
                 clause for variant in variants for clause in (
-                    Opportunity.objeto.ilike(f"%{variant}%"), Opportunity.descripcion.ilike(f"%{variant}%")
+                    Opportunity.objeto.ilike(f"%{variant}%"), Opportunity.descripcion.ilike(f"%{variant}%"),
+                    Opportunity.entidad.ilike(f"%{variant}%"), cast(Opportunity.raw_json, Text).ilike(f"%{variant}%")
                 )
             ]))
         if term_clauses:
-            # Términos genéricos por sí solos generan falsos positivos. Con
-            # 3+ términos exigimos al menos 2 coincidencias independientes;
-            # con 1-2 exigimos todas las coincidencias disponibles.
-            required = len(term_clauses) if len(term_clauses) < 3 else 2
-            query = query.filter(or_(*[
-                and_(*group) for group in combinations(term_clauses, required)
-            ]))
+            # Cada palabra relevante puede coincidir en cualquier campo del
+            # registro SECOP, incluidos entidad, descripción y datos crudos.
+            query = query.filter(or_(*term_clauses))
     if filtros.get("departamento"):
         query = query.filter(Opportunity.departamento.ilike(f"%{filtros['departamento']}%"))
     if filtros.get("municipio"):
