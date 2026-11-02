@@ -24,7 +24,7 @@ app = FastAPI(
         "Fuentes oficiales: SECOP II (datos.gov.co, Socrata). "
         "LicitaIA NO es una plataforma oficial del Gobierno colombiano."
     ),
-    docs_url="/docs",
+    docs_url="/docs" if settings.environment != "production" else None,
     openapi_url="/openapi.json",
 )
 
@@ -37,7 +37,14 @@ _request_slots = asyncio.Semaphore(max(1, settings.max_concurrent_requests))
 @app.middleware("http")
 async def overload_guard(request: Request, call_next):
     if request.url.path == "/health":
-        return await call_next(request)
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if settings.environment == "production":
+            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        return response
     try:
         await asyncio.wait_for(_request_slots.acquire(), timeout=settings.overload_wait_seconds)
     except asyncio.TimeoutError:
