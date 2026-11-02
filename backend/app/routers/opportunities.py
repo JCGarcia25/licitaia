@@ -1,6 +1,7 @@
 """Dashboard y oportunidades: filtros, buscador de lenguaje natural, triage, métricas."""
 from datetime import datetime, timedelta
 import re
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, cast, func, or_, Text
@@ -42,11 +43,10 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
         # This is only SECOP's login landing page, not the expediente. Do not
         # fabricate a noticeUID URL: SECOP rejects IDs that are not notices.
         url = None
-    consulta = {
-        "secop2_procesos": "https://www.datos.gov.co/Estad-sticas-Nacionales/SECOP-II-Procesos-de-Contrataci-n/p6dx-8zbt",
-        "secop2_contratos": "https://www.datos.gov.co/Estad-sticas-Nacionales/SECOP-II-Contratos-Electr-nicos/jbjy-vk9h",
-        "secop1": "https://www.datos.gov.co/",
-    }.get(opp.source, "https://www.datos.gov.co/")
+    if url:
+        host = (urlparse(url).hostname or "").lower()
+        if host not in {"community.secop.gov.co", "www.colombiacompra.gov.co", "colombiacompra.gov.co"}:
+            url = None
     return {
         "id": opp.id, "source": opp.source, "source_id": opp.source_id,
         "entidad": opp.entidad, "nit_entidad": opp.nit_entidad,
@@ -57,7 +57,8 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
         "estado": opp.estado, "fecha_publicacion": opp.fecha_publicacion,
         "fecha_cierre": opp.fecha_cierre,
         "url_oficial": url,
-        "url_consulta_secop": consulta,
+        # No se usa el dataset general como sustituto de un expediente.
+        "url_consulta_secop": None,
         "documentos_publicos_disponibles": _public_document_count(opp.raw_json or {}),
         "cancelled": opp.cancelled, "captured_at": opp.captured_at, "updated_at": opp.updated_at,
         "score": uo.score if uo else None,
