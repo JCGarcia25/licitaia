@@ -28,9 +28,13 @@ export default function Oportunidades() {
   const [soloScore, setSoloScore] = useState(true);
   const [error, setError] = useState("");
   const [perfilRequerido, setPerfilRequerido] = useState(false);
+  const [busquedaConPerfil, setBusquedaConPerfil] = useState(false);
   const router = useRouter();
 
   const cargar = useCallback(async (nlq?: string, usarPerfil = false) => {
+    const esBusquedaManual = Boolean(nlq || q);
+    const aplicarPerfil = !esBusquedaManual && (usarPerfil || busquedaConPerfil);
+    setBusquedaConPerfil(aplicarPerfil);
     setError("");
     const params = new URLSearchParams();
     if (nlq || q) params.set("q", nlq || q);
@@ -45,7 +49,7 @@ export default function Oportunidades() {
     try {
       const res = q || nlq
         ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q, departamento: departamento || undefined, municipio: municipio || undefined, modalidad: modalidad || undefined, valor_min: valorMin ? Number(valorMin.replace(/[^\d]/g, "")) : undefined, solo_con_score: soloScore }) })
-        : await api<{ total: number; items: Opp[]; profile_required?: boolean }>(`/api/opportunities?${params.toString()}&profile_match=${usarPerfil}`);
+        : await api<{ total: number; items: Opp[]; profile_required?: boolean }>(`/api/opportunities?${params.toString()}&profile_match=${aplicarPerfil}`);
       setPerfilRequerido(Boolean(res.profile_required));
       setItems(res.items);
       setTotal(res.total);
@@ -53,7 +57,7 @@ export default function Oportunidades() {
       setError(e instanceof Error ? e.message : "Error");
       setItems([]);
     }
-  }, [q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore]);
+  }, [q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore, busquedaConPerfil]);
 
   useEffect(() => {
     const inicial = new URLSearchParams(window.location.search).get("q");
@@ -68,7 +72,7 @@ export default function Oportunidades() {
 
   async function aplicarTriage(id: number, valor: string) {
     await api(`/api/opportunities/${id}/triaje`, { method: "POST", body: JSON.stringify({ triage: valor }) });
-    cargar();
+    cargar(undefined, busquedaConPerfil);
   }
 
   async function crearProyecto(id: number) {
