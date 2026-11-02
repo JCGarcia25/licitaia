@@ -47,6 +47,10 @@ body {
 ::selection { background: rgba(20, 184, 166, .3); }
 
 button, input, select, textarea { font-family: inherit; }
+select { color: var(--text); color-scheme: light; }
+select option { background: #ffffff; color: #132238; }
+.dark select { color-scheme: dark; }
+.dark select option { background: #0c2136; color: #e8f0f9; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(20,184,166,.28); outline-offset: 2px; }
 
 /* Scrollbar discreta */
