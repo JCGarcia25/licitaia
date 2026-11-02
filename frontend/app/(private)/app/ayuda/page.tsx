@@ -1,6 +1,7 @@
 "use client";
 import { FormEvent, useState } from "react";
 import { api } from "@/lib/api";
+import Link from "next/link";
 import { Button, Card, CardHeader, Field, Select, Textarea } from "@/components/ui";
 
 export default function AyudaPage() {
@@ -34,5 +35,6 @@ export default function AyudaPage() {
           <Button type="submit" disabled={estado === "enviando"}>{estado === "enviando" ? "Enviando…" : "Enviar a MySECOP"}</Button>
         </form>}
     </Card>
+    <Card className="border-teal/40 bg-teal/5"><CardHeader title="¿Requieres una licencia corporativa? Ahorra más" subtitle="Si quieres pagar una suscripción para cada vendedor de tu equipo, hablemos de una licencia comercial a tu medida." action={<Link href="/app/licencia-comercial" className="rounded-xl bg-teal px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-teal-light">Hablar con nosotros</Link>} /><p className="text-muted px-5 py-4 text-sm">Cuéntanos cuántas personas usarán MySECOP y te acompañaremos a elegir la mejor opción para tu empresa.</p></Card>
   </div>;
 }
