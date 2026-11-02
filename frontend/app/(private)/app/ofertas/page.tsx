@@ -25,8 +25,6 @@ export default function Ofertas() {
   const [sel, setSel] = useState<ProjectDetail | null>(null);
   const [comentario, setComentario] = useState("");
   const [msg, setMsg] = useState("");
-  const [propuestaAbierta, setPropuestaAbierta] = useState(false);
-  const [valorPropuesta, setValorPropuesta] = useState("");
 
   const cargarLista = useCallback(async () => {
     setLista(await api<Project[]>("/api/offer-projects"));
@@ -54,18 +52,6 @@ export default function Ofertas() {
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Error");
     }
-  }
-
-  async function proyectarPropuesta() {
-    if (!sel) return;
-    const numero = Number(valorPropuesta.replace(/[^0-9.,]/g, "").replace(/\./g, "").replace(",", "."));
-    if (!Number.isFinite(numero) || numero <= 0) { setMsg("Indica un valor de propuesta válido y mayor que cero."); return; }
-    try {
-      const blob = await api<Blob>(`/api/offer-projects/${sel.id}/proyectar-propuesta`, { method: "POST", body: JSON.stringify({ valor_propuesta: numero }) });
-      descargarBlob(blob, `propuesta_proyectada_${sel.id}.docx`);
-      setMsg("Propuesta proyectada descargada. Revísala, complétala y apruébala antes de presentarla en SECOP.");
-      setPropuestaAbierta(false); setValorPropuesta("");
-    } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible proyectar la propuesta."); }
   }
 
   async function cambiarEstado(status: string) {
@@ -192,7 +178,6 @@ export default function Ofertas() {
                   action={
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" onClick={() => generarBorrador("carta_presentacion")}>Carta de presentación</Button>
-                      <Button size="sm" variant="outline" onClick={() => setPropuestaAbierta(true)}>Proyectar propuesta</Button>
                       <Button size="sm" variant="outline" onClick={() => generarBorrador("matriz_cumplimiento")}>Matriz</Button>
                       <Button size="sm" variant="outline" onClick={() => generarBorrador("respuestas_tecnicas")}>Respuestas técnicas</Button>
                     </div>
@@ -236,7 +221,6 @@ export default function Ofertas() {
             </>
           )}
           {msg ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><div className="surface-card w-full max-w-md p-7 text-center"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal/15 text-3xl text-teal">✓</div><h2 className="mt-4 text-xl font-bold">Información del preparador</h2><p className="text-muted mt-2 text-sm">{msg}</p><Button className="mt-6 w-full" onClick={() => setMsg("")}>Continuar en MySECOP</Button></div></div> : null}
-          {propuestaAbierta ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"><div className="surface-card w-full max-w-md p-7" role="dialog" aria-modal="true"><h2 className="text-xl font-bold">Proyectar propuesta</h2><p className="text-muted mt-2 text-sm">Indica el valor total de la propuesta a presentar en pesos colombianos.</p><Input autoFocus type="number" min="1" step="1" className="mt-4" placeholder="Ej. 250000000" value={valorPropuesta} onChange={(e) => setValorPropuesta(e.target.value)} /><p className="text-muted mt-2 text-xs">Se generará un Word editable basado en el perfil de tu empresa y los documentos analizados del proceso.</p><div className="mt-5 flex gap-2"><Button variant="outline" className="flex-1" onClick={() => setPropuestaAbierta(false)}>Cancelar</Button><Button className="flex-1" onClick={proyectarPropuesta}>Generar Word</Button></div></div></div> : null}
         </div>
       </div>
     </div>

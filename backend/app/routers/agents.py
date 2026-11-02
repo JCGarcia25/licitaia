@@ -330,46 +330,6 @@ def add_borrador(project_id: int, data: BorradorIn, user: User = Depends(get_cur
     return {"borradores": p.borradores}
 
 
-@router.post("/offer-projects/{project_id}/proyectar-propuesta")
-def proyectar_propuesta(project_id: int, payload: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Genera un Word editable con una propuesta económica proyectada."""
-    require_pro(db, user)
-    p = db.query(OfferProject).filter(OfferProject.id == project_id, OfferProject.user_id == user.id).first()
-    if not p:
-        raise HTTPException(404, "Proyecto no encontrado")
-    try:
-        valor = float(payload.get("valor_propuesta"))
-        if valor <= 0: raise ValueError
-    except (TypeError, ValueError):
-        raise HTTPException(422, "Indica un valor de propuesta válido y mayor que cero.")
-    documentos = db.query(Document).filter(
-        Document.opportunity_id == p.opportunity_id,
-        (Document.user_id == user.id) | (Document.company_id == user.company_id),
-    ).count()
-    analisis = db.query(Analysis).filter(Analysis.opportunity_id == p.opportunity_id).order_by(Analysis.created_at.desc()).first()
-    if documentos == 0 or not analisis:
-        raise HTTPException(400, "Para generar el Word, primero debes cargar los documentos del proceso en la oportunidad y analizarlos. Ve al detalle de la oportunidad, carga los pliegos y anexos oficiales y pulsa «Analizar documentos».")
-    opp = db.query(Opportunity).filter(Opportunity.id == p.opportunity_id).first()
-    perfil = db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
-    filas = [
-        ["PROYECCIÓN DE PROPUESTA ECONÓMICA — BORRADOR EDITABLE"],
-        ["Nota de revisión humana: este documento es una proyección y debe ser completado, verificado y aprobado por una persona autorizada antes de presentarlo en SECOP."],
-        ["Entidad contratante", opp.entidad if opp else "N/D"],
-        ["Objeto del proceso", opp.objeto if opp else "N/D"],
-        ["Número de proceso", opp.source_id if opp else "N/D"],
-        ["Proponente", (perfil.nombre_comercial if perfil else None) or "Completar"],
-        ["NIT", (perfil.nit if perfil else None) or "Completar"],
-        ["Valor total proyectado (COP)", f"${valor:,.0f}"],
-        ["Alcance y metodología", "Completar con base en las especificaciones técnicas y obligaciones del pliego."],
-        ["Experiencia y equipo", "Completar con información verificable de la empresa."],
-        ["Vigencia de la propuesta", "Completar según el pliego."],
-        ["Firma y aceptación", "Completar por el representante legal autorizado."],
-    ]
-    content = export_docx("Proyección de propuesta — MySECOP", [("Propuesta proyectada", filas)])
-    return Response(content=content, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    headers={"Content-Disposition": f'attachment; filename="propuesta_proyectada_{project_id}.docx"'})
-
-
 @router.post("/offer-projects/{project_id}/comentarios")
 def add_comment(project_id: int, data: CommentIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     p = db.query(OfferProject).filter(OfferProject.id == project_id, OfferProject.user_id == user.id).first()
