@@ -29,9 +29,11 @@ export default function Oportunidades() {
   const [error, setError] = useState("");
   const [perfilRequerido, setPerfilRequerido] = useState(false);
   const [busquedaConPerfil, setBusquedaConPerfil] = useState(false);
+  const [pagina, setPagina] = useState(1);
+  const TAMANO_PAGINA = 25;
   const router = useRouter();
 
-  const cargar = useCallback(async (nlq?: string, usarPerfil = false) => {
+  const cargar = useCallback(async (nlq?: string, usarPerfil = false, paginaSolicitada = pagina) => {
     const esBusquedaManual = Boolean(nlq || q);
     const aplicarPerfil = !esBusquedaManual && (usarPerfil || busquedaConPerfil);
     setBusquedaConPerfil(aplicarPerfil);
@@ -45,10 +47,11 @@ export default function Oportunidades() {
     if (scoreMin) params.set("score_min", scoreMin);
     if (triage) params.set("triage", triage);
     params.set("solo_con_score", String(soloScore));
-    params.set("limit", "50");
+    params.set("limit", String(TAMANO_PAGINA));
+    params.set("offset", String((paginaSolicitada - 1) * TAMANO_PAGINA));
     try {
       const res = q || nlq
-        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q, departamento: departamento || undefined, municipio: municipio || undefined, modalidad: modalidad || undefined, valor_min: valorMin ? Number(valorMin.replace(/[^\d]/g, "")) : undefined, solo_con_score: soloScore }) })
+        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q, departamento: departamento || undefined, municipio: municipio || undefined, modalidad: modalidad || undefined, valor_min: valorMin ? Number(valorMin.replace(/[^\d]/g, "")) : undefined, solo_con_score: soloScore, limit: TAMANO_PAGINA, offset: (paginaSolicitada - 1) * TAMANO_PAGINA }) })
         : await api<{ total: number; items: Opp[]; profile_required?: boolean }>(`/api/opportunities?${params.toString()}&profile_match=${aplicarPerfil}`);
       setPerfilRequerido(Boolean(res.profile_required));
       setItems(res.items);
@@ -57,7 +60,7 @@ export default function Oportunidades() {
       setError(e instanceof Error ? e.message : "Error");
       setItems([]);
     }
-  }, [q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore, busquedaConPerfil]);
+  }, [q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore, busquedaConPerfil, pagina]);
 
   useEffect(() => {
     const inicial = new URLSearchParams(window.location.search).get("q");
@@ -73,6 +76,11 @@ export default function Oportunidades() {
   async function aplicarTriage(id: number, valor: string) {
     await api(`/api/opportunities/${id}/triaje`, { method: "POST", body: JSON.stringify({ triage: valor }) });
     cargar(undefined, busquedaConPerfil);
+  }
+
+  function nuevaBusqueda() {
+    setPagina(1);
+    cargar(undefined, false, 1);
   }
 
   async function crearProyecto(id: number) {
@@ -97,7 +105,7 @@ export default function Oportunidades() {
         <div className="flex gap-2">
           <Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && cargar()}
             placeholder='Búsqueda: texto libre o en lenguaje natural ("procesos abiertos de software en Bogotá superiores a 200 millones")' />
-          <Button onClick={() => cargar()}>Buscar</Button>
+          <Button onClick={nuevaBusqueda}>Buscar</Button>
         </div>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
           <Select value={departamento} onChange={(e) => { setDepartamento(e.target.value); setMunicipio(""); }}>
@@ -181,6 +189,13 @@ export default function Oportunidades() {
                 </div>
               </Card>
             ))}
+          </div>
+          <div className="flex items-center justify-between border-t border-base pt-4 text-xs">
+            <span className="text-muted">Página {pagina} de {Math.max(1, Math.ceil(total / TAMANO_PAGINA))}</span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" disabled={pagina <= 1} onClick={() => { const next = pagina - 1; setPagina(next); cargar(undefined, busquedaConPerfil, next); }}>Anterior</Button>
+              <Button size="sm" variant="outline" disabled={pagina * TAMANO_PAGINA >= total} onClick={() => { const next = pagina + 1; setPagina(next); cargar(undefined, busquedaConPerfil, next); }}>Siguiente</Button>
+            </div>
           </div>
         </>
       )}

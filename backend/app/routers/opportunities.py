@@ -288,13 +288,16 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         query = query.filter(Opportunity.valor <= filtros["valor_max"])
     if filtros.get("publicado_dias"):
         query = query.filter(Opportunity.fecha_publicacion >= datetime.utcnow() - timedelta(days=filtros["publicado_dias"]))
-    rows = query.order_by(Opportunity.updated_at.desc()).limit(50).all()
+    limit = min(max(int(payload.get("limit", 25)), 1), 100)
+    offset = max(int(payload.get("offset", 0)), 0)
+    rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
     scores = _user_scores(db, user.id)
     if payload.get("solo_con_score", True):
         # En búsquedas manuales el perfil no impone el umbral inicial; la
         # casilla solo exige que exista una puntuación calculada (> 0).
         rows = [o for o in rows if scores.get(o.id) is not None and (scores[o.id].score or 0) > 0]
-    return {"filtros_interpretados": filtros, "total": len(rows),
+    total = query.count()
+    return {"filtros_interpretados": filtros, "total": total,
             "items": [_serialize(o, scores.get(o.id)) for o in rows]}
 
 
