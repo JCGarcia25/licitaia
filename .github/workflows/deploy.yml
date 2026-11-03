@@ -48,11 +48,18 @@ jobs:
           test -n "$VPS_USER" || { echo "Missing VPS_USER" >&2; exit 1; }
           test -n "$VPS_DOMAIN" || { echo "Missing VPS_DOMAIN" >&2; exit 1; }
 
-          ssh -i "$HOME/.ssh/licitaia_deploy" \
-            -p "$VPS_PORT" \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes \
-            "$VPS_USER@$VPS_HOST" bash -s -- "$VPS_APP_DIR" "$VPS_DOMAIN" "$VPS_API_PORT" <<'REMOTE'
+          ssh_args=(
+            -i "$HOME/.ssh/licitaia_deploy"
+            -p "$VPS_PORT"
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=yes
+            -o ConnectTimeout=15
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=3
+          )
+          for intento in 1 2 3; do
+            echo "Conectando al VPS (intento $intento/3)..."
+            if ssh "${ssh_args[@]}" "$VPS_USER@$VPS_HOST" bash -s -- "$VPS_APP_DIR" "$VPS_DOMAIN" "$VPS_API_PORT" <<'REMOTE'
           set -Eeuo pipefail
           APP_DIR="$1"
           DOMAIN="$2"
@@ -63,3 +70,11 @@ jobs:
           docker image prune -af
           DOMAIN="$DOMAIN" LICITAIA_API_PORT="$API_PORT" ./scripts/deploy.sh
           REMOTE
+            then
+              exit 0
+            fi
+            codigo=$?
+            echo "SSH terminó con código $codigo" >&2
+            [[ "$intento" -lt 3 ]] || exit "$codigo"
+            sleep $((intento * 5))
+          done
