@@ -51,9 +51,6 @@ info "Validando configuración Compose"
 
 info "Liberando caché e imágenes no utilizadas"
 # No se eliminan volúmenes: contienen la base de datos y el almacenamiento.
-docker builder prune -af
-docker image prune -af
-
 info "Iniciando únicamente la infraestructura de LicitaIA"
 "${COMPOSE[@]}" up -d db redis
 
