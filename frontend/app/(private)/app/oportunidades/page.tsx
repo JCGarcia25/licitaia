@@ -51,7 +51,7 @@ export default function Oportunidades() {
     params.set("offset", String((paginaSolicitada - 1) * TAMANO_PAGINA));
     try {
       const res = q || nlq
-        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q, departamento: departamento || undefined, municipio: municipio || undefined, modalidad: modalidad || undefined, valor_min: valorMin ? Number(valorMin.replace(/[^\d]/g, "")) : undefined, solo_con_score: soloScore, limit: TAMANO_PAGINA, offset: (paginaSolicitada - 1) * TAMANO_PAGINA }) })
+        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q, departamento: departamento || undefined, municipio: municipio || undefined, modalidad: modalidad || undefined, valor_min: valorMin ? Number(valorMin.replace(/[^\d]/g, "")) : undefined, score_min: scoreMin ? Number(scoreMin) : undefined, triage: triage || undefined, solo_con_score: soloScore, limit: TAMANO_PAGINA, offset: (paginaSolicitada - 1) * TAMANO_PAGINA }) })
         : await api<{ total: number; items: Opp[]; profile_required?: boolean }>(`/api/opportunities?${params.toString()}&profile_match=${aplicarPerfil}`);
       setPerfilRequerido(Boolean(res.profile_required));
       setItems(res.items);

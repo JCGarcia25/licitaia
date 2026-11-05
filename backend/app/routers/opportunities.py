@@ -94,6 +94,7 @@ def list_opportunities(
     profile_configured = bool(profile and any([
         (profile.sector or "").strip(), (profile.actividades or "").strip(),
         (profile.productos_servicios or "").strip(), profile.keywords,
+        profile.departamentos, profile.municipios, profile.modalidades,
     ]))
     if profile_match and not profile_configured:
         return {"total": 0, "items": [], "profile_configured": False, "profile_required": True}
@@ -151,34 +152,25 @@ def list_opportunities(
     if valor_max is not None:
         query = query.filter(Opportunity.valor <= valor_max)
 
+    # Los filtros de puntuación/triage deben aplicarse en SQL antes de contar y
+    # paginar. Antes se paginaban primero y se filtraban después, provocando
+    # páginas vacías aunque existieran coincidencias en páginas posteriores.
+    user_opp = db.query(UserOpportunity).filter(
+        UserOpportunity.user_id == user.id,
+        UserOpportunity.opportunity_id == Opportunity.id,
+    )
+    if solo_con_score or profile_match:
+        min_score = PROFILE_MATCH_MIN_SCORE if profile_match else 1
+        query = query.filter(user_opp.filter(UserOpportunity.score >= min_score).exists())
+    if triage:
+        query = query.filter(user_opp.filter(UserOpportunity.triage == triage).exists())
+    if score_min is not None:
+        query = query.filter(user_opp.filter(UserOpportunity.score >= score_min).exists())
+
     scores = _user_scores(db, user.id)
-    rows = query.order_by(Opportunity.updated_at.desc()).offset(offset).limit(limit).all()
     total = query.count()
-    items = []
-    for opp in rows:
-        uo = scores.get(opp.id)
-        if (solo_con_score or profile_match) and (not uo or (uo.score or 0) < (PROFILE_MATCH_MIN_SCORE if profile_match else 1)):
-            continue
-        if triage and (not uo or uo.triage != triage):
-            continue
-        if score_min is not None and (not uo or uo.score < score_min):
-            continue
-        items.append(_serialize(opp, uo))
-    if triage or score_min is not None or solo_con_score:
-        # filtra también dentro del total real
-        all_rows = query.all()
-        filtered = []
-        for opp in all_rows:
-            uo = scores.get(opp.id)
-            if triage and (not uo or uo.triage != triage):
-                continue
-            if score_min is not None and (not uo or uo.score < score_min):
-                continue
-            if (solo_con_score or profile_match) and (not uo or (uo.score or 0) < (PROFILE_MATCH_MIN_SCORE if profile_match else 1)):
-                continue
-            filtered.append(opp)
-        total = len(filtered)
-        items = [_serialize(o, scores.get(o.id)) for o in filtered[offset:offset + limit]]
+    rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
+    items = [_serialize(opp, scores.get(opp.id)) for opp in rows]
     return {"total": total, "items": items, "profile_configured": profile_configured, "profile_required": False}
 
 
@@ -292,11 +284,26 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
     offset = max(int(payload.get("offset", 0)), 0)
     rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
     scores = _user_scores(db, user.id)
-    if payload.get("solo_con_score", True):
+    solo_con_score = bool(payload.get("solo_con_score", False))
+    score_min = payload.get("score_min")
+    triage = payload.get("triage")
+    user_opp = db.query(UserOpportunity).filter(
+        UserOpportunity.user_id == user.id,
+        UserOpportunity.opportunity_id == Opportunity.id,
+    )
+    if solo_con_score:
         # En búsquedas manuales el perfil no impone el umbral inicial; la
         # casilla solo exige que exista una puntuación calculada (> 0).
-        rows = [o for o in rows if scores.get(o.id) is not None and (scores[o.id].score or 0) > 0]
+        query = query.filter(user_opp.filter(UserOpportunity.score > 0).exists())
+    if score_min is not None:
+        try:
+            query = query.filter(user_opp.filter(UserOpportunity.score >= float(score_min)).exists())
+        except (TypeError, ValueError):
+            raise HTTPException(422, "El puntaje mínimo no es válido")
+    if triage:
+        query = query.filter(user_opp.filter(UserOpportunity.triage == triage).exists())
     total = query.count()
+    rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
     return {"filtros_interpretados": filtros, "total": total,
             "items": [_serialize(o, scores.get(o.id)) for o in rows]}
 
