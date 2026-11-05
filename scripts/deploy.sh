@@ -58,7 +58,7 @@ info "Ejecutando migraciones"
 "${COMPOSE[@]}" run --rm migrate
 
 info "Construyendo y levantando LicitaIA"
-"${COMPOSE[@]}" up -d --build api worker beat frontend
+"${COMPOSE[@]}" up -d --build --remove-orphans api worker beat frontend
 
 info "Limpiando caché e imágenes antiguas"
 # Conserva la caché reciente para que el siguiente despliegue no reinstale
