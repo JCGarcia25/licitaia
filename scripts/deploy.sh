@@ -61,7 +61,9 @@ info "Construyendo y levantando LicitaIA"
 "${COMPOSE[@]}" up -d --build api worker beat frontend
 
 info "Limpiando caché e imágenes antiguas"
-docker builder prune -af
+# Conserva la caché reciente para que el siguiente despliegue no reinstale
+# todas las dependencias; elimina únicamente caché con más de 7 días.
+docker builder prune -af --filter until=168h
 docker image prune -af
 
 info "Esperando healthcheck de la API"
