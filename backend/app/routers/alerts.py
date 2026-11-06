@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
-from app.db.models import Alert, AlertPrefs, User, UserOpportunity, Opportunity
+from app.db.models import Alert, AlertPrefs, CompanyProfile, User, UserOpportunity, Opportunity
 from app.db.session import get_db
 from app.schemas import AlertPrefsIn
 from app.services import alerts as alerts_service
@@ -66,6 +66,16 @@ def put_prefs(data: AlertPrefsIn, user: User = Depends(get_current_user), db: Se
     prefs.close_days = data.close_days
     prefs.digest_hour = data.digest_hour
     db.commit()
+    # En cuentas nuevas puede no existir todavía ningún score. Calculamos el
+    # perfil una sola vez al guardar preferencias para que la bandeja pueda
+    # generar alertas inmediatamente, sin esperar al ciclo del worker.
+    tiene_scores = db.query(UserOpportunity.id).filter(
+        UserOpportunity.user_id == user.id,
+        UserOpportunity.score.isnot(None),
+        UserOpportunity.score > 0,
+    ).first()
+    if not tiene_scores and db.query(CompanyProfile.id).filter(CompanyProfile.user_id == user.id).first():
+        alerts_service.rescore_user(db, user.id)
     # Recalcula las alertas de compatibilidad con el nuevo umbral para que la
     # bandeja se actualice inmediatamente, sin esperar al worker programado.
     created = alerts_service.create_alerts_for_user(db, user.id, high_score=data.high_score_threshold)
