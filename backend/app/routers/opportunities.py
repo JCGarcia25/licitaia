@@ -351,7 +351,7 @@ def metrics(user: User = Depends(get_current_user), db: Session = Depends(get_db
     # documentos pendientes dentro de ofertas existentes, no análisis sueltos.
     proyectos_oferta = db.query(OfferProject).filter(
         OfferProject.user_id == user.id,
-        OfferProject.status != "archivado",
+        OfferProject.status == "activo",
     ).all()
     docs_pendientes = sum(
         1 for proyecto in proyectos_oferta
@@ -379,6 +379,7 @@ def metrics(user: User = Depends(get_current_user), db: Session = Depends(get_db
         "guardadas": len(guardadas),
         "descartadas": len(descartadas),
         "proyectos_propuesta": len(proyectos),
+        "ofertas_activas": len(proyectos_oferta),
         "documentos_pendientes": docs_pendientes,
         "alertas_no_leidas": alertas_no_leidas,
         "tendencia_mensual": [{"mes": k, "total": v} for k, v in tendencia.items()],

@@ -16,6 +16,7 @@ type Metrics = {
   descartadas: number;
   proyectos_propuesta: number;
   documentos_pendientes: number;
+  ofertas_activas: number;
   alertas_no_leidas: number;
   tendencia_mensual: { mes: string; total: number }[];
 };
@@ -70,7 +71,7 @@ export default function Dashboard() {
     { t: "Compatibles con tu perfil", v: m.alta_compatibilidad, tone: "green" as const, help: "Compatibilidad de 70% o más." },
     { t: "Procesos nuevos", v: m.procesos_nuevos_base, tone: "teal" as const, help: "Publicados en los últimos 7 días." },
     { t: "Próximos a cerrar", v: m.proximos_a_cerrar, tone: "amber" as const, help: "Procesos guardados con cierre cercano." },
-    { t: "Documentos por revisar", v: m.documentos_pendientes, tone: "purple" as const, help: "Pendientes dentro de tus ofertas." },
+    { t: "Ofertas activas", v: m.ofertas_activas, tone: "purple" as const, help: "Proyectos activos en el preparador." },
   ];
 
   return (
