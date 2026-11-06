@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "@/lib/api";
 import { Badge, Button, Card, CardHeader, EmptyState, fmtCOP, Input, Spinner, scoreTone } from "@/components/ui";
 
@@ -56,14 +55,10 @@ export default function Dashboard() {
   if (!m) return <Spinner />;
 
   const kpis = [
-    { t: "Oportunidades detectadas", v: m.oportunidades_detectadas, tone: "blue" as const },
-    { t: "Procesos nuevos (7 días)", v: m.procesos_nuevos_base, tone: "teal" as const },
-    { t: "Alta compatibilidad", v: m.alta_compatibilidad, tone: "green" as const },
-    { t: "Próximas a cerrar", v: m.proximos_a_cerrar, tone: "amber" as const },
-    { t: "Guardadas", v: m.guardadas, tone: "blue" as const },
-    { t: "Proyectos de propuesta", v: m.proyectos_propuesta, tone: "purple" as const },
-    { t: "Docs. por revisar", v: m.documentos_pendientes, tone: "amber" as const },
-    { t: "Descartadas", v: m.descartadas, tone: "gray" as const },
+    { t: "Compatibles con tu perfil", v: m.alta_compatibilidad, tone: "green" as const, help: "Compatibilidad de 70% o más." },
+    { t: "Procesos nuevos", v: m.procesos_nuevos_base, tone: "teal" as const, help: "Publicados en los últimos 7 días." },
+    { t: "Próximos a cerrar", v: m.proximos_a_cerrar, tone: "amber" as const, help: "Procesos guardados con cierre cercano." },
+    { t: "Documentos por revisar", v: m.documentos_pendientes, tone: "purple" as const, help: "Análisis pendientes de revisión." },
   ];
 
   return (
@@ -87,35 +82,12 @@ export default function Dashboard() {
           <Card key={k.t} className="p-4">
             <p className="text-muted text-xs">{k.t}</p>
             <p className="mt-1 text-2xl font-bold tracking-tight">{k.v}</p>
-            <div className="mt-2"><Badge tone={k.tone}>live</Badge></div>
+            <p className="text-muted my-2 text-[11px]">{k.help}</p><Badge tone={k.tone}>{k.v ? "Revisar" : "Al día"}</Badge>
           </Card>
         ))}
       </div>
 
-      {/* Valor agregado */}
-      <Card className="p-5">
-        <p className="text-muted text-xs">Valor agregado de oportunidades de alta compatibilidad</p>
-        <p className="mt-1 text-3xl font-extrabold text-teal">{fmtCOP(m.valor_agregado_cop)}</p>
-        <p className="text-muted mt-1 text-[11px]">Suma de valores estimados de procesos con compatibilidad ≥ 70.</p>
-      </Card>
-
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Tendencia */}
-        <Card>
-          <CardHeader title="Tendencia de oportunidades por mes" subtitle="Según fecha de publicación en la fuente" />
-          <div className="h-64 p-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={m.tendencia_mensual}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={28} />
-                <Tooltip contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12 }} />
-                <Bar dataKey="total" fill="#14B8A6" radius={[6, 6, 0, 0]} name="Oportunidades" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
         {/* Top oportunidades */}
         <Card>
           <CardHeader
@@ -141,6 +113,14 @@ export default function Dashboard() {
               ))}
             </div>
           )}
+        </Card>
+        <Card className="p-5">
+          <h2 className="text-sm font-semibold">Qué puedes hacer ahora</h2>
+          <div className="mt-4 space-y-3 text-sm">
+            <Link href="/app/perfil" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">1. Completa tu perfil</span><span className="text-muted mt-1 block text-xs">Define actividades, ubicaciones, presupuesto y modalidades.</span></Link>
+            <Link href="/app/oportunidades" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">2. Revisa oportunidades</span><span className="text-muted mt-1 block text-xs">Filtra procesos y abre el expediente oficial en SECOP.</span></Link>
+            <Link href="/app/alertas" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">3. Activa alertas</span><span className="text-muted mt-1 block text-xs">Recibe avisos cuando aparezcan procesos compatibles.</span></Link>
+          </div>
         </Card>
       </div>
     </div>
