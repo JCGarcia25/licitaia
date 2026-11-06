@@ -49,9 +49,6 @@ export default function IniciarSesion() {
         <p className="text-muted mt-5 text-xs">
           ¿No tienes cuenta? <Link href="/registro" className="text-teal font-medium hover:underline">Regístrate gratis</Link>
         </p>
-        <p className="text-muted mt-3 rounded-lg border border-base bg-[var(--bg)] px-3 py-2 text-[11px]">
-          Demostración: <code>demo@licitaia.co</code> / <code>LicitAIA2026</code> (datos de ejemplo con datos ilustrativos)
-        </p>
       </div>
       </div>
   );
