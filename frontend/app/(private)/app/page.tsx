@@ -36,7 +36,19 @@ export default function Dashboard() {
     setM(metrics);
     // Mantener el mismo criterio que la vista Oportunidades: solo procesos
     // compatibles con el perfil y con una puntuación mínima significativa.
-    const res = await api<{ items: Opp[] }>("/api/opportunities?limit=50&score_min=40&solo_con_score=true&profile_match=true");
+    let res = await api<{ items: Opp[] }>("/api/opportunities?limit=50&score_min=40&solo_con_score=true&profile_match=true");
+    if (!res.items.length) {
+      try {
+        await api("/api/rescore", { method: "POST" });
+        res = await api<{ items: Opp[] }>("/api/opportunities?limit=50&score_min=40&solo_con_score=true&profile_match=true");
+      } catch {
+        // Perfil incompleto: se conserva el estado vacío guiado.
+      }
+    }
+    if (!res.items.length) {
+      // Evita dejar el dashboard vacío cuando solo hay coincidencias medias.
+      res = await api<{ items: Opp[] }>("/api/opportunities?limit=50&score_min=1&solo_con_score=true&profile_match=false");
+    }
     setTop(res.items
       .filter((o) => o.score !== null)
       .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
@@ -96,7 +108,7 @@ export default function Dashboard() {
             action={<Link href="/app/oportunidades"><Button variant="outline" size="sm">Ver todas</Button></Link>}
           />
           {top.length === 0 ? (
-            <EmptyState title="Aún no hay oportunidades puntuadas" body="Completa tu perfil y ejecuta el agente desde Oportunidades." />
+            <EmptyState title="Aún no encontramos coincidencias" body="Completa tu perfil y revisa Oportunidades para calcular las mejores coincidencias disponibles." />
           ) : (
             <div className="divide-y divide-[var(--border)]">
               {top.map((o) => (
