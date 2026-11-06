@@ -13,6 +13,10 @@ type Opp = {
   score: number | null; triage: string; reasons: Reason[]; url_oficial: string | null; cancelled: boolean;
   documentos_publicos_disponibles?: number; url_consulta_secop?: string;
 };
+type SearchState = {
+  q?: string; departamento?: string; municipio?: string; modalidad?: string;
+  valorMin?: string; scoreMin?: string; triage?: string; soloScore?: boolean;
+};
 const DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bogotá D.C.", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "Santander", "Sucre", "Tolima", "Valle del Cauca"];
 
 export default function Oportunidades() {
@@ -33,29 +37,39 @@ export default function Oportunidades() {
   const TAMANO_PAGINA = 25;
   const router = useRouter();
 
-  const cargar = useCallback(async (nlq?: string, usarPerfil = false, paginaSolicitada = pagina) => {
-    const esBusquedaManual = Boolean(nlq || q);
+  const cargar = useCallback(async (nlq?: string, usarPerfil = false, paginaSolicitada = pagina, override?: SearchState) => {
+    const estado = override || { q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore };
+    const consulta = nlq ?? estado.q ?? "";
+    const tieneFiltros = Boolean(estado.departamento || estado.municipio || estado.modalidad || estado.valorMin || estado.scoreMin || estado.triage);
+    const esBusquedaManual = Boolean(consulta || (!usarPerfil && tieneFiltros));
     const aplicarPerfil = !esBusquedaManual && (usarPerfil || busquedaConPerfil);
     setBusquedaConPerfil(aplicarPerfil);
     setError("");
     const params = new URLSearchParams();
-    if (nlq || q) params.set("q", nlq || q);
-    if (departamento) params.set("departamento", departamento);
-    if (municipio) params.set("municipio", municipio);
-    if (modalidad) params.set("modalidad", modalidad);
-    if (valorMin) params.set("valor_min", valorMin.replace(/[^\d]/g, ""));
-    if (scoreMin) params.set("score_min", scoreMin);
-    if (triage) params.set("triage", triage);
-    params.set("solo_con_score", String(soloScore));
+    if (consulta) params.set("q", consulta);
+    if (estado.departamento) params.set("departamento", estado.departamento);
+    if (estado.municipio) params.set("municipio", estado.municipio);
+    if (estado.modalidad) params.set("modalidad", estado.modalidad);
+    if (estado.valorMin) params.set("valor_min", estado.valorMin.replace(/[^\d]/g, ""));
+    if (estado.scoreMin) params.set("score_min", estado.scoreMin);
+    if (estado.triage) params.set("triage", estado.triage);
+    params.set("solo_con_score", String(estado.soloScore ?? soloScore));
+    if (esBusquedaManual) params.set("modo", "busqueda");
     params.set("limit", String(TAMANO_PAGINA));
     params.set("offset", String((paginaSolicitada - 1) * TAMANO_PAGINA));
     try {
-      const res = q || nlq
-        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q: nlq || q, departamento: departamento || undefined, municipio: municipio || undefined, modalidad: modalidad || undefined, valor_min: valorMin ? Number(valorMin.replace(/[^\d]/g, "")) : undefined, score_min: scoreMin ? Number(scoreMin) : undefined, triage: triage || undefined, solo_con_score: soloScore, limit: TAMANO_PAGINA, offset: (paginaSolicitada - 1) * TAMANO_PAGINA }) })
+      const res = consulta
+        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q: consulta, departamento: estado.departamento || undefined, municipio: estado.municipio || undefined, modalidad: estado.modalidad || undefined, valor_min: estado.valorMin ? Number(estado.valorMin.replace(/[^\d]/g, "")) : undefined, score_min: estado.scoreMin ? Number(estado.scoreMin) : undefined, triage: estado.triage || undefined, solo_con_score: estado.soloScore ?? soloScore, limit: TAMANO_PAGINA, offset: (paginaSolicitada - 1) * TAMANO_PAGINA }) })
         : await api<{ total: number; items: Opp[]; profile_required?: boolean }>(`/api/opportunities?${params.toString()}&profile_match=${aplicarPerfil}`);
       setPerfilRequerido(Boolean(res.profile_required));
       setItems(res.items);
       setTotal(res.total);
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        params.set("pagina", String(paginaSolicitada));
+        url.search = params.toString();
+        window.history.replaceState(null, "", url.toString());
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
       setItems([]);
@@ -63,10 +77,30 @@ export default function Oportunidades() {
   }, [q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore, busquedaConPerfil, pagina]);
 
   useEffect(() => {
-    const inicial = new URLSearchParams(window.location.search).get("q");
-    if (inicial) {
-      setQ(inicial);
-      cargar(inicial, false);
+    const params = new URLSearchParams(window.location.search);
+    const inicial = params.get("q") || "";
+    const paginaInicial = Number(params.get("pagina") || "1");
+    const estadoInicial: SearchState = {
+      q: inicial,
+      departamento: params.get("departamento") || "",
+      municipio: params.get("municipio") || "",
+      modalidad: params.get("modalidad") || "",
+      valorMin: params.get("valor_min") || "",
+      scoreMin: params.get("score_min") || "",
+      triage: params.get("triage") || "",
+      soloScore: params.has("solo_con_score") ? params.get("solo_con_score") !== "false" : true,
+    };
+    setQ(estadoInicial.q || "");
+    setDepartamento(estadoInicial.departamento || "");
+    setMunicipio(estadoInicial.municipio || "");
+    setModalidad(estadoInicial.modalidad || "");
+    setValorMin(estadoInicial.valorMin || "");
+    setScoreMin(estadoInicial.scoreMin || "");
+    setTriage(estadoInicial.triage || "");
+    setSoloScore(Boolean(estadoInicial.soloScore));
+    setPagina(paginaInicial);
+    if (inicial || params.get("modo") === "busqueda") {
+      cargar(inicial, false, paginaInicial, estadoInicial);
     } else {
       cargar(undefined, true);
     }
