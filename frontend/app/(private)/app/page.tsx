@@ -26,30 +26,35 @@ type Opp = {
   id: number; entidad: string; objeto: string; valor: number | null; estado: string;
   departamento: string | null; score: number | null; url_oficial: string | null;
 };
+type AlertPrefs = { email_enabled: boolean; high_score_threshold: number; close_days: number[]; digest_hour: number };
 
 export default function Dashboard() {
   const [m, setM] = useState<Metrics | null>(null);
   const [top, setTop] = useState<Opp[]>([]);
   const [consulta, setConsulta] = useState("");
+  const [umbral, setUmbral] = useState(50);
+  const [diasNuevos, setDiasNuevos] = useState(7);
+  const [prefs, setPrefs] = useState<AlertPrefs | null>(null);
+  const [guardandoCriterios, setGuardandoCriterios] = useState(false);
   const router = useRouter();
 
-  async function cargar() {
-    const metrics = await api<Metrics>("/api/dashboard/metrics");
+  async function cargar(umbralActual = umbral, diasActuales = diasNuevos) {
+    const metrics = await api<Metrics>(`/api/dashboard/metrics?compatibility_threshold=${umbralActual}&new_days=${diasActuales}`);
     setM(metrics);
     // Mantener el mismo criterio que la vista Oportunidades: solo procesos
     // compatibles con el perfil y con una puntuación mínima significativa.
-    let res = await api<{ items: Opp[] }>("/api/opportunities?limit=50&score_min=40&solo_con_score=true&profile_match=true");
+    let res = await api<{ items: Opp[] }>(`/api/opportunities?limit=50&score_min=${umbralActual}&solo_con_score=true&profile_match=true`);
     if (!res.items.length) {
       try {
         await api("/api/rescore", { method: "POST" });
-        res = await api<{ items: Opp[] }>("/api/opportunities?limit=50&score_min=40&solo_con_score=true&profile_match=true");
+        res = await api<{ items: Opp[] }>(`/api/opportunities?limit=50&score_min=${umbralActual}&solo_con_score=true&profile_match=true`);
       } catch {
         // Perfil incompleto: se conserva el estado vacío guiado.
       }
     }
     if (!res.items.length) {
       // Evita dejar el dashboard vacío cuando solo hay coincidencias medias.
-      res = await api<{ items: Opp[] }>("/api/opportunities?limit=50&score_min=1&solo_con_score=true&profile_match=false");
+      res = await api<{ items: Opp[] }>(`/api/opportunities?limit=50&score_min=${Math.max(1, umbralActual)}&solo_con_score=true&profile_match=false`);
     }
     setTop(res.items
       .filter((o) => o.score !== null)
@@ -58,8 +63,28 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    cargar().catch(() => {});
+    Promise.all([
+      api<AlertPrefs>("/api/alerts/prefs"),
+      api<Metrics>("/api/dashboard/metrics?compatibility_threshold=50&new_days=7"),
+    ]).then(([alertPrefs, metrics]) => {
+      setPrefs(alertPrefs);
+      setUmbral(alertPrefs.high_score_threshold);
+      setM(metrics);
+      return cargar(alertPrefs.high_score_threshold, 7);
+    }).catch(() => cargar().catch(() => {}));
   }, []);
+
+  async function aplicarCriterios() {
+    setGuardandoCriterios(true);
+    try {
+      const actual = prefs || { email_enabled: false, close_days: [10, 5, 1], digest_hour: 7, high_score_threshold: umbral };
+      const actualizado = await api<AlertPrefs>("/api/alerts/prefs", { method: "PUT", body: JSON.stringify({ ...actual, high_score_threshold: umbral }) });
+      setPrefs(actualizado);
+      await cargar(umbral, diasNuevos);
+    } finally {
+      setGuardandoCriterios(false);
+    }
+  }
 
   function buscar() {
     if (!consulta.trim()) return;
@@ -88,6 +113,15 @@ export default function Dashboard() {
           />
           <Button onClick={buscar}>Buscar</Button>
         </div>
+      </Card>
+
+      <Card className="p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="block min-w-48 flex-1"><span className="text-muted mb-1 block text-xs font-medium">Compatibilidad mínima (%)</span><Input type="number" min={0} max={100} value={umbral} onChange={(e) => setUmbral(Math.min(100, Math.max(0, Number(e.target.value))))} /></label>
+          <label className="block min-w-48 flex-1"><span className="text-muted mb-1 block text-xs font-medium">Procesos nuevos en los últimos días</span><Input type="number" min={1} max={90} value={diasNuevos} onChange={(e) => setDiasNuevos(Math.min(90, Math.max(1, Number(e.target.value))))} /></label>
+          <Button onClick={aplicarCriterios} disabled={guardandoCriterios}>{guardandoCriterios ? "Aplicando…" : "Aplicar criterios"}</Button>
+        </div>
+        <p className="text-muted mt-2 text-[11px]">Estos criterios actualizan los indicadores y el ranking. El porcentaje también se usa para tus alertas de compatibilidad.</p>
       </Card>
 
       {/* KPIs */}

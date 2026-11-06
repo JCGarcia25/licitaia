@@ -321,11 +321,16 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
 
 
 @router.get("/dashboard/metrics")
-def metrics(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def metrics(
+    compatibility_threshold: int | None = Query(default=None, ge=0, le=100),
+    new_days: int = Query(default=7, ge=1, le=90),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     scores = _user_scores(db, user.id)
     base = db.query(Opportunity).filter(Opportunity.cancelled.is_(False))
     prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user.id).first()
-    umbral_compatibilidad = prefs.high_score_threshold if prefs else 70
+    umbral_compatibilidad = compatibility_threshold if compatibility_threshold is not None else (prefs.high_score_threshold if prefs else 70)
     ahora = datetime.utcnow()
     uos = db.query(UserOpportunity).filter(UserOpportunity.user_id == user.id).all()
     ids = list(scores.keys())
@@ -377,7 +382,7 @@ def metrics(user: User = Depends(get_current_user), db: Session = Depends(get_db
         "oportunidades_detectadas": len(uos),
         "procesos_nuevos_base": base.filter(
             Opportunity.source == "secop2_procesos",
-            Opportunity.fecha_publicacion >= ahora - timedelta(days=7),
+            Opportunity.fecha_publicacion >= ahora - timedelta(days=new_days),
         ).count(),
         "proximos_a_cerrar": proximos,
         "alta_compatibilidad": len(alta),
