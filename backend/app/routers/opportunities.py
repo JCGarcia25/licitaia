@@ -8,7 +8,7 @@ from sqlalchemy import and_, cast, func, or_, Text
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
-from app.db.models import Alert, AlertPrefs, Analysis, CompanyProfile, Opportunity, User, UserOpportunity
+from app.db.models import Alert, AlertPrefs, Analysis, CompanyProfile, OfferProject, Opportunity, User, UserOpportunity
 from app.db.session import get_db
 from app.schemas import FeedbackIn, TriajeIn
 from app.services import alerts as alerts_service
@@ -347,7 +347,17 @@ def metrics(user: User = Depends(get_current_user), db: Session = Depends(get_db
             if key in tendencia:
                 tendencia[key] += 1
 
-    docs_pendientes = db.query(Analysis).filter(Analysis.user_id == user.id, Analysis.estado == "borrador").count()
+    # El indicador del dashboard debe reflejar el trabajo real del preparador:
+    # documentos pendientes dentro de ofertas existentes, no análisis sueltos.
+    proyectos_oferta = db.query(OfferProject).filter(
+        OfferProject.user_id == user.id,
+        OfferProject.status != "archivado",
+    ).all()
+    docs_pendientes = sum(
+        1 for proyecto in proyectos_oferta
+        for item in (proyecto.checklist or [])
+        if item.get("estado") != "listo"
+    )
     alertas_no_leidas = db.query(Alert).filter(Alert.user_id == user.id, Alert.read_at.is_(None)).count()
 
     # próximos a cerrar: solo con fecha de cierre conocida (analizada o registrada);
