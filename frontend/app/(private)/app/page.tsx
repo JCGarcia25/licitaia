@@ -35,8 +35,13 @@ export default function Dashboard() {
   async function cargar() {
     const metrics = await api<Metrics>("/api/dashboard/metrics");
     setM(metrics);
-    const res = await api<{ items: Opp[] }>("/api/opportunities?limit=5&score_min=1");
-    setTop(res.items.filter((o) => o.score !== null));
+    // Mantener el mismo criterio que la vista Oportunidades: solo procesos
+    // compatibles con el perfil y con una puntuación mínima significativa.
+    const res = await api<{ items: Opp[] }>("/api/opportunities?limit=50&score_min=40&solo_con_score=true&profile_match=true");
+    setTop(res.items
+      .filter((o) => o.score !== null)
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+      .slice(0, 5));
   }
 
   useEffect(() => {
