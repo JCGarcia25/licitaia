@@ -58,12 +58,7 @@ def sync_secop() -> dict:
     results = {}
     db = SessionLocal()
     try:
-        # watermark: última fecha de actualización registrada por fuente
-        from app.db.models import SyncRun
-
         for source in ("secop2_procesos", "secop2_contratos"):
-            last = db.query(SyncRun).filter(SyncRun.dataset == source, SyncRun.finished_at.isnot(None)).order_by(
-                SyncRun.started_at.desc()).first()
             run = sync_source(db, source, max_pages=10)
             results[source] = {"upserted": run.upserted, "duplicates": run.duplicates, "errors": run.errors}
     finally:
@@ -111,10 +106,11 @@ def daily_digest() -> dict:
     db = SessionLocal()
     try:
         sent, skipped = 0, 0
-        for prefs in db.query(AlertPrefs).filter(AlertPrefs.email_enabled.is_(True)).all():
-            user = db.query(User).filter(User.id == prefs.user_id).first()
-            if not user or not user.email_verified:
-                continue
+        rows = (db.query(AlertPrefs, User)
+                .join(User, User.id == AlertPrefs.user_id)
+                .filter(AlertPrefs.email_enabled.is_(True), User.email_verified.is_(True))
+                .all())
+        for prefs, user in rows:
             cuerpo = [
                 "Resumen diario LicitaIA",
                 f"Umbral de alta compatibilidad: {prefs.high_score_threshold}%",

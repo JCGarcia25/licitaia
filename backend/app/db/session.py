@@ -15,6 +15,10 @@ def _make_engine():
     kwargs: dict = {"pool_pre_ping": True}
     if url.startswith("sqlite"):
         kwargs["connect_args"] = {"check_same_thread": False}
+    else:
+        # Mantener un límite explícito de conexiones evita que varios workers
+        # creen picos de memoria/conexiones durante sincronizaciones o búsquedas.
+        kwargs.update(pool_size=10, max_overflow=5, pool_timeout=30, pool_recycle=1800)
     return create_engine(url, **kwargs)
 
 

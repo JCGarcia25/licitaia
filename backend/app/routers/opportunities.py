@@ -30,8 +30,14 @@ def _public_document_count(value) -> int:
     return 0
 
 
-def _user_scores(db: Session, user_id: int) -> dict[int, UserOpportunity]:
-    rows = db.query(UserOpportunity).filter(UserOpportunity.user_id == user_id).all()
+def _user_scores(db: Session, user_id: int, opportunity_ids: list[int] | None = None) -> dict[int, UserOpportunity]:
+    """Carga solo los scores necesarios para evitar crecer en memoria con el historial."""
+    query = db.query(UserOpportunity).filter(UserOpportunity.user_id == user_id)
+    if opportunity_ids is not None:
+        if not opportunity_ids:
+            return {}
+        query = query.filter(UserOpportunity.opportunity_id.in_(opportunity_ids))
+    rows = query.all()
     return {r.opportunity_id: r for r in rows}
 
 
@@ -167,9 +173,9 @@ def list_opportunities(
     if score_min is not None:
         query = query.filter(user_opp.filter(UserOpportunity.score >= score_min).exists())
 
-    scores = _user_scores(db, user.id)
     total = query.count()
     rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
+    scores = _user_scores(db, user.id, [opp.id for opp in rows])
     items = [_serialize(opp, scores.get(opp.id)) for opp in rows]
     return {"total": total, "items": items, "profile_configured": profile_configured, "profile_required": False}
 
@@ -283,7 +289,6 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
     limit = min(max(int(payload.get("limit", 25)), 1), 100)
     offset = max(int(payload.get("offset", 0)), 0)
     rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
-    scores = _user_scores(db, user.id)
     solo_con_score = bool(payload.get("solo_con_score", False))
     score_min = payload.get("score_min")
     triage = payload.get("triage")
@@ -304,6 +309,7 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         query = query.filter(user_opp.filter(UserOpportunity.triage == triage).exists())
     total = query.count()
     rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
+    scores = _user_scores(db, user.id, [opp.id for opp in rows])
     return {"filtros_interpretados": filtros, "total": total,
             "items": [_serialize(o, scores.get(o.id)) for o in rows]}
 
