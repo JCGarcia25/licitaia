@@ -34,6 +34,11 @@ def test_preferencias_por_defecto_y_actualizacion(client, db):
         "close_days": [10, 3, 1], "digest_hour": 8,
     }
 
+    response = client.delete("/api/alerts/prefs", headers=headers)
+    assert response.status_code == 200
+    response = client.get("/api/alerts/prefs", headers=headers)
+    assert response.json()["email_enabled"] is False
+
 
 def test_casilla_controla_destinatario_y_envio(client, db, monkeypatch):
     headers, user = _create_pro_user(client, db, "alerts-recipient@licitaia.co")

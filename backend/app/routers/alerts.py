@@ -69,6 +69,16 @@ def put_prefs(data: AlertPrefsIn, user: User = Depends(get_current_user), db: Se
     return {"ok": True, **data.model_dump()}
 
 
+@router.delete("/prefs")
+def delete_prefs(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Restablece las preferencias de alertas a sus valores iniciales."""
+    prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user.id).first()
+    if prefs:
+        db.delete(prefs)
+        db.commit()
+    return {"ok": True, "message": "Preferencias restablecidas."}
+
+
 @router.post("/digest")
 def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Ejecuta el ciclo de alertas ahora (alta compatibilidad, recordatorios, resumen)."""
