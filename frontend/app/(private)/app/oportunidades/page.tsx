@@ -219,7 +219,6 @@ export default function Oportunidades() {
                       {o.url_oficial ? <a href={o.url_oficial} target="_blank" rel="noopener,noreferrer"><Button size="sm" variant="outline">Ver en SECOP ↗</Button></a> : <Button size="sm" variant="outline" disabled>Expediente SECOP no disponible</Button>}
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => aplicarTriage(o.id, "guardada")}>Guardar</Button>
                       <Button size="sm" variant="ghost" onClick={() => aplicarTriage(o.id, "descartada")}>Descartar</Button>
                     </div>
                     <Button size="sm" variant="outline" onClick={() => crearProyecto(o.id)}>Crear proyecto de propuesta</Button>
