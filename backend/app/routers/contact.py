@@ -13,12 +13,17 @@ router = APIRouter(prefix="/api", tags=["contacto"])
 
 @router.post("/contact", status_code=201)
 def contact(data: ContactIn, db: Session = Depends(get_db)):
-    msg = ContactMessage(nombre=data.nombre, email=data.email, mensaje=data.mensaje)
+    detalle = data.mensaje
+    if data.telefono:
+        detalle = f"Teléfono: {data.telefono}\n\n{detalle}"
+    if data.motivo:
+        detalle = f"Motivo: {data.motivo}\n{detalle}"
+    msg = ContactMessage(nombre=data.nombre, email=data.email, mensaje=detalle)
     db.add(msg)
     db.commit()
     settings = get_settings()
     enviado = send_email(settings.contact_email, f"Contacto web: {data.nombre}",
-                         f"De: {data.nombre} <{data.email}>\n\n{data.mensaje}")
+                         f"De: {data.nombre} <{data.email}>\n\n{detalle}")
     return {
         "id": msg.id,
         "recibido": True,

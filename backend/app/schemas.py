@@ -127,4 +127,6 @@ class SubscribeIn(BaseModel):
 class ContactIn(BaseModel):
     nombre: str = Field(min_length=2, max_length=120)
     email: EmailStr
+    telefono: str = Field(default="", max_length=40)
+    motivo: str = Field(default="", max_length=200)
     mensaje: str = Field(min_length=10, max_length=4000)

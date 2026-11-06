@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme";
+import { ContactForm } from "@/components/contact-form";
 
 // Keep the public landing out of the static client-provider fallback. The
 // private dashboard remains under /app and keeps its authentication guard.
@@ -259,6 +260,16 @@ export default function Landing() {
         </div>
       </section>
 
+      <section id="contacto" className="border-b border-base py-20">
+        <div className="mx-auto max-w-3xl px-5">
+          <div className="surface-card shadow-card p-6 sm:p-8">
+            <h2 className="text-2xl font-bold tracking-tight">Hablemos de cómo puede ayudarte MySECOP</h2>
+            <p className="text-muted mt-2 text-sm">MySECOP evoluciona constantemente para ser tu aliado en contratación pública. Déjanos tus datos y te acompañaremos.</p>
+            <ContactForm />
+          </div>
+        </div>
+      </section>
+
       {/* ---------- 8. Registro gratuito ---------- */}
       <section className="py-20">
         <div className="mx-auto max-w-3xl px-5 text-center">
@@ -284,7 +295,7 @@ export default function Landing() {
               <a href="#" className="hover:text-teal">Términos y condiciones</a>
               <a href="#" className="hover:text-teal">Política de privacidad</a>
               <a href="#" className="hover:text-teal">Tratamiento de datos (Ley 1581)</a>
-              <a href="#" className="hover:text-teal">Contacto</a>
+              <a href="#contacto" className="hover:text-teal">Contacto</a>
             </nav>
           </div>
           <p className="max-w-3xl leading-relaxed">
