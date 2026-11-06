@@ -66,7 +66,10 @@ def put_prefs(data: AlertPrefsIn, user: User = Depends(get_current_user), db: Se
     prefs.close_days = data.close_days
     prefs.digest_hour = data.digest_hour
     db.commit()
-    return {"ok": True, **data.model_dump()}
+    # Recalcula las alertas de compatibilidad con el nuevo umbral para que la
+    # bandeja se actualice inmediatamente, sin esperar al worker programado.
+    created = alerts_service.create_alerts_for_user(db, user.id, high_score=data.high_score_threshold)
+    return {"ok": True, "alertas_creadas": created, **data.model_dump()}
 
 
 @router.delete("/prefs")

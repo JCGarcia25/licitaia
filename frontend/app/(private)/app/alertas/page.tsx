@@ -27,8 +27,12 @@ export default function Alertas() {
 
   async function guardarPrefs() {
     if (!prefs) return;
-    await api("/api/alerts/prefs", { method: "PUT", body: JSON.stringify(prefs) });
-    setMsg("Tus preferencias de alertas se guardaron correctamente.");
+    const result = await api<{ alertas_creadas?: number }>("/api/alerts/prefs", { method: "PUT", body: JSON.stringify(prefs) });
+    await cargar();
+    const creadas = result.alertas_creadas || 0;
+    setMsg(creadas
+      ? `Tus preferencias se guardaron y se generaron ${creadas} alerta(s) según tu nuevo umbral.`
+      : "Tus preferencias se guardaron. Aún no hay oportunidades puntuadas que cumplan el umbral seleccionado.");
   }
 
   async function restablecerPrefs() {

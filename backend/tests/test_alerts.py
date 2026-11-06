@@ -29,10 +29,11 @@ def test_preferencias_por_defecto_y_actualizacion(client, db):
         "digest_hour": 8,
     }, headers=headers)
     assert response.status_code == 200
-    assert response.json() == {
-        "ok": True, "email_enabled": True, "high_score_threshold": 80,
-        "close_days": [10, 3, 1], "digest_hour": 8,
-    }
+    assert response.json()["ok"] is True
+    assert response.json()["email_enabled"] is True
+    assert response.json()["high_score_threshold"] == 80
+    assert response.json()["close_days"] == [10, 3, 1]
+    assert response.json()["digest_hour"] == 8
 
     response = client.delete("/api/alerts/prefs", headers=headers)
     assert response.status_code == 200
