@@ -50,6 +50,11 @@ const PLANES = [
     cta: "Probar 14 días", destacado: true,
   },
   {
+    nombre: "Independiente", precio: "$ 59.900 COP", detalle: "por mes · para una persona",
+    rasgos: ["Oportunidades y alertas ilimitadas", "Análisis de pliegos ilimitado", "Evaluador de viabilidad configurable", "Preparador de ofertas y exportación", "Recordatorios de cierre y resumen diario"],
+    cta: "Comenzar con Independiente", destacado: false,
+  },
+  {
     nombre: "Corporativo", precio: "A la medida", detalle: "consorcios y gerencias de contratación",
     rasgos: ["Múltiples perfiles de empresa", "Historial de contratos y competencia", "Soporte prioritario y capacitación", "Integraciones y SSO"],
     cta: "Hablar con ventas", destacado: false,
@@ -57,10 +62,10 @@ const PLANES = [
 ];
 
 const FAQ = [
-  { q: "¿LicitaIA es una plataforma del Gobierno colombiano?", a: "No. LicitaIA es un producto independiente que consulta fuentes públicas oficiales (SECOP en datos.gov.co y Colombia Compra Eficiente) y siempre muestra el enlace al expediente original. La fuente oficial es la referencia definitiva." },
+  { q: "¿MySECOP es una plataforma del Gobierno colombiano?", a: "No. MySECOP es un producto independiente que consulta fuentes públicas oficiales (SECOP en datos.gov.co y Colombia Compra Eficiente) y siempre muestra el enlace al expediente original. La fuente oficial es la referencia definitiva." },
   { q: "¿Cómo calcula el puntaje de compatibilidad?", a: "El Cazador combina palabras clave, códigos UNSPSC, ubicación, cuantía y modalidad con búsqueda semántica sobre el objeto contractual. Cada punto incluye la razón verificable que lo sustenta." },
-  { q: "¿El puntaje de viabilidad garantiza que ganaré la licitación?", a: "No. Es una evaluación de conveniencia de participación con pesos configurables de LicitaIA. No constituye una probabilidad de adjudicación ni un criterio oficial de ninguna entidad." },
-  { q: "¿El sistema presenta propuestas en SECOP?", a: "No. LicitaIA prepara checklists, borradores y matrices, pero la presentación en SECOP la realiza siempre una persona autorizada de tu empresa." },
+  { q: "¿El puntaje de viabilidad garantiza que ganaré la licitación?", a: "No. Es una evaluación de conveniencia de participación con pesos configurables de MySECOP. No constituye una probabilidad de adjudicación ni un criterio oficial de ninguna entidad." },
+  { q: "¿El sistema presenta propuestas en SECOP?", a: "No. MySECOP prepara checklists, borradores y matrices, pero la presentación en SECOP la realiza siempre una persona autorizada de tu empresa." },
   { q: "¿Qué documentos puede analizar?", a: "PDF, DOCX y XLSX que cargues, o documentos oficiales accesibles mediante enlaces públicos permitidos. Cada hallazgo cita documento, página o sección y su nivel de confianza." },
   { q: "¿Qué pasa con mis datos?", a: "Tus perfiles, documentos y ofertas son privados, se almacenan cifrados en reposo en producción y no se comparten con terceros. Puedes exportarlos o eliminarlos cuando quieras." },
 ];
@@ -70,10 +75,10 @@ export default function Landing() {
     <div className="min-h-screen">
       {/* ---------- Header ---------- */}
       <header className="sticky top-0 z-40 border-b border-base bg-[var(--bg)]/85 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+        <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
           <Link href="/" className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 text-[10px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
-            <span className="text-lg font-bold tracking-tight">LicitaIA</span>
+            <span className="text-lg font-bold tracking-tight">MySECOP</span>
           </Link>
           <nav className="text-muted hidden items-center gap-6 text-sm md:flex">
             <a href="#como-funciona" className="hover:text-teal transition">Cómo funciona</a>
@@ -81,7 +86,7 @@ export default function Landing() {
             <a href="#planes" className="hover:text-teal transition">Planes</a>
             <a href="#faq" className="hover:text-teal transition">FAQ</a>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <ThemeToggle />
             <Link href="/iniciar-sesion"><Button variant="outline" size="sm">Iniciar sesión</Button></Link>
             <Link href="/registro"><Button size="sm">Comenzar gratis</Button></Link>
@@ -107,7 +112,7 @@ export default function Landing() {
               <a href="#como-funciona"><Button variant="outline" className="px-6 py-3">Ver cómo funciona</Button></a>
             </div>
             <p className="text-muted mt-6 text-xs">
-              LicitaIA no es una plataforma oficial del Gobierno colombiano. Consulta fuentes públicas y siempre muestra el expediente original.
+              MySECOP no es una plataforma oficial del Gobierno colombiano. Consulta fuentes públicas y siempre muestra el expediente original.
             </p>
           </div>
 
@@ -148,7 +153,7 @@ export default function Landing() {
       {/* ---------- 1. Cómo funciona ---------- */}
       <section id="como-funciona" className="border-b border-base py-20">
         <div className="mx-auto max-w-6xl px-5">
-          <h2 className="text-center text-3xl font-bold tracking-tight">Cómo funciona LicitaIA en tres pasos</h2>
+          <h2 className="text-center text-3xl font-bold tracking-tight">Cómo funciona MySECOP en tres pasos</h2>
           <p className="text-muted mx-auto mt-3 max-w-2xl text-center">
             La inteligencia detrás de tu próxima licitación opera en el fondo mientras tu equipo decide dónde competir.
           </p>
@@ -185,7 +190,7 @@ export default function Landing() {
           <h2 className="text-center text-3xl font-bold tracking-tight">Búsqueda manual vs. búsqueda asistida con IA</h2>
           <div className="surface-card shadow-card mt-10 overflow-hidden">
             {COMPARACION.map((fila, i) => (
-              <div key={i} className={`grid grid-cols-2 gap-4 px-6 py-4 text-sm ${i === 0 ? "border-b border-base bg-brand-50 font-semibold dark:bg-slate-800/60" : "border-b border-base last:border-0"}`}>
+              <div key={i} className={`grid grid-cols-1 gap-2 px-4 py-4 text-sm sm:grid-cols-2 sm:gap-4 sm:px-6 ${i === 0 ? "border-b border-base bg-brand-50 font-semibold dark:bg-slate-800/60" : "border-b border-base last:border-0"}`}>
                 <span className={i === 0 ? "" : "text-muted"}>{fila[0]}</span>
                 <span className={i === 0 ? "" : "font-medium text-teal"}>{fila[1]}</span>
               </div>
@@ -214,7 +219,7 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-5">
           <h2 className="text-center text-3xl font-bold tracking-tight">Planes y precios</h2>
           <p className="text-muted mt-3 text-center">Precios en pesos colombianos (COP). Sin contratos de permanencia.</p>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {PLANES.map((p) => (
               <div key={p.nombre} className={`surface-card relative p-7 ${p.destacado ? "shadow-lift ring-2 ring-teal" : "shadow-card"}`}>
                 {p.destacado ? (
@@ -273,7 +278,7 @@ export default function Landing() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <span className="flex items-center gap-2 text-sm font-bold text-[var(--text)]">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-900 text-[9px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
-              LicitaIA
+              MySECOP
             </span>
             <nav className="flex flex-wrap gap-5">
               <a href="#" className="hover:text-teal">Términos y condiciones</a>
@@ -283,12 +288,12 @@ export default function Landing() {
             </nav>
           </div>
           <p className="max-w-3xl leading-relaxed">
-            Aviso legal: LicitaIA es un producto independiente de análisis de información pública y <strong>no es una plataforma
+            Aviso legal: MySECOP es un producto independiente de análisis de información pública y <strong>no es una plataforma
             oficial del Gobierno colombiano</strong>, ni está afiliado a Colombia Compra Eficiente. Los datos provienen de fuentes
             públicas (SECOP en datos.gov.co); la fuente oficial permanece como referencia definitiva. Los puntajes y evaluaciones
             son orientativos, no constituyen asesoría legal ni probabilidades de adjudicación, y requieren validación humana.
           </p>
-          <p>© {new Date().getFullYear()} LicitaIA · La inteligencia detrás de tu próxima licitación.</p>
+          <p>© {new Date().getFullYear()} MySECOP · La inteligencia detrás de tu próxima licitación.</p>
         </div>
       </footer>
     </div>

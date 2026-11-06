@@ -58,7 +58,7 @@ export default function Registro() {
           ¿Ya tienes cuenta? <Link href="/iniciar-sesion" className="text-teal font-medium hover:underline">Inicia sesión</Link>
         </p>
         <p className="text-muted mt-4 text-[11px] leading-relaxed">
-          Al registrarte aceptas los términos y la política de privacidad. LicitaIA no es una plataforma oficial del Gobierno colombiano.
+          Al registrarte aceptas los términos y la política de privacidad. MySECOP no es una plataforma oficial del Gobierno colombiano.
         </p>
       </div>
       </div>
