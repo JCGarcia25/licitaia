@@ -62,6 +62,24 @@ def rescore_user(db: Session, user_id: int, limit: int = 1500) -> int:
 
 def create_alerts_for_user(db: Session, user_id: int, high_score: int = 70) -> int:
     """Alerta in-app por oportunidades de alta compatibilidad."""
+    # Mantiene la bandeja alineada con el umbral vigente: una alerta antigua
+    # no debe seguir mostrando "alta compatibilidad" si su score quedó por
+    # debajo del valor configurado por el usuario.
+    stale = (
+        db.query(Alert)
+        .join(UserOpportunity, UserOpportunity.opportunity_id == Alert.opportunity_id)
+        .filter(
+            Alert.user_id == user_id,
+            Alert.tipo == "alta_compatibilidad",
+            UserOpportunity.user_id == user_id,
+            UserOpportunity.score < high_score,
+        )
+        .all()
+    )
+    for alert in stale:
+        db.delete(alert)
+    if stale:
+        db.flush()
     rows = (
         db.query(UserOpportunity, Opportunity)
         .join(Opportunity, Opportunity.id == UserOpportunity.opportunity_id)
