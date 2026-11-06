@@ -324,12 +324,14 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
 def metrics(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     scores = _user_scores(db, user.id)
     base = db.query(Opportunity).filter(Opportunity.cancelled.is_(False))
+    prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user.id).first()
+    umbral_compatibilidad = prefs.high_score_threshold if prefs else 70
     ahora = datetime.utcnow()
     uos = db.query(UserOpportunity).filter(UserOpportunity.user_id == user.id).all()
     ids = list(scores.keys())
     opps = {o.id: o for o in db.query(Opportunity).filter(Opportunity.id.in_(ids)).all()} if ids else {}
 
-    alta = [s for s in uos if s.score >= 70 and s.triage != "descartada"]
+    alta = [s for s in uos if s.score >= umbral_compatibilidad and s.triage != "descartada"]
     guardadas = [s for s in uos if s.triage == "guardada"]
     descartadas = [s for s in uos if s.triage == "descartadas" or s.triage == "descartada"]
     proyectos = [s for s in uos if s.triage == "proyecto"]
@@ -360,11 +362,12 @@ def metrics(user: User = Depends(get_current_user), db: Session = Depends(get_db
     )
     alertas_no_leidas = db.query(Alert).filter(Alert.user_id == user.id, Alert.read_at.is_(None)).count()
 
-    # próximos a cerrar: solo con fecha de cierre conocida (analizada o registrada);
+    # Próximos a cerrar: únicamente ofertas activas del Preparador, no procesos
+    # meramente detectados o descartados.
     # la fuente SECOP II (p6dx-8zbt) NO expone fecha de cierre (ver docs/fuentes-secop.md)
     proximos = 0
-    for s in guardadas + proyectos:
-        o = opps.get(s.opportunity_id)
+    for proyecto in proyectos_oferta:
+        o = opps.get(proyecto.opportunity_id)
         if not o or not o.fecha_cierre:
             continue
         dias = (o.fecha_cierre - ahora).days
@@ -372,9 +375,13 @@ def metrics(user: User = Depends(get_current_user), db: Session = Depends(get_db
             proximos += 1
     return {
         "oportunidades_detectadas": len(uos),
-        "procesos_nuevos_base": base.filter(Opportunity.fecha_publicacion >= ahora - timedelta(days=7)).count(),
+        "procesos_nuevos_base": base.filter(
+            Opportunity.source == "secop2_procesos",
+            Opportunity.fecha_publicacion >= ahora - timedelta(days=7),
+        ).count(),
         "proximos_a_cerrar": proximos,
         "alta_compatibilidad": len(alta),
+        "umbral_compatibilidad": umbral_compatibilidad,
         "valor_agregado_cop": valor_total,
         "guardadas": len(guardadas),
         "descartadas": len(descartadas),

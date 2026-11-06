@@ -11,6 +11,7 @@ type Metrics = {
   procesos_nuevos_base: number;
   proximos_a_cerrar: number;
   alta_compatibilidad: number;
+  umbral_compatibilidad: number;
   valor_agregado_cop: number;
   guardadas: number;
   descartadas: number;
@@ -68,7 +69,7 @@ export default function Dashboard() {
   if (!m) return <Spinner />;
 
   const kpis = [
-    { t: "Compatibles con tu perfil", v: m.alta_compatibilidad, tone: "green" as const, help: "Compatibilidad de 70% o más." },
+    { t: "Compatibles con tu perfil", v: m.alta_compatibilidad, tone: "green" as const, help: `Compatibilidad de ${m.umbral_compatibilidad}% o más.` },
     { t: "Procesos nuevos", v: m.procesos_nuevos_base, tone: "teal" as const, help: "Publicados en los últimos 7 días." },
     { t: "Próximos a cerrar", v: m.proximos_a_cerrar, tone: "amber" as const, help: "Procesos guardados con cierre cercano." },
     { t: "Ofertas activas", v: m.ofertas_activas, tone: "purple" as const, help: "Proyectos activos en el preparador." },
