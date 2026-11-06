@@ -41,6 +41,8 @@ current_secret="$(grep -E '^SECRET_KEY=' .env | cut -d= -f2- || true)"
 current_db_password="$(grep -E '^POSTGRES_PASSWORD=' .env | cut -d= -f2- || true)"
 [[ -n "$current_db_password" && "$current_db_password" != "licitaia_dev" ]] || set_env POSTGRES_PASSWORD "$(openssl rand -hex 16)"
 set_env ENVIRONMENT production
+set_env ALLOW_DEMO_SEED false
+set_env DEBUG_ENDPOINT_ENABLED false
 set_env CORS_ORIGINS "https://${DOMAIN}"
 set_env NEXT_PUBLIC_API_URL "https://${DOMAIN}"
 set_env LICITAIA_API_PORT "$API_PORT"

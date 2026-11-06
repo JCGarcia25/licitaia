@@ -25,7 +25,7 @@ app = FastAPI(
         "LicitaIA NO es una plataforma oficial del Gobierno colombiano."
     ),
     docs_url="/docs" if settings.environment != "production" else None,
-    openapi_url="/openapi.json",
+    openapi_url="/openapi.json" if settings.environment != "production" else None,
 )
 
 # Backpressure a nivel de aplicación: cuando el API está ocupado, rechazamos
@@ -38,12 +38,7 @@ _request_slots = asyncio.Semaphore(max(1, settings.max_concurrent_requests))
 async def overload_guard(request: Request, call_next):
     if request.url.path == "/health":
         response = await call_next(request)
-        response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-        if settings.environment == "production":
-            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        _set_security_headers(response)
         return response
     try:
         await asyncio.wait_for(_request_slots.acquire(), timeout=settings.overload_wait_seconds)
@@ -54,9 +49,20 @@ async def overload_guard(request: Request, call_next):
             headers={"Retry-After": "2", "X-MySECOP-Overload": "1"},
         )
     try:
-        return await call_next(request)
+        response = await call_next(request)
+        _set_security_headers(response)
+        return response
     finally:
         _request_slots.release()
+
+
+def _set_security_headers(response) -> None:
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    if settings.environment == "production":
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
 
 app.add_middleware(
     CORSMiddleware,
