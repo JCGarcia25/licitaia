@@ -37,6 +37,15 @@ def test_score_filter_is_applied_before_pagination(client, db):
     assert payload["total"] >= len(payload["items"])
     assert all(item["score"] is not None and item["score"] > 0 for item in payload["items"])
 
+    if payload["items"]:
+        discarded_id = payload["items"][0]["id"]
+        response = client.post(f"/api/opportunities/{discarded_id}/triaje", json={"triage": "descartada"}, headers=headers)
+        assert response.status_code == 200
+        response = client.get("/api/opportunities?solo_con_score=true&limit=200", headers=headers)
+        assert discarded_id not in {item["id"] for item in response.json()["items"]}
+        response = client.get("/api/opportunities?triage=descartada&limit=200", headers=headers)
+        assert discarded_id in {item["id"] for item in response.json()["items"]}
+
 
 def test_manual_search_honours_score_and_triage_filters(client, db):
     from app.db.models import User

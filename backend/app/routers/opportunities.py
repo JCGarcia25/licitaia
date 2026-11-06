@@ -165,6 +165,10 @@ def list_opportunities(
         UserOpportunity.user_id == user.id,
         UserOpportunity.opportunity_id == Opportunity.id,
     )
+    # Descartar es persistente para este usuario: no debe reaparecer en nuevas
+    # búsquedas, salvo que se solicite explícitamente el filtro de descartadas.
+    if triage != "descartada":
+        query = query.filter(~user_opp.filter(UserOpportunity.triage == "descartada").exists())
     if solo_con_score or profile_match:
         min_score = PROFILE_MATCH_MIN_SCORE if profile_match else 1
         query = query.filter(user_opp.filter(UserOpportunity.score >= min_score).exists())
@@ -296,6 +300,8 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         UserOpportunity.user_id == user.id,
         UserOpportunity.opportunity_id == Opportunity.id,
     )
+    if triage != "descartada":
+        query = query.filter(~user_opp.filter(UserOpportunity.triage == "descartada").exists())
     if solo_con_score:
         # En búsquedas manuales el perfil no impone el umbral inicial; la
         # casilla solo exige que exista una puntuación calculada (> 0).
