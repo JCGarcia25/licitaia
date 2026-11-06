@@ -18,6 +18,7 @@ type SearchState = {
   valorMin?: string; scoreMin?: string; triage?: string; soloScore?: boolean;
 };
 const DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bogotá D.C.", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "Santander", "Sucre", "Tolima", "Valle del Cauca"];
+const SEARCH_STORAGE_KEY = "mysecop:oportunidades:ultima-busqueda";
 
 export default function Oportunidades() {
   const [items, setItems] = useState<Opp[] | null>(null);
@@ -69,6 +70,8 @@ export default function Oportunidades() {
         params.set("pagina", String(paginaSolicitada));
         url.search = params.toString();
         window.history.replaceState(null, "", url.toString());
+        if (esBusquedaManual) window.sessionStorage.setItem(SEARCH_STORAGE_KEY, params.toString());
+        else window.sessionStorage.removeItem(SEARCH_STORAGE_KEY);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
@@ -77,7 +80,8 @@ export default function Oportunidades() {
   }, [q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore, busquedaConPerfil, pagina]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const saved = window.sessionStorage.getItem(SEARCH_STORAGE_KEY) || "";
+    const params = new URLSearchParams(window.location.search || saved);
     const inicial = params.get("q") || "";
     const paginaInicial = Number(params.get("pagina") || "1");
     const estadoInicial: SearchState = {
