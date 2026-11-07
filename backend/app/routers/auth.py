@@ -53,10 +53,11 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
     settings = get_settings()
     enviado = False
     if settings.smtp_host:
-        enviado = send_email(email, "Verifica tu correo en MySECOP",
-                             f"Tu token de verificación: {token_ver}")
         welcome_subject, welcome_plain, welcome_html = _welcome_email(data.full_name)
-        send_email(email, welcome_subject, welcome_plain, html_body=welcome_html)
+        # El registro envía únicamente la bienvenida. No enviamos tokens
+        # técnicos al usuario: la verificación se mantiene disponible para
+        # flujos internos/dev mediante el token de la respuesta.
+        enviado = send_email(email, welcome_subject, welcome_plain, html_body=welcome_html)
     # Sin SMTP el token se devuelve en la respuesta (dev); con SMTP se envía por correo
     return TokenOut(access_token=create_access_token(user.email),
                     verification_token=None if enviado else token_ver)
