@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     quota_free_analyses: int = 20   # límite mensual de IA del plan explorador
     quota_pro_analyses: int = 500   # límite mensual de IA del plan profesional
     contact_email: str = "jorge@zorbagames.com"
+    frontend_url: str = "https://licitaia.centralspike.com"
     # Protección contra picos: evita que el pool de workers/CPU se agote y que
     # el proxy termine mostrando 502 por upstream saturado.
     max_concurrent_requests: int = 32

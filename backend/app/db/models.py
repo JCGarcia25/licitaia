@@ -32,6 +32,8 @@ class User(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
     email_verified = Column(Boolean, default=False)         # verificación de correo (Fase 5)
     verification_token = Column(String(64), nullable=True)
+    password_reset_token = Column(String(64), nullable=True, index=True)
+    password_reset_expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utcnow)
     profile = relationship("CompanyProfile", back_populates="user", uselist=False)
     alert_prefs = relationship("AlertPrefs", back_populates="user", uselist=False)

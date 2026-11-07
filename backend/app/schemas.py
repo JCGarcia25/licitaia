@@ -105,6 +105,15 @@ class VerifyEmailIn(BaseModel):
     token: str = Field(min_length=8, max_length=64)
 
 
+class PasswordResetRequestIn(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetIn(BaseModel):
+    token: str = Field(min_length=8, max_length=64)
+    password: str = Field(min_length=8, max_length=128)
+
+
 class CompanyIn(BaseModel):
     nombre: str = Field(min_length=2, max_length=200)
     nit: str = ""

@@ -3,6 +3,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Field, Input } from "@/components/ui";
+import { api } from "@/lib/api";
 import { useAuth } from "@/components/auth";
 
 export default function IniciarSesion() {
@@ -14,6 +15,8 @@ export default function IniciarSesion() {
   const [cargando, setCargando] = useState(false);
   const [remember, setRemember] = useState(true);
   const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [recuperacion, setRecuperacion] = useState(false);
+  const [mensajeRecuperacion, setMensajeRecuperacion] = useState("");
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
@@ -27,6 +30,14 @@ export default function IniciarSesion() {
     } finally {
       setCargando(false);
     }
+  }
+
+  async function solicitarRecuperacion() {
+    setMensajeRecuperacion("");
+    try {
+      const result = await api<{ mensaje: string }>("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) });
+      setMensajeRecuperacion(result.mensaje);
+    } catch (err) { setMensajeRecuperacion(err instanceof Error ? err.message : "No fue posible procesar la solicitud."); }
   }
 
   return (
@@ -49,6 +60,8 @@ export default function IniciarSesion() {
           {error ? <p className="text-xs text-red-600">{error}</p> : null}
           <Button type="submit" disabled={cargando} className="w-full">{cargando ? "Ingresando…" : "Ingresar"}</Button>
         </form>
+        <button type="button" onClick={() => setRecuperacion((value) => !value)} className="text-teal mt-4 text-xs font-medium hover:underline">¿Olvidaste tu contraseña?</button>
+        {recuperacion ? <div className="mt-3 space-y-2 rounded-lg border border-base p-3"><p className="text-muted text-xs">Escribe tu correo y te enviaremos un enlace seguro para crear una nueva contraseña.</p><Button type="button" size="sm" onClick={solicitarRecuperacion} disabled={!email}>Enviar enlace</Button>{mensajeRecuperacion ? <p className="text-muted text-xs">{mensajeRecuperacion}</p> : null}</div> : null}
         <p className="text-muted mt-5 text-xs">
           ¿No tienes cuenta? <Link href="/registro" className="text-teal font-medium hover:underline">Regístrate gratis</Link>
         </p>

@@ -2,6 +2,7 @@
 import secrets
 import logging
 from html import escape
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import OAuth2PasswordRequestForm
@@ -11,7 +12,7 @@ from app.core.config import get_settings
 from app.core.security import create_access_token, get_current_user, hash_password, verify_password
 from app.db.models import AlertPrefs, User
 from app.db.session import get_db
-from app.schemas import RegisterIn, TokenOut, UserOut, VerifyEmailIn
+from app.schemas import PasswordResetIn, PasswordResetRequestIn, RegisterIn, TokenOut, UserOut, VerifyEmailIn
 from app.services.notifier import send_email
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -35,6 +36,13 @@ def _welcome_email(full_name: str | None) -> tuple[str, str, str]:
 <tr><td style="background:linear-gradient(135deg,#082b55,#0f766e);padding:28px 32px;color:#fff"><div style="font-size:20px;font-weight:700;letter-spacing:.2px"><span style="display:inline-block;background:#14b8a6;color:#062238;border-radius:8px;padding:7px 8px;font-size:13px;margin-right:8px">MS</span>MySECOP</div><div style="margin-top:24px;font-size:28px;line-height:1.2;font-weight:700">Tu próxima oportunidad empieza aquí</div></td></tr>
 <tr><td style="padding:32px"><p style="margin:0 0 18px;font-size:18px;font-weight:700">¡Bienvenido/a, {nombre}!</p><p style="margin:0 0 16px;line-height:1.6;color:#52657d">Gracias por registrarte en MySECOP, tu aliado para descubrir, analizar y priorizar oportunidades de contratación pública.</p><p style="margin:0 0 22px;line-height:1.6;color:#52657d">Completa el perfil de tu empresa para que el sistema encuentre procesos más relevantes para tus capacidades, ubicación y presupuesto.</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eefaf8;border-radius:10px"><tr><td style="padding:16px;color:#0f766e;font-size:14px;line-height:1.5"><strong>Consejo para empezar:</strong><br>Describe con claridad tus actividades, productos y servicios. Esa información ayuda a mejorar tus coincidencias.</td></tr></table><p style="margin:24px 0 0;line-height:1.6;color:#52657d">Estamos aquí para ayudarte a competir con más información y confianza.</p><p style="margin:24px 0 0;font-weight:700">Equipo MySECOP</p></td></tr>
 <tr><td style="padding:18px 32px;background:#f8fafc;color:#718096;font-size:11px;line-height:1.5">MySECOP es un producto independiente y no es una plataforma oficial del Gobierno colombiano. Consulta siempre la fuente oficial del proceso.</td></tr></table></td></tr></table></body></html>'''
+    return subject, plain, html
+
+
+def _reset_email(name: str | None, link: str) -> tuple[str, str, str]:
+    subject = "Restablece tu contraseña de MySECOP"
+    plain = f"Hola {name or 'usuario/a'},\n\nRecibimos una solicitud para cambiar tu contraseña de MySECOP. Usa este enlace antes de 30 minutos:\n{link}\n\nSi no solicitaste este cambio, ignora este mensaje."
+    html = f'''<!doctype html><html lang="es"><body style="margin:0;background:#f4f7fb;font-family:Arial;color:#132238"><table width="100%" cellpadding="0" cellspacing="0" style="padding:28px 12px"><tr><td align="center"><table width="100%" style="max-width:600px;background:#fff;border-radius:16px;overflow:hidden"><tr><td style="background:#082b55;padding:26px 30px;color:#fff;font-size:21px;font-weight:bold"><span style="background:#14b8a6;color:#062238;border-radius:8px;padding:7px;font-size:13px">MS</span> MySECOP</td></tr><tr><td style="padding:30px"><h2 style="margin-top:0">Restablece tu contraseña</h2><p style="color:#52657d;line-height:1.6">Hola {escape(name or 'usuario/a')}, recibimos una solicitud para cambiar tu contraseña.</p><p style="color:#52657d;line-height:1.6">El enlace es válido durante 30 minutos y solo puede utilizarse una vez.</p><p><a href="{link}" style="display:inline-block;background:#14b8a6;color:#062238;text-decoration:none;font-weight:bold;padding:13px 22px;border-radius:8px">Restablecer contraseña</a></p><p style="font-size:12px;color:#718096">Si no solicitaste este cambio, puedes ignorar este correo.</p></td></tr></table></td></tr></table></body></html>'''
     return subject, plain, html
 
 
@@ -104,3 +112,32 @@ def verify_email(data: VerifyEmailIn, db: Session = Depends(get_db)):
     user.verification_token = None
     db.commit()
     return {"verificado": True, "email": user.email}
+
+
+@router.post("/forgot-password")
+def forgot_password(data: PasswordResetRequestIn, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == str(data.email).strip().lower()).first()
+    # Respuesta uniforme para no revelar qué correos están registrados.
+    if user:
+        token = secrets.token_urlsafe(32)[:64]
+        user.password_reset_token = token
+        user.password_reset_expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+        db.commit()
+        settings = get_settings()
+        link = f"{settings.frontend_url.rstrip('/')}/restablecer-contrasena?token={token}"
+        subject, plain, html = _reset_email(user.full_name, link)
+        send_email(user.email, subject, plain, html_body=html)
+    return {"solicitud_recibida": True, "mensaje": "Si el correo está registrado, recibirás un enlace para restablecer tu contraseña."}
+
+
+@router.post("/reset-password")
+def reset_password(data: PasswordResetIn, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.password_reset_token == data.token).first()
+    now = datetime.now(timezone.utc)
+    if not user or not user.password_reset_expires_at or user.password_reset_expires_at < now:
+        raise HTTPException(400, "El enlace no es válido o ya expiró")
+    user.hashed_password = hash_password(data.password)
+    user.password_reset_token = None
+    user.password_reset_expires_at = None
+    db.commit()
+    return {"restablecida": True}
