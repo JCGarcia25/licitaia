@@ -62,8 +62,13 @@ info "Iniciando únicamente la infraestructura de LicitaIA"
 info "Ejecutando migraciones"
 "${COMPOSE[@]}" run --rm migrate
 
-info "Construyendo y levantando LicitaIA"
-"${COMPOSE[@]}" up -d --build --remove-orphans api worker beat frontend
+info "Construyendo imágenes de LicitaIA"
+# Construir antes de crear contenedores evita una condición de carrera de
+# BuildKit cuando varios servicios se levantan simultáneamente.
+"${COMPOSE[@]}" build api worker beat frontend
+
+info "Levantando LicitaIA"
+"${COMPOSE[@]}" up -d --remove-orphans api worker beat frontend
 
 info "Limpiando caché e imágenes antiguas"
 # Conserva la caché reciente para que el siguiente despliegue no reinstale
