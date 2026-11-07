@@ -4,15 +4,17 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("licitaia_token");
+  return localStorage.getItem("licitaia_token") || sessionStorage.getItem("licitaia_token");
 }
 
-export function setToken(token: string) {
-  localStorage.setItem("licitaia_token", token);
+export function setToken(token: string, remember = true) {
+  if (remember) localStorage.setItem("licitaia_token", token);
+  else sessionStorage.setItem("licitaia_token", token);
 }
 
 export function clearToken() {
   localStorage.removeItem("licitaia_token");
+  sessionStorage.removeItem("licitaia_token");
 }
 
 export async function api<T = any>(path: string, opts: RequestInit = {}): Promise<T> {

@@ -3,7 +3,7 @@ import secrets
 import logging
 from html import escape
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -64,7 +64,7 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenOut)
-def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login(form: OAuth2PasswordRequestForm = Depends(), remember: bool = Query(False), db: Session = Depends(get_db)):
     email = form.username.strip().lower()
     user = db.query(User).filter(User.email == email).first()
     try:
@@ -76,7 +76,9 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
         valid = False
     if not valid:
         raise HTTPException(401, "Credenciales inválidas")
-    return TokenOut(access_token=create_access_token(user.email))
+    # Una sesión recordada dura 30 días; la sesión normal conserva el plazo
+    # corto configurado por seguridad.
+    return TokenOut(access_token=create_access_token(user.email, 60 * 24 * 30 if remember else None))
 
 
 @router.get("/me", response_model=UserOut)

@@ -19,7 +19,7 @@ function userFromToken(token: string | null, fallbackEmail = ""): User | null {
 
 type AuthContextValue = {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, remember?: boolean) => Promise<void>;
   register: (email: string, password: string, fullName: string) => Promise<void>;
   logout: () => void;
 };
@@ -51,14 +51,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, remember = true) => {
     const form = new URLSearchParams({ username: email, password });
-    const data = await api<{ access_token: string }>("/api/auth/login", { method: "POST", body: form.toString(), headers: { "Content-Type": "application/x-www-form-urlencoded" } });
-    setToken(data.access_token);
+    const data = await api<{ access_token: string }>(`/api/auth/login?remember=${remember ? "true" : "false"}`, { method: "POST", body: form.toString(), headers: { "Content-Type": "application/x-www-form-urlencoded" } });
+    setToken(data.access_token, remember);
     try {
       setUser(await api<User>("/api/auth/me"));
     } catch {
-      setToken(data.access_token);
+      setToken(data.access_token, remember);
       setUser(userFromToken(data.access_token, email.trim().toLowerCase()));
     }
   }, []);

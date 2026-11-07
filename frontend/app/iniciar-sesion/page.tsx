@@ -12,13 +12,15 @@ export default function IniciarSesion() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
+  const [remember, setRemember] = useState(true);
+  const [mostrarPassword, setMostrarPassword] = useState(false);
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
     setError("");
     setCargando(true);
     try {
-      await login(email, password);
+      await login(email, password, remember);
       router.push("/app");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible iniciar sesión");
@@ -41,8 +43,9 @@ export default function IniciarSesion() {
             <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@empresa.co" />
           </Field>
           <Field label="Contraseña">
-            <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+            <div className="relative"><Input type={mostrarPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pr-20" /><button type="button" onClick={() => setMostrarPassword((visible) => !visible)} className="text-muted absolute inset-y-0 right-3 text-xs hover:text-teal">{mostrarPassword ? "Ocultar" : "Ver"}</button></div>
           </Field>
+          <label className="text-muted flex items-center gap-2 text-xs"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="accent-teal" /> Recordarme en este dispositivo</label>
           {error ? <p className="text-xs text-red-600">{error}</p> : null}
           <Button type="submit" disabled={cargando} className="w-full">{cargando ? "Ingresando…" : "Ingresar"}</Button>
         </form>
