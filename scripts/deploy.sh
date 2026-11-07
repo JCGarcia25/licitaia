@@ -47,6 +47,7 @@ set_env ALLOW_DEMO_SEED false
 set_env DEBUG_ENDPOINT_ENABLED false
 set_env CORS_ORIGINS "https://${DOMAIN}"
 set_env NEXT_PUBLIC_API_URL "https://${DOMAIN}"
+set_env FRONTEND_URL "https://${DOMAIN}"
 set_env MERCADOPAGO_BACK_URL "https://${DOMAIN}/app/plan"
 set_env LICITAIA_API_PORT "$API_PORT"
 set_env LICITAIA_FRONTEND_PORT "$FRONTEND_PORT"
