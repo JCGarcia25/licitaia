@@ -1,6 +1,7 @@
 """Endpoints de autenticación (registro, login JWT, perfil actual)."""
 import secrets
 import logging
+from html import escape
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
@@ -15,6 +16,26 @@ from app.services.notifier import send_email
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 logger = logging.getLogger("licitaia.auth")
+
+
+def _welcome_email(full_name: str | None) -> tuple[str, str, str]:
+    nombre = escape((full_name or "").strip() or "empresario/a")
+    subject = "Bienvenido/a a MySECOP: empieza a encontrar mejores oportunidades"
+    plain = (
+        f"Hola {full_name or 'empresario/a'},\n\n"
+        "Te damos la bienvenida a MySECOP, tu aliado para descubrir, analizar y priorizar oportunidades de contratación pública.\n\n"
+        "Completa el perfil de tu empresa para recibir resultados más relevantes y consulta las oportunidades que mejor encajan con tus capacidades.\n\n"
+        "Estamos aquí para ayudarte a competir con más información y confianza.\n\n"
+        "Equipo MySECOP"
+    )
+    html = f'''<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#132238">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fb;padding:28px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#fff;border:1px solid #dfe7f0;border-radius:16px;overflow:hidden">
+<tr><td style="background:linear-gradient(135deg,#082b55,#0f766e);padding:28px 32px;color:#fff"><div style="font-size:20px;font-weight:700;letter-spacing:.2px"><span style="display:inline-block;background:#14b8a6;color:#062238;border-radius:8px;padding:7px 8px;font-size:13px;margin-right:8px">MS</span>MySECOP</div><div style="margin-top:24px;font-size:28px;line-height:1.2;font-weight:700">Tu próxima oportunidad empieza aquí</div></td></tr>
+<tr><td style="padding:32px"><p style="margin:0 0 18px;font-size:18px;font-weight:700">¡Bienvenido/a, {nombre}!</p><p style="margin:0 0 16px;line-height:1.6;color:#52657d">Gracias por registrarte en MySECOP, tu aliado para descubrir, analizar y priorizar oportunidades de contratación pública.</p><p style="margin:0 0 22px;line-height:1.6;color:#52657d">Completa el perfil de tu empresa para que el sistema encuentre procesos más relevantes para tus capacidades, ubicación y presupuesto.</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eefaf8;border-radius:10px"><tr><td style="padding:16px;color:#0f766e;font-size:14px;line-height:1.5"><strong>Consejo para empezar:</strong><br>Describe con claridad tus actividades, productos y servicios. Esa información ayuda a mejorar tus coincidencias.</td></tr></table><p style="margin:24px 0 0;line-height:1.6;color:#52657d">Estamos aquí para ayudarte a competir con más información y confianza.</p><p style="margin:24px 0 0;font-weight:700">Equipo MySECOP</p></td></tr>
+<tr><td style="padding:18px 32px;background:#f8fafc;color:#718096;font-size:11px;line-height:1.5">MySECOP es un producto independiente y no es una plataforma oficial del Gobierno colombiano. Consulta siempre la fuente oficial del proceso.</td></tr></table></td></tr></table></body></html>'''
+    return subject, plain, html
 
 
 @router.post("/register", response_model=TokenOut, status_code=201)
@@ -32,8 +53,10 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
     settings = get_settings()
     enviado = False
     if settings.smtp_host:
-        enviado = send_email(email, "Verifica tu correo en LicitaIA",
+        enviado = send_email(email, "Verifica tu correo en MySECOP",
                              f"Tu token de verificación: {token_ver}")
+        welcome_subject, welcome_plain, welcome_html = _welcome_email(data.full_name)
+        send_email(email, welcome_subject, welcome_plain, html_body=welcome_html)
     # Sin SMTP el token se devuelve en la respuesta (dev); con SMTP se envía por correo
     return TokenOut(access_token=create_access_token(user.email),
                     verification_token=None if enviado else token_ver)

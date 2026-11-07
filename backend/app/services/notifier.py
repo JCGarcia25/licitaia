@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import smtplib
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from app.core.config import get_settings
@@ -10,13 +11,18 @@ from app.core.config import get_settings
 logger = logging.getLogger("licitaia.notifier")
 
 
-def send_email(to: str, subject: str, body: str) -> bool:
+def send_email(to: str, subject: str, body: str, html_body: str | None = None) -> bool:
     settings = get_settings()
     if not settings.smtp_host:
         logger.info("SMTP no configurado: alerta '%s' se mantiene solo in-app para %s", subject, to)
         return False
     try:
-        msg = MIMEText(body, "plain", "utf-8")
+        if html_body:
+            msg = MIMEMultipart("alternative")
+            msg.attach(MIMEText(body, "plain", "utf-8"))
+            msg.attach(MIMEText(html_body, "html", "utf-8"))
+        else:
+            msg = MIMEText(body, "plain", "utf-8")
         msg["Subject"] = subject
         msg["From"] = settings.alerts_from_email
         msg["To"] = to
