@@ -127,6 +127,8 @@ OPENAI_MODEL=gpt-4o-mini
 QUOTA_FREE_ANALYSES=20
 QUOTA_PRO_ANALYSES=500
 CONTACT_EMAIL=contacto@tudominio.com
+# Dominio utilizado en enlaces de recuperación de contraseña
+FRONTEND_URL=https://dev.mysecop.co
 ```
 
 ## Protección contra saturación
