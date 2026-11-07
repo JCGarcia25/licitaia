@@ -134,7 +134,12 @@ def forgot_password(data: PasswordResetRequestIn, db: Session = Depends(get_db))
 def reset_password(data: PasswordResetIn, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.password_reset_token == data.token).first()
     now = datetime.now(timezone.utc)
-    if not user or not user.password_reset_expires_at or user.password_reset_expires_at < now:
+    expires_at = user.password_reset_expires_at if user else None
+    # SQLite puede devolver DateTime sin zona horaria aunque el valor se haya
+    # guardado en UTC; normalizamos antes de comparar para evitar un 500.
+    if expires_at and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if not user or not expires_at or expires_at < now:
         raise HTTPException(400, "El enlace no es válido o ya expiró")
     user.hashed_password = hash_password(data.password)
     user.password_reset_token = None
