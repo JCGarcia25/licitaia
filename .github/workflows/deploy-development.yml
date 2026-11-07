@@ -9,7 +9,7 @@ jobs:
     with:
       environment_name: development
       domain: dev.mysecop.co
-      app_dir: /opt/licitaia/development
+      app_dir: /home/administrator/licitaia-development
       project_name: licitaia-dev
       app_env: development
       api_port: 8002

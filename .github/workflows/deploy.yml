@@ -9,8 +9,8 @@ jobs:
     with:
       environment_name: production
       domain: mysecop.co
-      app_dir: /opt/licitaia/production
-      project_name: licitaia-prd
+      app_dir: /home/administrator/licitaia
+      project_name: licitaia
       app_env: production
       api_port: 8001
       frontend_port: 3000

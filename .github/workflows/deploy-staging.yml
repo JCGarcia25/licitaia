@@ -9,7 +9,7 @@ jobs:
     with:
       environment_name: staging
       domain: stg.mysecop.co
-      app_dir: /opt/licitaia/staging
+      app_dir: /home/administrator/licitaia-staging
       project_name: licitaia-stg
       app_env: staging
       api_port: 8003
