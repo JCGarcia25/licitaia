@@ -1,0 +1,17 @@
+name: Deploy development
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy-reusable.yml
+    with:
+      environment_name: development
+      domain: dev.mysecop.co
+      app_dir: /opt/licitaia/development
+      project_name: licitaia-dev
+      app_env: development
+      api_port: 8002
+      frontend_port: 3001
+    secrets: inherit

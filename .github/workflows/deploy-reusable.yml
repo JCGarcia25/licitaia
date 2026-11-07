@@ -1,0 +1,63 @@
+name: Reusable VPS deployment
+on:
+  workflow_call:
+    inputs:
+      environment_name: { required: true, type: string }
+      domain: { required: true, type: string }
+      app_dir: { required: true, type: string }
+      project_name: { required: true, type: string }
+      app_env: { required: true, type: string }
+      api_port: { required: true, type: number }
+      frontend_port: { required: true, type: number }
+    secrets:
+      VPS_SSH_KEY: { required: true }
+      VPS_KNOWN_HOSTS: { required: true }
+      VPS_HOST: { required: true }
+      VPS_USER: { required: true }
+      VPS_PORT: { required: false }
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.environment_name }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment_name }}
+    timeout-minutes: 30
+    concurrency:
+      group: licitaia-${{ inputs.environment_name }}
+      cancel-in-progress: true
+    steps:
+      - name: Configure SSH
+        shell: bash
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KEY" > "$HOME/.ssh/licitaia_deploy"
+          chmod 600 "$HOME/.ssh/licitaia_deploy"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+      - name: Pull and deploy on VPS
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          APP_DIR: ${{ inputs.app_dir }}
+          DOMAIN: ${{ inputs.domain }}
+          PROJECT_NAME: ${{ inputs.project_name }}
+          APP_ENV: ${{ inputs.app_env }}
+          API_PORT: ${{ inputs.api_port }}
+          FRONTEND_PORT: ${{ inputs.frontend_port }}
+        run: |
+          set -Eeuo pipefail
+          : "${VPS_PORT:=22}"
+          ssh_args=(-i "$HOME/.ssh/licitaia_deploy" -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15)
+          ssh "${ssh_args[@]}" "$VPS_USER@$VPS_HOST" bash -s -- "$APP_DIR" "$DOMAIN" "$PROJECT_NAME" "$APP_ENV" "$API_PORT" "$FRONTEND_PORT" <<'REMOTE'
+          set -Eeuo pipefail
+          APP_DIR="$1"; DOMAIN="$2"; PROJECT_NAME="$3"; APP_ENV="$4"; API_PORT="$5"; FRONTEND_PORT="$6"
+          cd "$APP_DIR"
+          git pull --ff-only
+          DOMAIN="$DOMAIN" PROJECT_NAME="$PROJECT_NAME" APP_ENV="$APP_ENV" \
+            LICITAIA_API_PORT="$API_PORT" LICITAIA_FRONTEND_PORT="$FRONTEND_PORT" ./scripts/deploy.sh
+          REMOTE

@@ -1,0 +1,17 @@
+name: Deploy staging
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy-reusable.yml
+    with:
+      environment_name: staging
+      domain: stg.mysecop.co
+      app_dir: /opt/licitaia/staging
+      project_name: licitaia-stg
+      app_env: staging
+      api_port: 8003
+      frontend_port: 3002
+    secrets: inherit

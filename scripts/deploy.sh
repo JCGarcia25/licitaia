@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 # Deploy LicitaIA without stopping or recreating containers from other projects.
-# Usage: DOMAIN=licitaia.centralspike.com ./scripts/deploy.sh
+# Usage: DOMAIN=mysecop.co APP_ENV=production PROJECT_NAME=licitaia-prd ./scripts/deploy.sh
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
@@ -10,7 +10,9 @@ cd "$ROOT_DIR"
 DOMAIN="${DOMAIN:-}"
 API_PORT="${LICITAIA_API_PORT:-8001}"
 FRONTEND_PORT="${LICITAIA_FRONTEND_PORT:-3000}"
-COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)
+APP_ENV="${APP_ENV:-production}"
+PROJECT_NAME="${PROJECT_NAME:-licitaia-${APP_ENV}}"
+COMPOSE=(docker compose -p "$PROJECT_NAME" -f docker-compose.yml -f docker-compose.prod.yml)
 
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 info() { printf '\n==> %s\n' "$*"; }
@@ -40,11 +42,12 @@ current_secret="$(grep -E '^SECRET_KEY=' .env | cut -d= -f2- || true)"
 [[ -n "$current_secret" && "$current_secret" != "cambiar-por-una-clave-larga-y-aleatoria" ]] || set_env SECRET_KEY "$(openssl rand -hex 32)"
 current_db_password="$(grep -E '^POSTGRES_PASSWORD=' .env | cut -d= -f2- || true)"
 [[ -n "$current_db_password" && "$current_db_password" != "licitaia_dev" ]] || set_env POSTGRES_PASSWORD "$(openssl rand -hex 16)"
-set_env ENVIRONMENT production
+set_env ENVIRONMENT "$APP_ENV"
 set_env ALLOW_DEMO_SEED false
 set_env DEBUG_ENDPOINT_ENABLED false
 set_env CORS_ORIGINS "https://${DOMAIN}"
 set_env NEXT_PUBLIC_API_URL "https://${DOMAIN}"
+set_env MERCADOPAGO_BACK_URL "https://${DOMAIN}/app/plan"
 set_env LICITAIA_API_PORT "$API_PORT"
 set_env LICITAIA_FRONTEND_PORT "$FRONTEND_PORT"
 
