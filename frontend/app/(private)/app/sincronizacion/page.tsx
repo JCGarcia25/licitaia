@@ -22,6 +22,7 @@ export default function Sincronizacion() {
   const [datasetActivo, setDatasetActivo] = useState<string | null>(null);
   const [modal, setModal] = useState<{ title: string; message: string; tone: "success" | "error" | "info" } | null>(null);
   const [usoGratis, setUsoGratis] = useState<{ used: number; limit: number } | null>(null);
+  const [esPro, setEsPro] = useState(false);
 
   const cargarRuns = useCallback(async () => {
     setRuns(await api<Run[]>("/api/sync/runs"));
@@ -38,7 +39,16 @@ export default function Sincronizacion() {
     }
   }
 
-  useEffect(() => { cargarRuns().catch(() => setRuns([])); }, [cargarRuns]);
+  useEffect(() => {
+    Promise.all([cargarRuns(), api<{ es_pro: boolean }>("/api/billing")]).then(([, billing]) => {
+      setEsPro(Boolean(billing.es_pro));
+    }).catch(() => setRuns([]));
+  }, [cargarRuns]);
+  useEffect(() => {
+    if (runs && !esPro && runs.length === 0 && !modal) {
+      setModal({ title: "Comienza con una sincronización", message: "Para consultar oportunidades actualizadas, ejecuta tu primera sincronización con SECOP. Tu plan Free incluye 3 sincronizaciones exitosas al mes.", tone: "info" });
+    }
+  }, [runs, esPro, modal]);
 
   async function ejecutar() {
     setCorriendo(true);
@@ -48,7 +58,12 @@ export default function Sincronizacion() {
       if (extraWhere.trim()) body.extra_where = extraWhere.trim();
       const r = await api<Record<string, unknown>>("/api/sync/secop", { method: "POST", body: JSON.stringify(body) });
       setResultado(r);
-      if (r.sync_free_limit) setUsoGratis({ used: Number(r.sync_free_used || 0), limit: Number(r.sync_free_limit) });
+      if (r.sync_free_limit) {
+        const used = Number(r.sync_free_used || 0);
+        const limit = Number(r.sync_free_limit);
+        setUsoGratis({ used, limit });
+        setModal({ title: used >= limit ? "Llegaste al límite gratuito" : "Sincronización completada", message: used >= limit ? "Has utilizado tus 3 sincronizaciones gratuitas de este mes. Actualiza a MySECOP Pro para disfrutar sincronizaciones ilimitadas y automáticas cada 30 minutos." : `Tu sincronización terminó correctamente. Te ${limit - used === 1 ? "queda" : "quedan"} ${limit - used} ${limit - used === 1 ? "ingesta gratuita" : "ingestas gratuitas"} este mes. Con MySECOP Pro disfrutas sincronizaciones ilimitadas y automáticas cada 30 minutos.`, tone: "success" });
+      }
       setModal({ title: "Sincronización completada", message: `La ingesta terminó correctamente. Nuevos: ${String(r.upserted ?? 0)} · Actualizados: ${String(r.duplicates ?? 0)} · Errores: ${String(r.errors ?? 0)}.`, tone: "success" });
       await cargarRuns();
     } catch (e) {
