@@ -40,7 +40,7 @@ def sync_source(
 ) -> SyncRun:
     """Ingesta incremental y upsert idempotente de un dataset SECOP verificado."""
     settings = get_settings()
-    run = SyncRun(dataset=source, user_id=user_id, detail={"max_pages": max_pages, "extra_where": extra_where})
+    run = SyncRun(dataset=source, user_id=user_id, detail={"max_pages": max_pages, "extra_where": extra_where, "owner_user_id": user_id})
     db.add(run)
     db.commit()
 
