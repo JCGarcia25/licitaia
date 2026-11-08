@@ -18,6 +18,7 @@ export default function Sincronizacion() {
   const [corriendo, setCorriendo] = useState(false);
   const [resultado, setResultado] = useState<Record<string, unknown> | null>(null);
   const [runs, setRuns] = useState<Run[] | null>(null);
+  const [runsError, setRunsError] = useState("");
   const [procesos, setProcesos] = useState<Process[] | null>(null);
   const [datasetActivo, setDatasetActivo] = useState<string | null>(null);
   const [modal, setModal] = useState<{ title: string; message: string; tone: "success" | "error" | "info" } | null>(null);
@@ -26,7 +27,12 @@ export default function Sincronizacion() {
   const [avisoInicialMostrado, setAvisoInicialMostrado] = useState(false);
 
   const cargarRuns = useCallback(async () => {
-    setRuns(await api<Run[]>("/api/sync/runs"));
+    try {
+      setRunsError("");
+      setRuns(await api<Run[]>("/api/sync/runs"));
+    } catch (error) {
+      setRunsError(error instanceof Error ? error.message : "No fue posible consultar el historial de sincronizaciones.");
+    }
   }, []);
 
   async function verProcesos(dataset: string) {
@@ -125,6 +131,8 @@ export default function Sincronizacion() {
         <CardHeader title="Auditoría de sincronizaciones" subtitle="Últimas 20 corridas registradas" />
         {!runs ? (
           <Spinner />
+        ) : runsError ? (
+          <p className="text-red-400 p-5 text-sm">No fue posible cargar tu historial de sincronizaciones. Intenta actualizar la página; tus oportunidades y el límite de uso permanecen protegidos.</p>
         ) : runs.length === 0 ? (
           <p className="text-muted p-5 text-sm">Aún no hay corridas registradas.</p>
         ) : (
