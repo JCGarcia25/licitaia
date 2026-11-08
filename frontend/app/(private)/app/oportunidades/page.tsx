@@ -233,10 +233,10 @@ export default function Oportunidades() {
                       </ul>
                     ) : null}
                   </div>
-                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:shrink-0">
+                  <div className="basis-full flex w-full flex-col gap-2 sm:basis-auto sm:w-auto sm:shrink-0">
                     <div className="flex flex-wrap gap-2">
-                      <Link href={`/app/oportunidades/${o.id}`}><Button size="sm">Analizar</Button></Link>
-                      {o.url_oficial ? <a href={o.url_oficial} target="_blank" rel="noopener,noreferrer"><Button size="sm" variant="outline">Ver en SECOP ↗</Button></a> : <Button size="sm" variant="outline" disabled>Expediente SECOP no disponible</Button>}
+                      <Link className="w-full sm:w-auto" href={`/app/oportunidades/${o.id}`}><Button size="sm" className="w-full sm:w-auto">Analizar</Button></Link>
+                      {o.url_oficial ? <a className="w-full sm:w-auto" href={o.url_oficial} target="_blank" rel="noopener,noreferrer"><Button size="sm" variant="outline" className="w-full sm:w-auto">Ver en SECOP ↗</Button></a> : <Button size="sm" variant="outline" className="w-full sm:w-auto" disabled>Expediente SECOP no disponible</Button>}
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="ghost" onClick={() => aplicarTriage(o.id, "descartada")}>Descartar</Button>

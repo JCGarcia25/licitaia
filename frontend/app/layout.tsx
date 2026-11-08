@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeInitScript } from "@/components/theme";
 
@@ -6,6 +6,12 @@ export const metadata: Metadata = {
   title: "MySECOP — Inteligencia para contratación pública",
   description:
     "MySECOP encuentra oportunidades de contratación pública que encajan con tu empresa y analiza sus requisitos. No es una plataforma oficial del Gobierno colombiano.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -8,7 +8,7 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
 
 export function CardHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-base px-5 py-4">
+    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-base px-5 py-4">
       <div>
         <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
         {subtitle ? <p className="text-muted mt-0.5 text-xs">{subtitle}</p> : null}
