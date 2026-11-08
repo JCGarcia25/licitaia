@@ -2,7 +2,7 @@
 /* Perfil empresarial: alimentación directa del Cazador de Oportunidades. */
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { Button, Card, CardHeader, Field, Input, Select, Spinner, Textarea } from "@/components/ui";
+import { Button, Card, CardHeader, Field, Input, MessageModal, Select, Spinner, Textarea } from "@/components/ui";
 
 type Profile = {
   nombre_comercial: string; razon_social: string; nit: string; sector: string;
@@ -26,6 +26,7 @@ export default function Perfil() {
   const [msg, setMsg] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [listas, setListas] = useState<Record<string, string>>({});
+  const [modal, setModal] = useState<{ title: string; message: string; tone: "success" | "error" } | null>(null);
 
   useEffect(() => {
     api<Profile | null>("/api/profile")
@@ -45,9 +46,11 @@ export default function Perfil() {
     try {
       const normalizadas = Object.fromEntries(Object.entries(listas).map(([key, value]) => [key, lista(value)]));
       await api("/api/profile", { method: "PUT", body: JSON.stringify({ ...p, ...normalizadas }) });
-      setMsg("Perfil guardado. Ejecuta el agente en Oportunidades para re-puntuar.");
+      setMsg("");
+      setModal({ title: "Perfil guardado", message: "Tus datos se actualizaron correctamente. Ve a Oportunidades para recalcular las coincidencias con tu perfil.", tone: "success" });
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : "Error guardando");
+      setMsg("");
+      setModal({ title: "No pudimos guardar tu perfil", message: err instanceof Error ? err.message : "Ocurrió un error al guardar los datos.", tone: "error" });
     } finally {
       setGuardando(false);
     }
@@ -147,6 +150,7 @@ export default function Perfil() {
         <Button type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar perfil"}</Button>
         {msg ? <p className="text-muted text-xs">{msg}</p> : null}
       </div>
+      {modal ? <MessageModal {...modal} onClose={() => setModal(null)} /> : null}
     </form>
   );
 }

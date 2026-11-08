@@ -222,6 +222,7 @@ class SyncRun(Base):
     """Registro de cada ingesta de datos (auditoría y deduplicación)."""
     __tablename__ = "sync_runs"
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     dataset = Column(String(60))                            # p6dx-8zbt | jbjy-vk9h | e985-4d7e
     started_at = Column(DateTime, default=utcnow)
     finished_at = Column(DateTime, nullable=True)
@@ -231,6 +232,14 @@ class SyncRun(Base):
     errors = Column(Integer, default=0)
     watermark = Column(DateTime, nullable=True)             # última fecha_de_ultima_publicaci procesada
     detail = Column(JSON, default=dict)
+
+class SyncUsage(Base):
+    __tablename__ = "sync_usage"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    month = Column(String(7), nullable=False, index=True)
+    successful_runs = Column(Integer, default=0, nullable=False)
+    __table_args__ = (UniqueConstraint("user_id", "month", name="uq_sync_usage_user_month"),)
 
 
 class Company(Base):

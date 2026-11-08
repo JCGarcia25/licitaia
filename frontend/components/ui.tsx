@@ -8,7 +8,7 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
 
 export function CardHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-base px-5 py-4">
+    <div className="flex flex-wrap items-start justify-between gap-3 border-b border-base px-5 py-4">
       <div>
         <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
         {subtitle ? <p className="text-muted mt-0.5 text-xs">{subtitle}</p> : null}
@@ -110,6 +110,19 @@ export function EmptyState({ title, body }: { title: string; body?: string }) {
       {body ? <p className="text-muted mt-1 text-xs">{body}</p> : null}
     </div>
   );
+}
+
+export function MessageModal({ title = "Mensaje de MySECOP", message, tone = "info", onClose, actionLabel, onAction }: { title?: string; message: string; tone?: "info" | "success" | "error"; onClose: () => void; actionLabel?: string; onAction?: () => void }) {
+  const icon = tone === "success" ? "✓" : tone === "error" ? "!" : "i";
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4" role="presentation">
+    <div className="surface-card w-full max-w-md p-7 text-center shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="mysecop-message-title">
+      <div className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full text-2xl font-bold ${tone === "success" ? "bg-teal/15 text-teal" : tone === "error" ? "bg-red-500/15 text-red-500" : "bg-brand-500/15 text-brand-500"}`}>{icon}</div>
+      <h2 id="mysecop-message-title" className="mt-4 text-xl font-bold">{title}</h2>
+      <p className="text-muted mt-2 text-sm leading-relaxed">{message}</p>
+      {onAction ? <Button className="mt-6 w-full" onClick={onAction}>{actionLabel || "Continuar"}</Button> : <Button className="mt-6 w-full" onClick={onClose}>Continuar en MySECOP</Button>}
+      {onAction ? <button type="button" className="text-muted mt-3 text-xs hover:text-teal" onClick={onClose}>Cerrar</button> : null}
+    </div>
+  </div>;
 }
 
 export function fmtCOP(valor: number | null | undefined): string {

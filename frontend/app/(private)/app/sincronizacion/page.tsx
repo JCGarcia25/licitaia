@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { Badge, Button, Card, CardHeader, Field, Input, Select, Spinner } from "@/components/ui";
+import { Badge, Button, Card, CardHeader, Field, Input, MessageModal, Select, Spinner } from "@/components/ui";
 
 type Run = {
   id: number; dataset: string; started_at: string; finished_at: string | null;
@@ -20,6 +20,10 @@ export default function Sincronizacion() {
   const [runs, setRuns] = useState<Run[] | null>(null);
   const [procesos, setProcesos] = useState<Process[] | null>(null);
   const [datasetActivo, setDatasetActivo] = useState<string | null>(null);
+  const [modal, setModal] = useState<{ title: string; message: string; tone: "success" | "error" | "info" } | null>(null);
+  const [usoGratis, setUsoGratis] = useState<{ used: number; limit: number } | null>(null);
+  const [esPro, setEsPro] = useState(false);
+  const [avisoInicialMostrado, setAvisoInicialMostrado] = useState(false);
 
   const cargarRuns = useCallback(async () => {
     setRuns(await api<Run[]>("/api/sync/runs"));
@@ -36,7 +40,18 @@ export default function Sincronizacion() {
     }
   }
 
-  useEffect(() => { cargarRuns().catch(() => setRuns([])); }, [cargarRuns]);
+  useEffect(() => {
+    Promise.all([cargarRuns(), api<{ es_pro: boolean }>("/api/billing"), api<{ es_pro: boolean; used: number; limit: number | null }>("/api/sync/usage")]).then(([, billing, usage]) => {
+      setEsPro(Boolean(billing.es_pro));
+      if (!usage.es_pro && usage.limit !== null) setUsoGratis({ used: usage.used, limit: usage.limit });
+    }).catch(() => setRuns([]));
+  }, [cargarRuns]);
+  useEffect(() => {
+    if (runs && !esPro && runs.length === 0 && !modal && !avisoInicialMostrado) {
+      setAvisoInicialMostrado(true);
+      setModal({ title: "Comienza con una sincronización", message: "Para consultar oportunidades actualizadas, ejecuta tu primera sincronización con SECOP. Tu plan Free incluye 3 sincronizaciones exitosas al mes.", tone: "info" });
+    }
+  }, [runs, esPro, modal, avisoInicialMostrado]);
 
   async function ejecutar() {
     setCorriendo(true);
@@ -46,9 +61,24 @@ export default function Sincronizacion() {
       if (extraWhere.trim()) body.extra_where = extraWhere.trim();
       const r = await api<Record<string, unknown>>("/api/sync/secop", { method: "POST", body: JSON.stringify(body) });
       setResultado(r);
+      const usoActual = await api<{ es_pro: boolean; used: number; limit: number | null }>("/api/sync/usage");
+      if (!usoActual.es_pro && usoActual.limit !== null) {
+        setUsoGratis({ used: usoActual.used, limit: usoActual.limit });
+        setModal({ title: "Sincronización completada", message: `La ingesta terminó correctamente. Te ${usoActual.limit - usoActual.used === 1 ? "queda" : "quedan"} ${Math.max(0, usoActual.limit - usoActual.used)} ${usoActual.limit - usoActual.used === 1 ? "sincronización gratuita" : "sincronizaciones gratuitas"} este mes. Pásate a MySECOP Pro para disfrutar sincronizaciones ilimitadas y automáticas cada 30 minutos.`, tone: "success" });
+      }
+      if (r.sync_free_limit) {
+        const used = Number(r.sync_free_used || 0);
+        const limit = Number(r.sync_free_limit);
+        setUsoGratis({ used, limit });
+        setModal({ title: used >= limit ? "Llegaste al límite gratuito" : "Sincronización completada", message: used >= limit ? "Has utilizado tus 3 sincronizaciones gratuitas de este mes. Actualiza a MySECOP Pro para disfrutar sincronizaciones ilimitadas y automáticas cada 30 minutos." : `Tu sincronización terminó correctamente. Te ${limit - used === 1 ? "queda" : "quedan"} ${limit - used} ${limit - used === 1 ? "ingesta gratuita" : "ingestas gratuitas"} este mes. Con MySECOP Pro disfrutas sincronizaciones ilimitadas y automáticas cada 30 minutos.`, tone: "success" });
+      }
+      setModal({ title: "Sincronización completada", message: `La ingesta terminó correctamente. Nuevos: ${String(r.upserted ?? 0)} · Actualizados: ${String(r.duplicates ?? 0)} · Errores: ${String(r.errors ?? 0)}.`, tone: "success" });
       await cargarRuns();
     } catch (e) {
-      setResultado({ error: e instanceof Error ? e.message : "Error" });
+      const message = e instanceof Error ? e.message : "No fue posible ejecutar la sincronización.";
+      setResultado({ error: message });
+      const limite = message.toLowerCase().includes("3 sincronizaciones gratuitas");
+      setModal({ title: limite ? "Llegaste al límite gratuito" : message.toLowerCase().includes("exclusiva") ? "Función disponible en MySECOP Pro" : "No fue posible sincronizar", message: limite ? "Has utilizado tus 3 sincronizaciones gratuitas de este mes. Actualiza a MySECOP Pro para mantener tus oportunidades actualizadas automáticamente." : message.toLowerCase().includes("exclusiva") ? "Esta función es exclusiva de MySECOP Pro. Actualiza tu plan para continuar." : message, tone: limite || message.toLowerCase().includes("exclusiva") ? "info" : "error" });
     } finally {
       setCorriendo(false);
     }
@@ -67,6 +97,7 @@ export default function Sincronizacion() {
         <p className="text-muted text-sm">
           Ingesta incremental vía API Socrata de datos.gov.co. El agendamiento automático (cada 30 minutos) corre en el worker de Celery.
         </p>
+        {usoGratis ? <p className="mt-2 text-xs text-teal">Sincronizaciones gratuitas usadas este mes: {usoGratis.used} de {usoGratis.limit}.</p> : null}
       </div>
 
       <Card>
@@ -86,15 +117,7 @@ export default function Sincronizacion() {
         </div>
         <div className="flex items-center gap-3 px-5 pb-5">
           <Button onClick={ejecutar} disabled={corriendo}>{corriendo ? "Sincronizando…" : "Ejecutar sincronización"}</Button>
-          {resultado ? (
-            <p className="text-muted text-xs">
-              {"error" in resultado ? (
-                <span className="text-red-600">{String(resultado.error)}</span>
-              ) : (
-                <>Nuevas: {String(resultado.upserted)} · Duplicadas actualizadas: {String(resultado.duplicates)} · Errores: {String(resultado.errors)}</>
-              )}
-            </p>
-          ) : null}
+          {resultado ? <p className="text-muted text-xs">Última ejecución registrada. Consulta la auditoría para ver el detalle.</p> : null}
         </div>
       </Card>
 
@@ -152,6 +175,7 @@ export default function Sincronizacion() {
           registrada por el usuario. La fuente oficial es siempre la referencia definitiva del estado del expediente.
         </p>
       </Card>
+      {modal ? <MessageModal {...modal} onClose={() => setModal(null)} /> : null}
     </div>
   );
 }

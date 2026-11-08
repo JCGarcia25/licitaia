@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import { Badge, Button, Card, EmptyState, fmtCOP, fmtFecha, Input, Spinner, scoreTone, Select } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, fmtCOP, fmtFecha, Input, MessageModal, Spinner, scoreTone, Select } from "@/components/ui";
 
 type Reason = { factor: string; detalle: string; evidencia: string };
 type Opp = {
@@ -30,10 +30,14 @@ export default function Oportunidades() {
   const [valorMin, setValorMin] = useState("");
   const [scoreMin, setScoreMin] = useState("");
   const [triage, setTriage] = useState("");
-  const [soloScore, setSoloScore] = useState(true);
+  // Buscar y filtrar es una capacidad común de Free y Pro. La puntuación es
+  // opcional para que una cuenta nueva también vea resultados sincronizados.
+  const [soloScore, setSoloScore] = useState(false);
   const [error, setError] = useState("");
   const [perfilRequerido, setPerfilRequerido] = useState(false);
   const [busquedaConPerfil, setBusquedaConPerfil] = useState(false);
+  const [modal, setModal] = useState<{ title: string; message: string; tone: "error" | "info" } | null>(null);
+  const [perfilAvisado, setPerfilAvisado] = useState(false);
   const [pagina, setPagina] = useState(1);
   const TAMANO_PAGINA = 25;
   const router = useRouter();
@@ -59,10 +63,22 @@ export default function Oportunidades() {
     params.set("limit", String(TAMANO_PAGINA));
     params.set("offset", String((paginaSolicitada - 1) * TAMANO_PAGINA));
     try {
-      const res = consulta
-        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q: consulta, departamento: estado.departamento || undefined, municipio: estado.municipio || undefined, modalidad: estado.modalidad || undefined, valor_min: estado.valorMin ? Number(estado.valorMin.replace(/[^\d]/g, "")) : undefined, score_min: estado.scoreMin ? Number(estado.scoreMin) : undefined, triage: estado.triage || undefined, solo_con_score: estado.soloScore ?? soloScore, limit: TAMANO_PAGINA, offset: (paginaSolicitada - 1) * TAMANO_PAGINA }) })
+      const searchBody = { q: consulta, departamento: estado.departamento || undefined, municipio: estado.municipio || undefined, modalidad: estado.modalidad || undefined, valor_min: estado.valorMin ? Number(estado.valorMin.replace(/[^\d]/g, "")) : undefined, score_min: estado.scoreMin ? Number(estado.scoreMin) : undefined, triage: estado.triage || undefined, solo_con_score: estado.soloScore ?? soloScore, limit: TAMANO_PAGINA, offset: (paginaSolicitada - 1) * TAMANO_PAGINA };
+      let res = consulta
+        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify(searchBody) })
         : await api<{ total: number; items: Opp[]; profile_required?: boolean }>(`/api/opportunities?${params.toString()}&profile_match=${aplicarPerfil}`);
+      // En un ambiente recién sincronizado puede no haber puntuaciones aún.
+      // La búsqueda textual sigue siendo útil: si el filtro de puntuadas no
+      // encuentra nada, repetimos sin ese requisito y mostramos los procesos.
+      if (consulta && res.total === 0 && searchBody.solo_con_score) {
+        setSoloScore(false);
+        res = await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ ...searchBody, solo_con_score: false }) });
+      }
       setPerfilRequerido(Boolean(res.profile_required));
+      if (res.profile_required && !perfilAvisado) {
+        setPerfilAvisado(true);
+        setModal({ title: "Completa tu perfil para encontrar oportunidades", message: "Antes de mostrar procesos, necesitamos conocer las actividades, productos o servicios, ubicaciones y presupuesto de tu empresa. Así MySECOP podrá mostrarte coincidencias relevantes y evitar resultados que no correspondan a tu negocio.", tone: "info" });
+      }
       setItems(res.items);
       setTotal(res.total);
       if (typeof window !== "undefined") {
@@ -74,7 +90,11 @@ export default function Oportunidades() {
         else window.sessionStorage.removeItem(SEARCH_STORAGE_KEY);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error");
+      const message = e instanceof Error ? e.message : "No fue posible consultar las oportunidades.";
+      if (message.toLowerCase().includes("exclusiva") || message.toLowerCase().includes("mysecop pro")) {
+        setModal({ title: "Función disponible en MySECOP Pro", message: "Esta función es exclusiva de MySECOP Pro. Actualiza tu plan para continuar disfrutando el flujo completo.", tone: "info" });
+        setError("");
+      } else setError(message);
       setItems([]);
     }
   }, [q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore, busquedaConPerfil, pagina]);
@@ -92,7 +112,7 @@ export default function Oportunidades() {
       valorMin: params.get("valor_min") || "",
       scoreMin: params.get("score_min") || "",
       triage: params.get("triage") || "",
-      soloScore: params.has("solo_con_score") ? params.get("solo_con_score") !== "false" : true,
+      soloScore: params.has("solo_con_score") ? params.get("solo_con_score") === "true" : false,
     };
     setQ(estadoInicial.q || "");
     setDepartamento(estadoInicial.departamento || "");
@@ -140,12 +160,12 @@ export default function Oportunidades() {
 
       {/* Filtros */}
       <Card className="space-y-3 p-4">
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && cargar()}
             placeholder='Búsqueda: texto libre o en lenguaje natural ("procesos abiertos de software en Bogotá superiores a 200 millones")' />
-          <Button onClick={nuevaBusqueda}>Buscar</Button>
+          <Button onClick={nuevaBusqueda} className="w-full shrink-0 whitespace-nowrap sm:w-auto sm:min-w-24">Buscar</Button>
         </div>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-6">
           <Select value={departamento} onChange={(e) => { setDepartamento(e.target.value); setMunicipio(""); }}>
             <option value="">Toda Colombia</option>
             {DEPARTAMENTOS.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -213,15 +233,15 @@ export default function Oportunidades() {
                       </ul>
                     ) : null}
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      <Link href={`/app/oportunidades/${o.id}`}><Button size="sm">Analizar</Button></Link>
-                      {o.url_oficial ? <a href={o.url_oficial} target="_blank" rel="noopener,noreferrer"><Button size="sm" variant="outline">Ver en SECOP ↗</Button></a> : <Button size="sm" variant="outline" disabled>Expediente SECOP no disponible</Button>}
+                  <div className="basis-full flex w-full flex-col gap-2 sm:basis-auto sm:w-auto sm:shrink-0">
+                    <div className="flex flex-wrap gap-2">
+                      <Link className="w-full sm:w-auto" href={`/app/oportunidades/${o.id}`}><Button size="sm" className="w-full sm:w-auto">Analizar</Button></Link>
+                      {o.url_oficial ? <a className="w-full sm:w-auto" href={o.url_oficial} target="_blank" rel="noopener,noreferrer"><Button size="sm" variant="outline" className="w-full sm:w-auto">Ver en SECOP ↗</Button></a> : <Button size="sm" variant="outline" className="w-full sm:w-auto" disabled>Expediente SECOP no disponible</Button>}
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="ghost" onClick={() => aplicarTriage(o.id, "descartada")}>Descartar</Button>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => crearProyecto(o.id)}>Crear proyecto de propuesta</Button>
+                    <Button size="sm" variant="outline" className="w-full" onClick={() => crearProyecto(o.id)}>Crear proyecto de propuesta</Button>
                   </div>
                 </div>
               </Card>
@@ -236,6 +256,7 @@ export default function Oportunidades() {
           </div>
         </>
       )}
+      {modal ? <MessageModal {...modal} onClose={() => setModal(null)} actionLabel={modal.title.startsWith("Completa") ? "Completar perfil de empresa" : undefined} onAction={modal.title.startsWith("Completa") ? () => router.push("/app/perfil") : undefined} /> : null}
     </div>
   );
 }

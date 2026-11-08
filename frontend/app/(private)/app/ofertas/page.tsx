@@ -145,7 +145,7 @@ export default function Ofertas() {
                 <CardHeader title="Checklist documental" subtitle="Marca los documentos listos" />
                 <ul className="divide-y divide-[var(--border)]">
                   {sel.checklist.map((c, i) => (
-                    <li key={i} className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm">
+                    <li key={i} className="flex flex-wrap items-center justify-between gap-3 px-5 py-2.5 text-sm">
                       <button onClick={() => toggleChecklist(i, c.estado)} className="flex items-center gap-2 text-left">
                         <span className={`flex h-5 w-5 items-center justify-center rounded-md border text-[10px] ${c.estado === "listo" ? "border-teal bg-teal text-white" : "border-base"}`}>
                           {c.estado === "listo" ? "✓" : ""}
@@ -163,7 +163,7 @@ export default function Ofertas() {
                 <CardHeader title="Cronograma interno sugerido" />
                 <ul className="divide-y divide-[var(--border)]">
                   {sel.cronograma.map((c, i) => (
-                    <li key={i} className="flex justify-between px-5 py-2 text-sm">
+                    <li key={i} className="flex flex-wrap justify-between gap-2 px-5 py-2 text-sm">
                       <span className="text-muted">{c.tarea}</span><span className="font-medium">{c.plazo}</span>
                     </li>
                   ))}
@@ -176,7 +176,7 @@ export default function Ofertas() {
                   title="Borradores"
                   subtitle="Las respuestas técnicas se generan solo con información que tú proporcionas"
                   action={
-                    <div className="flex gap-2">
+                    <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                       <Button size="sm" variant="outline" onClick={() => generarBorrador("carta_presentacion")}>Carta de presentación</Button>
                       <Button size="sm" variant="outline" onClick={() => generarBorrador("matriz_cumplimiento")}>Matriz</Button>
                       <Button size="sm" variant="outline" onClick={() => generarBorrador("respuestas_tecnicas")}>Respuestas técnicas</Button>
@@ -212,9 +212,9 @@ export default function Ofertas() {
                   {sel.comentarios.map((c, i) => (
                     <p key={i} className="text-muted text-xs"><span className="font-medium text-[var(--text)]">{c.autor}:</span> {c.texto} <span className="text-[10px]">({c.fecha})</span></p>
                   ))}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <Input value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder="Añadir comentario…" />
-                    <Button size="sm" onClick={enviarComentario}>Comentar</Button>
+                    <Button size="sm" onClick={enviarComentario} className="shrink-0">Comentar</Button>
                   </div>
                 </div>
               </Card>
