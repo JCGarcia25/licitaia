@@ -90,7 +90,7 @@ export default function Perfil() {
 
       <Card>
         <CardHeader title="Identificación" />
-        <div className="grid gap-4 p-5 md:grid-cols-3">
+        <div className="grid gap-4 p-5 lg:grid-cols-3">
           <Field label="Nombre comercial"><Input value={p.nombre_comercial} onChange={(e) => setP({ ...p, nombre_comercial: e.target.value })} /></Field>
           <Field label="Razón social"><Input value={p.razon_social} onChange={(e) => setP({ ...p, razon_social: e.target.value })} /></Field>
           <Field label="NIT"><Input value={p.nit} onChange={(e) => setP({ ...p, nit: e.target.value })} placeholder="900.123.456-7" /></Field>

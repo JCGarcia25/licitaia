@@ -110,7 +110,7 @@ export default function Sincronizacion() {
 
       <Card>
         <CardHeader title="Ejecutar ingesta manual" subtitle="Paginación segura con upsert idempotente (sin duplicados)" />
-        <div className="grid gap-4 p-5 md:grid-cols-3">
+        <div className="grid gap-4 p-5 lg:grid-cols-3">
           <Field label="Fuente">
             <Select value={source} onChange={(e) => setSource(e.target.value)}>
               {FUENTES.map((f) => <option key={f.v} value={f.v}>{f.l}</option>)}
@@ -123,8 +123,8 @@ export default function Sincronizacion() {
             <Input value={extraWhere} onChange={(e) => setExtraWhere(e.target.value)} />
           </Field>
         </div>
-        <div className="flex items-center gap-3 px-5 pb-5">
-          <Button onClick={ejecutar} disabled={corriendo}>{corriendo ? "Sincronizando…" : "Ejecutar sincronización"}</Button>
+        <div className="flex flex-wrap items-center gap-3 px-5 pb-5">
+          <Button onClick={ejecutar} disabled={corriendo} className="w-full sm:w-auto">{corriendo ? "Sincronizando…" : "Ejecutar sincronización"}</Button>
           {resultado ? <p className="text-muted text-xs">Última ejecución registrada. Consulta la auditoría para ver el detalle.</p> : null}
         </div>
       </Card>
