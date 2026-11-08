@@ -41,8 +41,9 @@ export default function Sincronizacion() {
   }
 
   useEffect(() => {
-    Promise.all([cargarRuns(), api<{ es_pro: boolean }>("/api/billing")]).then(([, billing]) => {
+    Promise.all([cargarRuns(), api<{ es_pro: boolean }>("/api/billing"), api<{ es_pro: boolean; used: number; limit: number | null }>("/api/sync/usage")]).then(([, billing, usage]) => {
       setEsPro(Boolean(billing.es_pro));
+      if (!usage.es_pro && usage.limit !== null) setUsoGratis({ used: usage.used, limit: usage.limit });
     }).catch(() => setRuns([]));
   }, [cargarRuns]);
   useEffect(() => {
@@ -60,6 +61,11 @@ export default function Sincronizacion() {
       if (extraWhere.trim()) body.extra_where = extraWhere.trim();
       const r = await api<Record<string, unknown>>("/api/sync/secop", { method: "POST", body: JSON.stringify(body) });
       setResultado(r);
+      const usoActual = await api<{ es_pro: boolean; used: number; limit: number | null }>("/api/sync/usage");
+      if (!usoActual.es_pro && usoActual.limit !== null) {
+        setUsoGratis({ used: usoActual.used, limit: usoActual.limit });
+        setModal({ title: "Sincronización completada", message: `La ingesta terminó correctamente. Te ${usoActual.limit - usoActual.used === 1 ? "queda" : "quedan"} ${Math.max(0, usoActual.limit - usoActual.used)} ${usoActual.limit - usoActual.used === 1 ? "sincronización gratuita" : "sincronizaciones gratuitas"} este mes. Pásate a MySECOP Pro para disfrutar sincronizaciones ilimitadas y automáticas cada 30 minutos.`, tone: "success" });
+      }
       if (r.sync_free_limit) {
         const used = Number(r.sync_free_used || 0);
         const limit = Number(r.sync_free_limit);

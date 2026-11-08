@@ -52,3 +52,10 @@ def list_runs(user: User = Depends(get_current_user), db: Session = Depends(get_
         "pages": r.pages, "upserted": r.upserted, "duplicates": r.duplicates, "errors": r.errors,
         "watermark": r.watermark,
     } for r in runs]
+
+@router.get("/usage")
+def sync_usage(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    month = datetime.utcnow().strftime("%Y-%m")
+    usage = db.query(SyncUsage).filter(SyncUsage.user_id == user.id, SyncUsage.month == month).first()
+    is_pro = subscription_is_pro(get_subscription(db, user))
+    return {"es_pro": is_pro, "used": usage.successful_runs if usage else 0, "limit": None if is_pro else 3, "remaining": None if is_pro else max(0, 3 - (usage.successful_runs if usage else 0))}
