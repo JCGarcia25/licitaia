@@ -18,15 +18,22 @@ export default function Sincronizacion() {
   const [corriendo, setCorriendo] = useState(false);
   const [resultado, setResultado] = useState<Record<string, unknown> | null>(null);
   const [runs, setRuns] = useState<Run[] | null>(null);
+  const [runsError, setRunsError] = useState("");
   const [procesos, setProcesos] = useState<Process[] | null>(null);
   const [datasetActivo, setDatasetActivo] = useState<string | null>(null);
   const [modal, setModal] = useState<{ title: string; message: string; tone: "success" | "error" | "info" } | null>(null);
   const [usoGratis, setUsoGratis] = useState<{ used: number; limit: number } | null>(null);
-  const [esPro, setEsPro] = useState(false);
+  const [esPro, setEsPro] = useState<boolean | null>(null);
+  const [planCargado, setPlanCargado] = useState(false);
   const [avisoInicialMostrado, setAvisoInicialMostrado] = useState(false);
 
   const cargarRuns = useCallback(async () => {
-    setRuns(await api<Run[]>("/api/sync/runs"));
+    try {
+      setRunsError("");
+      setRuns(await api<Run[]>("/api/sync/runs"));
+    } catch (error) {
+      setRunsError(error instanceof Error ? error.message : "No fue posible consultar el historial de sincronizaciones.");
+    }
   }, []);
 
   async function verProcesos(dataset: string) {
@@ -43,15 +50,16 @@ export default function Sincronizacion() {
   useEffect(() => {
     Promise.all([cargarRuns(), api<{ es_pro: boolean }>("/api/billing"), api<{ es_pro: boolean; used: number; limit: number | null }>("/api/sync/usage")]).then(([, billing, usage]) => {
       setEsPro(Boolean(billing.es_pro));
+      setPlanCargado(true);
       if (!usage.es_pro && usage.limit !== null) setUsoGratis({ used: usage.used, limit: usage.limit });
-    }).catch(() => setRuns([]));
+    }).catch(() => { setRuns([]); setPlanCargado(true); });
   }, [cargarRuns]);
   useEffect(() => {
-    if (runs && !esPro && runs.length === 0 && !modal && !avisoInicialMostrado) {
+    if (runs && planCargado && esPro === false && runs.length === 0 && !modal && !avisoInicialMostrado) {
       setAvisoInicialMostrado(true);
       setModal({ title: "Comienza con una sincronización", message: "Para consultar oportunidades actualizadas, ejecuta tu primera sincronización con SECOP. Tu plan Free incluye 3 sincronizaciones exitosas al mes.", tone: "info" });
     }
-  }, [runs, esPro, modal, avisoInicialMostrado]);
+  }, [runs, esPro, planCargado, modal, avisoInicialMostrado]);
 
   async function ejecutar() {
     setCorriendo(true);
@@ -125,6 +133,8 @@ export default function Sincronizacion() {
         <CardHeader title="Auditoría de sincronizaciones" subtitle="Últimas 20 corridas registradas" />
         {!runs ? (
           <Spinner />
+        ) : runsError ? (
+          <p className="text-red-400 p-5 text-sm">No fue posible cargar tu historial de sincronizaciones. Intenta actualizar la página; tus oportunidades y el límite de uso permanecen protegidos.</p>
         ) : runs.length === 0 ? (
           <p className="text-muted p-5 text-sm">Aún no hay corridas registradas.</p>
         ) : (
