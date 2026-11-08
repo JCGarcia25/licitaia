@@ -30,7 +30,9 @@ export default function Oportunidades() {
   const [valorMin, setValorMin] = useState("");
   const [scoreMin, setScoreMin] = useState("");
   const [triage, setTriage] = useState("");
-  const [soloScore, setSoloScore] = useState(true);
+  // Buscar y filtrar es una capacidad común de Free y Pro. La puntuación es
+  // opcional para que una cuenta nueva también vea resultados sincronizados.
+  const [soloScore, setSoloScore] = useState(false);
   const [error, setError] = useState("");
   const [perfilRequerido, setPerfilRequerido] = useState(false);
   const [busquedaConPerfil, setBusquedaConPerfil] = useState(false);
@@ -105,7 +107,7 @@ export default function Oportunidades() {
       valorMin: params.get("valor_min") || "",
       scoreMin: params.get("score_min") || "",
       triage: params.get("triage") || "",
-      soloScore: params.has("solo_con_score") ? params.get("solo_con_score") !== "false" : true,
+      soloScore: params.has("solo_con_score") ? params.get("solo_con_score") === "true" : false,
     };
     setQ(estadoInicial.q || "");
     setDepartamento(estadoInicial.departamento || "");
