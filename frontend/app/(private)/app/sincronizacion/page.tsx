@@ -23,6 +23,7 @@ export default function Sincronizacion() {
   const [modal, setModal] = useState<{ title: string; message: string; tone: "success" | "error" | "info" } | null>(null);
   const [usoGratis, setUsoGratis] = useState<{ used: number; limit: number } | null>(null);
   const [esPro, setEsPro] = useState(false);
+  const [avisoInicialMostrado, setAvisoInicialMostrado] = useState(false);
 
   const cargarRuns = useCallback(async () => {
     setRuns(await api<Run[]>("/api/sync/runs"));
@@ -45,10 +46,11 @@ export default function Sincronizacion() {
     }).catch(() => setRuns([]));
   }, [cargarRuns]);
   useEffect(() => {
-    if (runs && !esPro && runs.length === 0 && !modal) {
+    if (runs && !esPro && runs.length === 0 && !modal && !avisoInicialMostrado) {
+      setAvisoInicialMostrado(true);
       setModal({ title: "Comienza con una sincronización", message: "Para consultar oportunidades actualizadas, ejecuta tu primera sincronización con SECOP. Tu plan Free incluye 3 sincronizaciones exitosas al mes.", tone: "info" });
     }
-  }, [runs, esPro, modal]);
+  }, [runs, esPro, modal, avisoInicialMostrado]);
 
   async function ejecutar() {
     setCorriendo(true);
