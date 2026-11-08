@@ -9,7 +9,7 @@ from starlette.requests import Request
 
 from app.core.config import get_settings
 from app.core.runtime_errors import record_error
-from app.routers import agents, alerts, auth, billing, companies, contact, debug, documents, opportunities, profile, sync
+from app.routers import admin, agents, alerts, auth, billing, companies, contact, debug, documents, opportunities, profile, sync
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
@@ -83,6 +83,7 @@ app.include_router(companies.router)
 app.include_router(billing.router)
 app.include_router(contact.router)
 app.include_router(debug.router)
+app.include_router(admin.router)
 
 
 @app.exception_handler(Exception)
