@@ -140,12 +140,12 @@ export default function Oportunidades() {
 
       {/* Filtros */}
       <Card className="space-y-3 p-4">
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && cargar()}
             placeholder='Búsqueda: texto libre o en lenguaje natural ("procesos abiertos de software en Bogotá superiores a 200 millones")' />
-          <Button onClick={nuevaBusqueda}>Buscar</Button>
+          <Button onClick={nuevaBusqueda} className="w-full sm:w-auto">Buscar</Button>
         </div>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-6">
           <Select value={departamento} onChange={(e) => { setDepartamento(e.target.value); setMunicipio(""); }}>
             <option value="">Toda Colombia</option>
             {DEPARTAMENTOS.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -213,15 +213,15 @@ export default function Oportunidades() {
                       </ul>
                     ) : null}
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
+                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:shrink-0">
+                    <div className="flex flex-wrap gap-2">
                       <Link href={`/app/oportunidades/${o.id}`}><Button size="sm">Analizar</Button></Link>
                       {o.url_oficial ? <a href={o.url_oficial} target="_blank" rel="noopener,noreferrer"><Button size="sm" variant="outline">Ver en SECOP ↗</Button></a> : <Button size="sm" variant="outline" disabled>Expediente SECOP no disponible</Button>}
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="ghost" onClick={() => aplicarTriage(o.id, "descartada")}>Descartar</Button>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => crearProyecto(o.id)}>Crear proyecto de propuesta</Button>
+                    <Button size="sm" variant="outline" className="w-full" onClick={() => crearProyecto(o.id)}>Crear proyecto de propuesta</Button>
                   </div>
                 </div>
               </Card>

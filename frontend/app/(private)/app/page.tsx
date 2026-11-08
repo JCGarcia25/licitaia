@@ -104,14 +104,14 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Búsqueda en lenguaje natural */}
       <Card className="p-4">
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             value={consulta}
             onChange={(e) => setConsulta(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && buscar()}
             placeholder='Consulta en lenguaje natural: "procesos abiertos de software en Bogotá superiores a 200 millones"'
           />
-          <Button onClick={buscar}>Buscar</Button>
+          <Button onClick={buscar} className="w-full sm:w-auto">Buscar</Button>
         </div>
       </Card>
 
@@ -125,7 +125,7 @@ export default function Dashboard() {
       </Card>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
         {kpis.map((k) => (
           <Card key={k.t} className="p-4">
             <p className="text-muted text-xs">{k.t}</p>
