@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import { Badge, Button, Card, EmptyState, fmtCOP, fmtFecha, Input, Spinner, scoreTone, Select } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, fmtCOP, fmtFecha, Input, MessageModal, Spinner, scoreTone, Select } from "@/components/ui";
 
 type Reason = { factor: string; detalle: string; evidencia: string };
 type Opp = {
@@ -34,6 +34,7 @@ export default function Oportunidades() {
   const [error, setError] = useState("");
   const [perfilRequerido, setPerfilRequerido] = useState(false);
   const [busquedaConPerfil, setBusquedaConPerfil] = useState(false);
+  const [modal, setModal] = useState<{ title: string; message: string; tone: "error" | "info" } | null>(null);
   const [pagina, setPagina] = useState(1);
   const TAMANO_PAGINA = 25;
   const router = useRouter();
@@ -82,7 +83,11 @@ export default function Oportunidades() {
         else window.sessionStorage.removeItem(SEARCH_STORAGE_KEY);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error");
+      const message = e instanceof Error ? e.message : "No fue posible consultar las oportunidades.";
+      if (message.toLowerCase().includes("exclusiva") || message.toLowerCase().includes("mysecop pro")) {
+        setModal({ title: "Función disponible en MySECOP Pro", message: "Esta función es exclusiva de MySECOP Pro. Actualiza tu plan para continuar disfrutando el flujo completo.", tone: "info" });
+        setError("");
+      } else setError(message);
       setItems([]);
     }
   }, [q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore, busquedaConPerfil, pagina]);
@@ -244,6 +249,7 @@ export default function Oportunidades() {
           </div>
         </>
       )}
+      {modal ? <MessageModal {...modal} onClose={() => setModal(null)} /> : null}
     </div>
   );
 }

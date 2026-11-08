@@ -112,6 +112,18 @@ export function EmptyState({ title, body }: { title: string; body?: string }) {
   );
 }
 
+export function MessageModal({ title = "Mensaje de MySECOP", message, tone = "info", onClose }: { title?: string; message: string; tone?: "info" | "success" | "error"; onClose: () => void }) {
+  const icon = tone === "success" ? "✓" : tone === "error" ? "!" : "i";
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4" role="presentation">
+    <div className="surface-card w-full max-w-md p-7 text-center shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="mysecop-message-title">
+      <div className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full text-2xl font-bold ${tone === "success" ? "bg-teal/15 text-teal" : tone === "error" ? "bg-red-500/15 text-red-500" : "bg-brand-500/15 text-brand-500"}`}>{icon}</div>
+      <h2 id="mysecop-message-title" className="mt-4 text-xl font-bold">{title}</h2>
+      <p className="text-muted mt-2 text-sm leading-relaxed">{message}</p>
+      <Button className="mt-6 w-full" onClick={onClose}>Continuar en MySECOP</Button>
+    </div>
+  </div>;
+}
+
 export function fmtCOP(valor: number | null | undefined): string {
   if (valor === null || valor === undefined) return "N/D";
   return `$ ${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(valor)} COP`;
