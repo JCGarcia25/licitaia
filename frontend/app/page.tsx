@@ -72,8 +72,17 @@ const FAQ = [
 ];
 
 export default function Landing() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      { "@type": "Organization", name: "MySECOP", url: "https://mysecop.co", logo: "https://mysecop.co/icon.svg", email: "jorge@zorbagames.com" },
+      { "@type": "WebSite", name: "MySECOP", url: "https://mysecop.co", description: "Inteligencia para encontrar y analizar oportunidades de contratación pública en Colombia." },
+      { "@type": "SoftwareApplication", name: "MySECOP", applicationCategory: "BusinessApplication", operatingSystem: "Web", offers: [{ "@type": "Offer", price: "0", priceCurrency: "COP" }, { "@type": "Offer", price: "59900", priceCurrency: "COP" }] },
+    ],
+  };
   return (
     <div className="min-h-screen">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       {/* ---------- Header ---------- */}
       <header className="sticky top-0 z-40 border-b border-base bg-[var(--bg)]/85 backdrop-blur">
         <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
