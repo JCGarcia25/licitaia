@@ -222,6 +222,7 @@ class SyncRun(Base):
     """Registro de cada ingesta de datos (auditoría y deduplicación)."""
     __tablename__ = "sync_runs"
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     dataset = Column(String(60))                            # p6dx-8zbt | jbjy-vk9h | e985-4d7e
     started_at = Column(DateTime, default=utcnow)
     finished_at = Column(DateTime, nullable=True)

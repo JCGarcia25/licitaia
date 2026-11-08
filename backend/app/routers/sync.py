@@ -23,7 +23,7 @@ def run_sync(data: SyncIn, user: User = Depends(get_current_user), db: Session =
     if not is_pro and used >= 3:
         raise HTTPException(402, "Has utilizado tus 3 sincronizaciones gratuitas de este mes. Actualiza a MySECOP Pro para mantener tus oportunidades actualizadas.")
     try:
-        run = sync_source(db, data.source, max_pages=data.max_pages, extra_where=data.extra_where)
+        run = sync_source(db, data.source, user_id=user.id, max_pages=data.max_pages, extra_where=data.extra_where)
     except Exception as exc:
         db.rollback()
         raise HTTPException(status_code=502, detail=f"No fue posible consultar SECOP: {str(exc)[:300]}") from exc
@@ -46,7 +46,7 @@ def run_sync(data: SyncIn, user: User = Depends(get_current_user), db: Session =
 
 @router.get("/runs")
 def list_runs(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    runs = db.query(SyncRun).order_by(SyncRun.started_at.desc()).limit(20).all()
+    runs = db.query(SyncRun).filter(SyncRun.user_id == user.id).order_by(SyncRun.started_at.desc()).limit(20).all()
     return [{
         "id": r.id, "dataset": r.dataset, "started_at": r.started_at, "finished_at": r.finished_at,
         "pages": r.pages, "upserted": r.upserted, "duplicates": r.duplicates, "errors": r.errors,

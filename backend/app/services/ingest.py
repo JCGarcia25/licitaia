@@ -33,13 +33,14 @@ def _row_date(value: str | None) -> datetime | None:
 def sync_source(
     db: Session,
     source: str,
+    user_id: int | None = None,
     since: datetime | None = None,
     max_pages: int = 5,
     extra_where: str | None = None,
 ) -> SyncRun:
     """Ingesta incremental y upsert idempotente de un dataset SECOP verificado."""
     settings = get_settings()
-    run = SyncRun(dataset=source, detail={"max_pages": max_pages, "extra_where": extra_where})
+    run = SyncRun(dataset=source, user_id=user_id, detail={"max_pages": max_pages, "extra_where": extra_where})
     db.add(run)
     db.commit()
 

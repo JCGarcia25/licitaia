@@ -37,6 +37,7 @@ export default function Oportunidades() {
   const [perfilRequerido, setPerfilRequerido] = useState(false);
   const [busquedaConPerfil, setBusquedaConPerfil] = useState(false);
   const [modal, setModal] = useState<{ title: string; message: string; tone: "error" | "info" } | null>(null);
+  const [perfilAvisado, setPerfilAvisado] = useState(false);
   const [pagina, setPagina] = useState(1);
   const TAMANO_PAGINA = 25;
   const router = useRouter();
@@ -74,6 +75,10 @@ export default function Oportunidades() {
         res = await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ ...searchBody, solo_con_score: false }) });
       }
       setPerfilRequerido(Boolean(res.profile_required));
+      if (res.profile_required && !perfilAvisado) {
+        setPerfilAvisado(true);
+        setModal({ title: "Completa tu perfil para encontrar oportunidades", message: "Antes de mostrar procesos, necesitamos conocer las actividades, productos o servicios, ubicaciones y presupuesto de tu empresa. Así MySECOP podrá mostrarte coincidencias relevantes y evitar resultados que no correspondan a tu negocio.", tone: "info" });
+      }
       setItems(res.items);
       setTotal(res.total);
       if (typeof window !== "undefined") {
@@ -251,7 +256,7 @@ export default function Oportunidades() {
           </div>
         </>
       )}
-      {modal ? <MessageModal {...modal} onClose={() => setModal(null)} /> : null}
+      {modal ? <MessageModal {...modal} onClose={() => setModal(null)} actionLabel={modal.title.startsWith("Completa") ? "Completar perfil de empresa" : undefined} onAction={modal.title.startsWith("Completa") ? () => router.push("/app/perfil") : undefined} /> : null}
     </div>
   );
 }
