@@ -23,7 +23,8 @@ export default function Sincronizacion() {
   const [datasetActivo, setDatasetActivo] = useState<string | null>(null);
   const [modal, setModal] = useState<{ title: string; message: string; tone: "success" | "error" | "info" } | null>(null);
   const [usoGratis, setUsoGratis] = useState<{ used: number; limit: number } | null>(null);
-  const [esPro, setEsPro] = useState(false);
+  const [esPro, setEsPro] = useState<boolean | null>(null);
+  const [planCargado, setPlanCargado] = useState(false);
   const [avisoInicialMostrado, setAvisoInicialMostrado] = useState(false);
 
   const cargarRuns = useCallback(async () => {
@@ -49,15 +50,16 @@ export default function Sincronizacion() {
   useEffect(() => {
     Promise.all([cargarRuns(), api<{ es_pro: boolean }>("/api/billing"), api<{ es_pro: boolean; used: number; limit: number | null }>("/api/sync/usage")]).then(([, billing, usage]) => {
       setEsPro(Boolean(billing.es_pro));
+      setPlanCargado(true);
       if (!usage.es_pro && usage.limit !== null) setUsoGratis({ used: usage.used, limit: usage.limit });
-    }).catch(() => setRuns([]));
+    }).catch(() => { setRuns([]); setPlanCargado(true); });
   }, [cargarRuns]);
   useEffect(() => {
-    if (runs && !esPro && runs.length === 0 && !modal && !avisoInicialMostrado) {
+    if (runs && planCargado && esPro === false && runs.length === 0 && !modal && !avisoInicialMostrado) {
       setAvisoInicialMostrado(true);
       setModal({ title: "Comienza con una sincronización", message: "Para consultar oportunidades actualizadas, ejecuta tu primera sincronización con SECOP. Tu plan Free incluye 3 sincronizaciones exitosas al mes.", tone: "info" });
     }
-  }, [runs, esPro, modal, avisoInicialMostrado]);
+  }, [runs, esPro, planCargado, modal, avisoInicialMostrado]);
 
   async function ejecutar() {
     setCorriendo(true);
