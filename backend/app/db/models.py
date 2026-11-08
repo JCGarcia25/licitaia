@@ -232,6 +232,14 @@ class SyncRun(Base):
     watermark = Column(DateTime, nullable=True)             # última fecha_de_ultima_publicaci procesada
     detail = Column(JSON, default=dict)
 
+class SyncUsage(Base):
+    __tablename__ = "sync_usage"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    month = Column(String(7), nullable=False, index=True)
+    successful_runs = Column(Integer, default=0, nullable=False)
+    __table_args__ = (UniqueConstraint("user_id", "month", name="uq_sync_usage_user_month"),)
+
 
 class Company(Base):
     """Empresa cliente (Fase 5): aislamiento de información por tenant."""

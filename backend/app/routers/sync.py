@@ -1,13 +1,14 @@
 """Ingesta SECOP (protegida por JWT) y auditoría de sincronizaciones."""
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
-from app.db.models import SyncRun, User
+from app.db.models import SyncRun, SyncUsage, User
 from app.db.session import get_db
 from app.schemas import SyncIn
 from app.services.ingest import sync_source
-from app.services.quota import require_pro
+from app.services.quota import get_subscription, subscription_is_pro
 
 router = APIRouter(prefix="/api/sync", tags=["secop"])
 
@@ -15,17 +16,31 @@ router = APIRouter(prefix="/api/sync", tags=["secop"])
 @router.post("/secop")
 def run_sync(data: SyncIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Ejecuta una ingesta incremental del dataset solicitado (paginación + upsert idempotente)."""
-    require_pro(db, user)
+    is_pro = subscription_is_pro(get_subscription(db, user))
+    month = datetime.utcnow().strftime("%Y-%m")
+    usage = db.query(SyncUsage).filter(SyncUsage.user_id == user.id, SyncUsage.month == month).first()
+    used = usage.successful_runs if usage else 0
+    if not is_pro and used >= 3:
+        raise HTTPException(402, "Has utilizado tus 3 sincronizaciones gratuitas de este mes. Actualiza a MySECOP Pro para mantener tus oportunidades actualizadas.")
     try:
         run = sync_source(db, data.source, max_pages=data.max_pages, extra_where=data.extra_where)
     except Exception as exc:
         db.rollback()
         raise HTTPException(status_code=502, detail=f"No fue posible consultar SECOP: {str(exc)[:300]}") from exc
+    if not is_pro and run.errors == 0:
+        if not usage:
+            usage = SyncUsage(user_id=user.id, month=month, successful_runs=0)
+            db.add(usage)
+        usage.successful_runs += 1
+        db.commit()
+        used += 1
     return {
         "id": run.id, "dataset": run.dataset, "upserted": run.upserted,
         "duplicates": run.duplicates, "errors": run.errors,
         "started_at": run.started_at, "finished_at": run.finished_at,
         "detail": run.detail,
+        "sync_free_used": used if not is_pro else None,
+        "sync_free_limit": 3 if not is_pro else None,
     }
 
 

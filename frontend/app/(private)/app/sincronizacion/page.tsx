@@ -21,6 +21,7 @@ export default function Sincronizacion() {
   const [procesos, setProcesos] = useState<Process[] | null>(null);
   const [datasetActivo, setDatasetActivo] = useState<string | null>(null);
   const [modal, setModal] = useState<{ title: string; message: string; tone: "success" | "error" | "info" } | null>(null);
+  const [usoGratis, setUsoGratis] = useState<{ used: number; limit: number } | null>(null);
 
   const cargarRuns = useCallback(async () => {
     setRuns(await api<Run[]>("/api/sync/runs"));
@@ -47,12 +48,14 @@ export default function Sincronizacion() {
       if (extraWhere.trim()) body.extra_where = extraWhere.trim();
       const r = await api<Record<string, unknown>>("/api/sync/secop", { method: "POST", body: JSON.stringify(body) });
       setResultado(r);
+      if (r.sync_free_limit) setUsoGratis({ used: Number(r.sync_free_used || 0), limit: Number(r.sync_free_limit) });
       setModal({ title: "Sincronización completada", message: `La ingesta terminó correctamente. Nuevos: ${String(r.upserted ?? 0)} · Actualizados: ${String(r.duplicates ?? 0)} · Errores: ${String(r.errors ?? 0)}.`, tone: "success" });
       await cargarRuns();
     } catch (e) {
       const message = e instanceof Error ? e.message : "No fue posible ejecutar la sincronización.";
       setResultado({ error: message });
-      setModal({ title: message.toLowerCase().includes("exclusiva") ? "Función disponible en MySECOP Pro" : "No fue posible sincronizar", message: message.toLowerCase().includes("exclusiva") ? "Esta función es exclusiva de MySECOP Pro. Actualiza tu plan para continuar." : message, tone: message.toLowerCase().includes("exclusiva") ? "info" : "error" });
+      const limite = message.toLowerCase().includes("3 sincronizaciones gratuitas");
+      setModal({ title: limite ? "Llegaste al límite gratuito" : message.toLowerCase().includes("exclusiva") ? "Función disponible en MySECOP Pro" : "No fue posible sincronizar", message: limite ? "Has utilizado tus 3 sincronizaciones gratuitas de este mes. Actualiza a MySECOP Pro para mantener tus oportunidades actualizadas automáticamente." : message.toLowerCase().includes("exclusiva") ? "Esta función es exclusiva de MySECOP Pro. Actualiza tu plan para continuar." : message, tone: limite || message.toLowerCase().includes("exclusiva") ? "info" : "error" });
     } finally {
       setCorriendo(false);
     }
@@ -71,6 +74,7 @@ export default function Sincronizacion() {
         <p className="text-muted text-sm">
           Ingesta incremental vía API Socrata de datos.gov.co. El agendamiento automático (cada 30 minutos) corre en el worker de Celery.
         </p>
+        {usoGratis ? <p className="mt-2 text-xs text-teal">Sincronizaciones gratuitas usadas este mes: {usoGratis.used} de {usoGratis.limit}.</p> : null}
       </div>
 
       <Card>
