@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { Badge, Button, Card, CardHeader, Field, Input, Select, Spinner } from "@/components/ui";
+import { Badge, Button, Card, CardHeader, Field, Input, MessageModal, Select, Spinner } from "@/components/ui";
 
 type Run = {
   id: number; dataset: string; started_at: string; finished_at: string | null;
@@ -20,6 +20,7 @@ export default function Sincronizacion() {
   const [runs, setRuns] = useState<Run[] | null>(null);
   const [procesos, setProcesos] = useState<Process[] | null>(null);
   const [datasetActivo, setDatasetActivo] = useState<string | null>(null);
+  const [modal, setModal] = useState<{ title: string; message: string; tone: "success" | "error" | "info" } | null>(null);
 
   const cargarRuns = useCallback(async () => {
     setRuns(await api<Run[]>("/api/sync/runs"));
@@ -46,9 +47,12 @@ export default function Sincronizacion() {
       if (extraWhere.trim()) body.extra_where = extraWhere.trim();
       const r = await api<Record<string, unknown>>("/api/sync/secop", { method: "POST", body: JSON.stringify(body) });
       setResultado(r);
+      setModal({ title: "Sincronización completada", message: `La ingesta terminó correctamente. Nuevos: ${String(r.upserted ?? 0)} · Actualizados: ${String(r.duplicates ?? 0)} · Errores: ${String(r.errors ?? 0)}.`, tone: "success" });
       await cargarRuns();
     } catch (e) {
-      setResultado({ error: e instanceof Error ? e.message : "Error" });
+      const message = e instanceof Error ? e.message : "No fue posible ejecutar la sincronización.";
+      setResultado({ error: message });
+      setModal({ title: message.toLowerCase().includes("exclusiva") ? "Función disponible en MySECOP Pro" : "No fue posible sincronizar", message: message.toLowerCase().includes("exclusiva") ? "Esta función es exclusiva de MySECOP Pro. Actualiza tu plan para continuar." : message, tone: message.toLowerCase().includes("exclusiva") ? "info" : "error" });
     } finally {
       setCorriendo(false);
     }
@@ -86,15 +90,7 @@ export default function Sincronizacion() {
         </div>
         <div className="flex items-center gap-3 px-5 pb-5">
           <Button onClick={ejecutar} disabled={corriendo}>{corriendo ? "Sincronizando…" : "Ejecutar sincronización"}</Button>
-          {resultado ? (
-            <p className="text-muted text-xs">
-              {"error" in resultado ? (
-                <span className="text-red-600">{String(resultado.error)}</span>
-              ) : (
-                <>Nuevas: {String(resultado.upserted)} · Duplicadas actualizadas: {String(resultado.duplicates)} · Errores: {String(resultado.errors)}</>
-              )}
-            </p>
-          ) : null}
+          {resultado ? <p className="text-muted text-xs">Última ejecución registrada. Consulta la auditoría para ver el detalle.</p> : null}
         </div>
       </Card>
 
@@ -152,6 +148,7 @@ export default function Sincronizacion() {
           registrada por el usuario. La fuente oficial es siempre la referencia definitiva del estado del expediente.
         </p>
       </Card>
+      {modal ? <MessageModal {...modal} onClose={() => setModal(null)} /> : null}
     </div>
   );
 }
