@@ -35,6 +35,9 @@ class User(Base):
     password_reset_token = Column(String(64), nullable=True, index=True)
     password_reset_expires_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utcnow)
+    last_seen_at = Column(DateTime, nullable=True, index=True)
+    current_path = Column(String(255), nullable=True)
+    last_user_agent = Column(String(255), nullable=True)
     profile = relationship("CompanyProfile", back_populates="user", uselist=False)
     alert_prefs = relationship("AlertPrefs", back_populates="user", uselist=False)
 
