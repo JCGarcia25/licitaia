@@ -156,7 +156,7 @@ export default function Oportunidades() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && cargar()}
             placeholder='Búsqueda: texto libre o en lenguaje natural ("procesos abiertos de software en Bogotá superiores a 200 millones")' />
-          <Button onClick={nuevaBusqueda} className="w-full sm:w-auto">Buscar</Button>
+          <Button onClick={nuevaBusqueda} className="w-full shrink-0 whitespace-nowrap sm:w-auto sm:min-w-24">Buscar</Button>
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-6">
           <Select value={departamento} onChange={(e) => { setDepartamento(e.target.value); setMunicipio(""); }}>

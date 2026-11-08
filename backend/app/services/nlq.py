@@ -132,7 +132,7 @@ def parse_query(q: str) -> ParsedQuery:
         resto = resto.replace(p.modalidad, " ")
     palabras = [
         w for w in re.split(r"[^\wáéíóúñü]+", resto, flags=re.IGNORECASE)
-        if len(w) > 3 and _norm(w) not in stop and not re.fullmatch(r"[\d.,]+", w)
+        if len(w) > 1 and _norm(w) not in stop and not re.fullmatch(r"[\d.,]+", w)
     ]
     correcciones = {
         "aplicaicones": "aplicaciones",
@@ -143,6 +143,12 @@ def parse_query(q: str) -> ParsedQuery:
         "móviles": "moviles",
     }
     p.texto_libre = [correcciones.get(_norm(w), _norm(w)) for w in palabras[:8]]
+    # Una consulta de una sola palabra debe seguir siendo útil. Si el término
+    # fue descartado por el parser, conservamos el primer token alfanumérico.
+    if not p.texto_libre:
+        candidatos = [w for w in re.split(r"[^\wáéíóúñü]+", text, flags=re.IGNORECASE) if len(w) > 1 and _norm(w) not in stop]
+        if candidatos:
+            p.texto_libre = [correcciones.get(_norm(candidatos[0]), _norm(candidatos[0]))]
     return p
 
 
