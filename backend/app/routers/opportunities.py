@@ -126,7 +126,7 @@ def list_opportunities(
             match_condition = and_(*profile_conditions)
             query = query.filter(or_(match_condition, Opportunity.id.in_(preserved_ids))) if preserved_ids else query.filter(match_condition)
     if not include_cancelled:
-        query = query.filter(Opportunity.cancelled.is_(False))
+        query = query.filter(or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)))
     if q:
         stopwords = {"procesos", "proceso", "contratación", "contratacion", "pública", "publica", "superior", "millones", "pesos", "buscar", "para", "con", "los", "las", "del", "una"}
         words = [w for w in re.split(r"[^\wáéíóúñü]+", q.lower()) if len(w) > 3 and w not in stopwords][:8]
@@ -257,7 +257,7 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         filtros["valor_min"] = float(payload["valor_min"])
     query = db.query(Opportunity)
     if not filtros.get("estado"):
-        query = query.filter(Opportunity.cancelled.is_(False))
+        query = query.filter(or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)))
     if filtros.get("q"):
         # La búsqueda manual es flexible: basta con que el proceso coincida
         # con al menos un término relevante. Exigir todos los términos hacía
@@ -328,7 +328,7 @@ def metrics(
     db: Session = Depends(get_db),
 ):
     scores = _user_scores(db, user.id)
-    base = db.query(Opportunity).filter(Opportunity.cancelled.is_(False))
+    base = db.query(Opportunity).filter(or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)))
     prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user.id).first()
     umbral_compatibilidad = compatibility_threshold if compatibility_threshold is not None else (prefs.high_score_threshold if prefs else 70)
     ahora = datetime.utcnow()

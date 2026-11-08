@@ -247,7 +247,7 @@ export default function DetalleOportunidad() {
             <Button size="sm" variant="outline" onClick={importarDocumentos} disabled={cargando === "importar"}>{cargando === "importar" ? "Importando…" : "Importar documentos públicos"}</Button>
             <input ref={archivoInput} type="file" multiple accept=".pdf,.docx,.xlsx" className="hidden" onChange={(e) => aceptarArchivos(e.target.files || undefined)} />
             <div
-              className={`min-w-[280px] flex-1 rounded-xl border-2 border-dashed px-4 py-4 text-center text-xs transition ${arrastrando ? "border-teal bg-teal/10 text-teal" : "border-base text-muted hover:border-teal/60"}`}
+              className={`min-w-0 flex-1 rounded-xl border-2 border-dashed px-4 py-4 text-center text-xs transition ${arrastrando ? "border-teal bg-teal/10 text-teal" : "border-base text-muted hover:border-teal/60"}`}
               onDragOver={(e) => { e.preventDefault(); setArrastrando(true); }}
               onDragLeave={() => setArrastrando(false)}
               onDrop={(e) => { e.preventDefault(); setArrastrando(false); aceptarArchivos(e.dataTransfer.files); }}
@@ -265,7 +265,7 @@ export default function DetalleOportunidad() {
                 <label className="text-muted flex items-center gap-2"><input type="checkbox" checked={docsSeleccionados.length === docs.length} onChange={(e) => setDocsSeleccionados(e.target.checked ? docs.map((d) => d.id) : [])} /> Seleccionar todos</label>
                 <Button size="sm" variant="outline" disabled={!docsSeleccionados.length || cargando === "eliminar"} onClick={eliminarDocumentosSeleccionados}>{cargando === "eliminar" ? "Eliminando…" : `Eliminar seleccionados (${docsSeleccionados.length})`}</Button>
               </div>
-              <ul className="text-muted space-y-1 text-xs">
+              <ul className="text-muted min-w-0 space-y-1 text-xs">
                 {docs.map((d) => <li key={d.id} className="flex items-center justify-between gap-2"><label className="flex min-w-0 items-center gap-2"><input type="checkbox" checked={docsSeleccionados.includes(d.id)} onChange={(e) => setDocsSeleccionados((seleccionados) => e.target.checked ? [...seleccionados, d.id] : seleccionados.filter((docId) => docId !== d.id))} /><span className="truncate">📎 {d.filename}</span></label><span className="flex shrink-0 gap-1"><Button size="sm" variant="ghost" onClick={() => abrirDocumento(d)}>Ver</Button><Button size="sm" variant="ghost" onClick={() => eliminarDocumento(d.id)}>Eliminar</Button></span></li>)}
               </ul>
             </div>

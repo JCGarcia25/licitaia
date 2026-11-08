@@ -104,28 +104,28 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Búsqueda en lenguaje natural */}
       <Card className="p-4">
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             value={consulta}
             onChange={(e) => setConsulta(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && buscar()}
             placeholder='Consulta en lenguaje natural: "procesos abiertos de software en Bogotá superiores a 200 millones"'
           />
-          <Button onClick={buscar}>Buscar</Button>
+          <Button onClick={buscar} className="w-full sm:w-auto">Buscar</Button>
         </div>
       </Card>
 
       <Card className="p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="block min-w-48 flex-1"><span className="text-muted mb-1 block text-xs font-medium">Compatibilidad mínima (%)</span><Input type="number" min={0} max={100} value={umbral} onChange={(e) => setUmbral(Math.min(100, Math.max(0, Number(e.target.value))))} /></label>
-          <label className="block min-w-48 flex-1"><span className="text-muted mb-1 block text-xs font-medium">Procesos nuevos en los últimos días</span><Input type="number" min={1} max={90} value={diasNuevos} onChange={(e) => setDiasNuevos(Math.min(90, Math.max(1, Number(e.target.value))))} /></label>
-          <Button onClick={aplicarCriterios} disabled={guardandoCriterios}>{guardandoCriterios ? "Aplicando…" : "Aplicar criterios"}</Button>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block min-w-0"><span className="text-muted mb-1 block text-xs font-medium">Compatibilidad mínima (%)</span><Input type="number" min={0} max={100} value={umbral} onChange={(e) => setUmbral(Math.min(100, Math.max(0, Number(e.target.value))))} /></label>
+          <label className="block min-w-0"><span className="text-muted mb-1 block text-xs font-medium">Procesos nuevos en los últimos días</span><Input type="number" min={1} max={90} value={diasNuevos} onChange={(e) => setDiasNuevos(Math.min(90, Math.max(1, Number(e.target.value))))} /></label>
+          <Button onClick={aplicarCriterios} disabled={guardandoCriterios} className="w-full sm:col-span-2 sm:w-auto">{guardandoCriterios ? "Aplicando…" : "Aplicar criterios"}</Button>
         </div>
         <p className="text-muted mt-2 text-[11px]">Estos criterios actualizan los indicadores y el ranking. El porcentaje también se usa para tus alertas de compatibilidad.</p>
       </Card>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
         {kpis.map((k) => (
           <Card key={k.t} className="p-4">
             <p className="text-muted text-xs">{k.t}</p>

@@ -33,6 +33,8 @@ body {
   border: 1px solid var(--border);
   border-radius: 18px;
   box-shadow: 0 8px 28px rgba(25, 55, 90, .06);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .text-muted { color: var(--muted); }
