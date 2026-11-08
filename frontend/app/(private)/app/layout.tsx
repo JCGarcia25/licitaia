@@ -79,13 +79,14 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
         {/* Contenido */}
         <div className="min-w-0 flex-1">
           <header className="sticky top-0 z-30 flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-base bg-[var(--bg)]/90 px-4 py-3 backdrop-blur sm:px-6">
-            <div className="order-2 flex w-full items-center gap-4 overflow-x-auto pb-1 md:order-1 md:hidden">
+            <div className="order-2 grid w-full grid-cols-2 gap-x-4 gap-y-2 border-t border-base pt-3 md:order-1 md:hidden">
               {NAV.map((n) => (
-                <Link key={n.href} href={n.href} className="text-muted whitespace-nowrap text-xs hover:text-teal">{n.label}</Link>
+                <Link key={n.href} href={n.href} className="text-muted min-w-0 truncate text-xs hover:text-teal">{n.label}</Link>
               ))}
             </div>
             <div className="hidden md:block" />
             <div className="order-1 ml-auto flex items-center gap-2 sm:gap-3 md:order-2">
+              <Link href="/app" className="mr-1 flex items-center gap-2 font-semibold md:hidden"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal text-[9px] font-bold text-slate-950">MS</span><span className="hidden xs:inline">MySECOP</span></Link>
               <ThemeToggle />
               <Link href="/app/plan" className={`hidden rounded-full border px-3 py-1 text-[11px] font-semibold sm:inline ${plan?.es_pro ? "border-teal/40 bg-teal/10 text-teal" : "border-amber-300/60 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200"}`}>
                 {plan?.nombre || "MySECOP Free"}
@@ -96,7 +97,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
               </button>
             </div>
           </header>
-          <main className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">
+          <main className="mx-auto w-full max-w-7xl min-w-0 overflow-x-hidden p-4 sm:p-6 lg:p-8">
             {plan && !plan.es_pro && <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/50 bg-amber-50/80 px-4 py-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/25 dark:text-amber-100">
               <span><strong>MySECOP Free:</strong> análisis de pliegos, alertas por correo, sincronización avanzada y preparador de ofertas están identificados como funciones Pro.</span>
               <Link href="/app/plan" className="font-bold underline underline-offset-2">Ver MySECOP Pro</Link>
