@@ -59,9 +59,17 @@ export default function Oportunidades() {
     params.set("limit", String(TAMANO_PAGINA));
     params.set("offset", String((paginaSolicitada - 1) * TAMANO_PAGINA));
     try {
-      const res = consulta
-        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ q: consulta, departamento: estado.departamento || undefined, municipio: estado.municipio || undefined, modalidad: estado.modalidad || undefined, valor_min: estado.valorMin ? Number(estado.valorMin.replace(/[^\d]/g, "")) : undefined, score_min: estado.scoreMin ? Number(estado.scoreMin) : undefined, triage: estado.triage || undefined, solo_con_score: estado.soloScore ?? soloScore, limit: TAMANO_PAGINA, offset: (paginaSolicitada - 1) * TAMANO_PAGINA }) })
+      const searchBody = { q: consulta, departamento: estado.departamento || undefined, municipio: estado.municipio || undefined, modalidad: estado.modalidad || undefined, valor_min: estado.valorMin ? Number(estado.valorMin.replace(/[^\d]/g, "")) : undefined, score_min: estado.scoreMin ? Number(estado.scoreMin) : undefined, triage: estado.triage || undefined, solo_con_score: estado.soloScore ?? soloScore, limit: TAMANO_PAGINA, offset: (paginaSolicitada - 1) * TAMANO_PAGINA };
+      let res = consulta
+        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify(searchBody) })
         : await api<{ total: number; items: Opp[]; profile_required?: boolean }>(`/api/opportunities?${params.toString()}&profile_match=${aplicarPerfil}`);
+      // En un ambiente recién sincronizado puede no haber puntuaciones aún.
+      // La búsqueda textual sigue siendo útil: si el filtro de puntuadas no
+      // encuentra nada, repetimos sin ese requisito y mostramos los procesos.
+      if (consulta && res.total === 0 && searchBody.solo_con_score) {
+        setSoloScore(false);
+        res = await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ ...searchBody, solo_con_score: false }) });
+      }
       setPerfilRequerido(Boolean(res.profile_required));
       setItems(res.items);
       setTotal(res.total);

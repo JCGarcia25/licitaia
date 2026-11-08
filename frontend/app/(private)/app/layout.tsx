@@ -79,9 +79,11 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
         {/* Contenido */}
         <div className="min-w-0 flex-1">
           <header className="sticky top-0 z-30 flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-base bg-[var(--bg)]/90 px-4 py-3 backdrop-blur sm:px-6">
-            <div className="order-2 grid w-full grid-cols-2 gap-x-4 gap-y-2 border-t border-base pt-3 md:order-1 md:hidden">
+            <div className="order-2 grid w-full grid-cols-2 gap-2 border-t border-base pt-3 md:order-1 md:hidden">
               {NAV.map((n) => (
-                <Link key={n.href} href={n.href} className="text-muted min-w-0 truncate text-xs hover:text-teal">{n.label}</Link>
+                <Link key={n.href} href={n.href} className={`flex min-w-0 items-center gap-2 rounded-xl border border-base px-3 py-2.5 text-xs transition hover:border-teal hover:bg-teal/10 ${pathname === n.href || (n.href !== "/app" && pathname.startsWith(n.href)) ? "border-teal/60 bg-teal/10 text-teal" : "text-muted"}`}>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-[11px] dark:bg-slate-700">{n.icon}</span><span className="truncate">{n.label}</span>
+                </Link>
               ))}
             </div>
             <div className="hidden md:block" />
