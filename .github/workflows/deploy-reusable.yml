@@ -41,6 +41,33 @@ jobs:
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 644 "$HOME/.ssh/known_hosts"
 
+      - name: Construir y transferir imágenes
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          PROJECT_NAME: ${{ inputs.project_name }}
+          DOMAIN: ${{ inputs.domain }}
+        run: |
+          set -Eeuo pipefail
+          : "${VPS_PORT:=22}"
+          ssh_args=(-i "$HOME/.ssh/licitaia_deploy" -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15)
+          docker build -t "${PROJECT_NAME}-api:latest" ./backend
+          docker tag "${PROJECT_NAME}-api:latest" "${PROJECT_NAME}-worker:latest"
+          docker tag "${PROJECT_NAME}-api:latest" "${PROJECT_NAME}-beat:latest"
+          docker tag "${PROJECT_NAME}-api:latest" "${PROJECT_NAME}-migrate:latest"
+          docker build --build-arg "NEXT_PUBLIC_API_URL=https://${DOMAIN}" \
+            -t "${PROJECT_NAME}-frontend:latest" ./frontend
+          docker save \
+            "${PROJECT_NAME}-api:latest" \
+            "${PROJECT_NAME}-worker:latest" \
+            "${PROJECT_NAME}-beat:latest" \
+            "${PROJECT_NAME}-migrate:latest" \
+            "${PROJECT_NAME}-frontend:latest" \
+            | gzip -1 \
+            | ssh "${ssh_args[@]}" "$VPS_USER@$VPS_HOST" 'gunzip | docker load'
+
       - name: Copiar código al VPS
         shell: bash
         env:
@@ -75,6 +102,6 @@ jobs:
           set -Eeuo pipefail
           APP_DIR="$1"; DOMAIN="$2"; PROJECT_NAME="$3"; APP_ENV="$4"; API_PORT="$5"; FRONTEND_PORT="$6"
           cd "$APP_DIR"
-          DOMAIN="$DOMAIN" PROJECT_NAME="$PROJECT_NAME" APP_ENV="$APP_ENV" \
+          DOMAIN="$DOMAIN" PROJECT_NAME="$PROJECT_NAME" APP_ENV="$APP_ENV" PREBUILT_IMAGES=true \
             LICITAIA_API_PORT="$API_PORT" LICITAIA_FRONTEND_PORT="$FRONTEND_PORT" ./scripts/deploy.sh
           REMOTE
