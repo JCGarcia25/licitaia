@@ -188,8 +188,8 @@ export default function Sincronizacion() {
       </Card>
       {corriendo ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-label="Sincronización en curso">
-          <div className="w-full max-w-sm rounded-2xl border border-base bg-surface p-7 text-center shadow-2xl">
-            <div className="mx-auto h-24 w-24 rounded-xl border border-base bg-slate-950/35 p-2" aria-hidden="true">
+          <div className="w-full max-w-sm rounded-2xl border border-teal/40 bg-surface p-7 text-center text-[var(--text)] shadow-2xl">
+            <div className="mx-auto h-24 w-24 rounded-xl border border-teal/30 bg-slate-100 p-2 shadow-inner dark:bg-slate-950/70" aria-hidden="true">
               <div className="relative h-full overflow-hidden rounded-lg">
                 <span className="absolute bottom-1 left-2 h-3 w-3 rounded-sm bg-teal animate-[tetris-fall-1_2.4s_linear_infinite]" />
                 <span className="absolute bottom-1 left-5 h-3 w-3 rounded-sm bg-cyan-300 animate-[tetris-fall-2_2.8s_linear_infinite_.35s]" />
@@ -200,8 +200,8 @@ export default function Sincronizacion() {
                 <span className="absolute bottom-4 left-11 h-3 w-3 rounded-sm bg-amber-300 animate-[tetris-fall-3_3s_linear_infinite_2s]" />
               </div>
             </div>
-            <h2 className="mt-5 text-lg font-bold">Estamos actualizando tus oportunidades</h2>
-            <p className="text-muted mt-2 text-sm leading-relaxed">Estamos consultando las fuentes oficiales de SECOP. Puedes esperar aquí; te avisaremos cuando termine.</p>
+            <h2 className="mt-5 text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Estamos actualizando tus oportunidades</h2>
+            <p className="mt-3 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">Estamos consultando las fuentes oficiales de SECOP. Puedes esperar aquí; te avisaremos cuando termine.</p>
             <div className="mx-auto mt-5 h-1.5 w-40 overflow-hidden rounded-full bg-base"><div className="h-full w-1/2 animate-[pulse_1.5s_ease-in-out_infinite] rounded-full bg-teal" /></div>
           </div>
         </div>
