@@ -18,6 +18,22 @@ router = APIRouter(prefix="/api", tags=["dashboard"])
 PROFILE_MATCH_MIN_SCORE = 40
 
 
+def _vigente_condition():
+    """Procesos publicados y no terminales según el estado disponible en SECOP.
+
+    El dataset p6dx-8zbt no expone fecha de cierre; por eso la vigencia se
+    determina con la fecha de publicación (no futura) y los estados oficiales
+    de cierre/cancelación/adjudicación. Nunca se infiere una fecha de cierre.
+    """
+    estado = func.lower(func.coalesce(Opportunity.estado, ""))
+    terminales = ("cancelad", "cerrad", "adjudic", "terminad", "desiert", "retirad", "suspendid")
+    return and_(
+        or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)),
+        or_(Opportunity.fecha_publicacion.is_(None), Opportunity.fecha_publicacion <= datetime.utcnow()),
+        *[~estado.like(f"%{term}%") for term in terminales],
+    )
+
+
 def _public_document_count(value) -> int:
     if isinstance(value, dict):
         return sum(_public_document_count(v) for v in value.values())
@@ -126,7 +142,7 @@ def list_opportunities(
             match_condition = and_(*profile_conditions)
             query = query.filter(or_(match_condition, Opportunity.id.in_(preserved_ids))) if preserved_ids else query.filter(match_condition)
     if not include_cancelled:
-        query = query.filter(or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)))
+        query = query.filter(_vigente_condition())
     if q:
         stopwords = {"procesos", "proceso", "contratación", "contratacion", "pública", "publica", "superior", "millones", "pesos", "buscar", "para", "con", "los", "las", "del", "una"}
         words = [w for w in re.split(r"[^\wáéíóúñü]+", q.lower()) if len(w) > 3 and w not in stopwords][:8]
@@ -269,8 +285,8 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
     if payload.get("valor_min"):
         filtros["valor_min"] = float(payload["valor_min"])
     query = db.query(Opportunity)
-    if not filtros.get("estado"):
-        query = query.filter(or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)))
+    if not filtros.get("estado") or filtros.get("estado") == "abiertos":
+        query = query.filter(_vigente_condition())
     if filtros.get("q"):
         # La búsqueda manual es flexible: basta con que el proceso coincida
         # con al menos un término relevante. Exigir todos los términos hacía
