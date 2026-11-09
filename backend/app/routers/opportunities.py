@@ -1,6 +1,7 @@
 """Dashboard y oportunidades: filtros, buscador de lenguaje natural, triage, métricas."""
 from datetime import datetime, timedelta
 import re
+import unicodedata
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -32,6 +33,21 @@ def _vigente_condition():
         or_(Opportunity.fecha_publicacion.is_(None), Opportunity.fecha_publicacion <= datetime.utcnow()),
         *[~estado.like(f"%{term}%") for term in terminales],
     )
+
+
+def _location_variants(value: str) -> list[str]:
+    """Acepta nombres de SECOP con/sin tildes y abreviaturas habituales."""
+    raw = value.strip()
+    folded = "".join(c for c in unicodedata.normalize("NFD", raw) if unicodedata.category(c) != "Mn")
+    variants = {raw, folded}
+    key = folded.lower().replace(".", "").strip()
+    if key in {"bogota", "bogota dc", "bogota d c"}:
+        variants.update({"Bogotá", "Bogotá D.C.", "Bogota", "Bogota D.C."})
+    return [v for v in variants if v]
+
+
+def _location_condition(column, value: str):
+    return or_(*[column.ilike(f"%{variant}%") for variant in _location_variants(value)])
 
 
 def _public_document_count(value) -> int:
@@ -126,9 +142,9 @@ def list_opportunities(
         modalidades = [x for x in (profile.modalidades or []) if x and "toda" not in x.lower()]
         profile_conditions = []
         if not departamento and departamentos:
-            profile_conditions.append(or_(*[Opportunity.departamento.ilike(f"%{x}%") for x in departamentos]))
+            profile_conditions.append(or_(*[_location_condition(Opportunity.departamento, x) for x in departamentos]))
         if not municipio and municipios:
-            profile_conditions.append(or_(*[Opportunity.ciudad.ilike(f"%{x}%") for x in municipios]))
+            profile_conditions.append(or_(*[_location_condition(Opportunity.ciudad, x) for x in municipios]))
         if not modalidad and modalidades:
             profile_conditions.append(or_(*[Opportunity.modalidad.ilike(f"%{x}%") for x in modalidades]))
         if valor_min is None and profile.presupuesto_min is not None:
@@ -173,9 +189,9 @@ def list_opportunities(
                 ~Opportunity.estado.ilike("%terminado%"),
             )
     if departamento:
-        query = query.filter(Opportunity.departamento.ilike(f"%{departamento}%"))
+        query = query.filter(_location_condition(Opportunity.departamento, departamento))
     if municipio:
-        query = query.filter(Opportunity.ciudad.ilike(f"%{municipio}%"))
+        query = query.filter(_location_condition(Opportunity.ciudad, municipio))
     if modalidad:
         query = query.filter(Opportunity.modalidad.ilike(f"%{modalidad}%"))
     if source:
@@ -306,9 +322,9 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
             # registro SECOP, incluidos entidad, descripción y datos crudos.
             query = query.filter(or_(*term_clauses))
     if filtros.get("departamento"):
-        query = query.filter(Opportunity.departamento.ilike(f"%{filtros['departamento']}%"))
+        query = query.filter(_location_condition(Opportunity.departamento, filtros["departamento"]))
     if filtros.get("municipio"):
-        query = query.filter(Opportunity.ciudad.ilike(f"%{filtros['municipio']}%"))
+        query = query.filter(_location_condition(Opportunity.ciudad, filtros["municipio"]))
     if filtros.get("modalidad"):
         query = query.filter(Opportunity.modalidad.ilike(f"%{filtros['modalidad']}%"))
     if filtros.get("estado") == "abiertos":
