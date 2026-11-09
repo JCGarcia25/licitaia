@@ -59,7 +59,7 @@ class TriajeIn(BaseModel):
 
 
 class SyncIn(BaseModel):
-    source: str = Field(default="secop2_procesos", pattern="^(secop2_procesos|secop2_contratos|secop1)$")
+    source: str = Field(default="todas", pattern="^(todas|secop2_procesos|secop2_contratos|secop1)$")
     max_pages: int = Field(default=5, ge=1, le=50)
     extra_where: Optional[str] = None  # cláusula SoQL adicional ($where), opcional
 

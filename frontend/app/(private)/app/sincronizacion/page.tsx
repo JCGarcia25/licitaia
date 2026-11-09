@@ -12,7 +12,7 @@ type Run = {
 type Process = { id: number; source_id: string; entidad: string | null; objeto: string | null; estado: string | null; modalidad: string | null; fecha_publicacion: string | null; url_oficial: string | null };
 
 export default function Sincronizacion() {
-  const [source, setSource] = useState("secop2_procesos");
+  const [source, setSource] = useState("todas");
   const [maxPages, setMaxPages] = useState("1");
   const [extraWhere, setExtraWhere] = useState("");
   const [corriendo, setCorriendo] = useState(false);
@@ -66,7 +66,6 @@ export default function Sincronizacion() {
     setResultado(null);
     try {
       const body: Record<string, unknown> = { source, max_pages: Number(maxPages) };
-      if (extraWhere.trim()) body.extra_where = extraWhere.trim();
       const r = await api<Record<string, unknown>>("/api/sync/secop", { method: "POST", body: JSON.stringify(body) });
       setResultado(r);
       const usoActual = await api<{ es_pro: boolean; used: number; limit: number | null }>("/api/sync/usage");
@@ -93,6 +92,7 @@ export default function Sincronizacion() {
   }
 
   const FUENTES = [
+    { v: "todas", l: "Todas las fuentes oficiales SECOP" },
     { v: "secop2_procesos", l: "SECOP II — Procesos de Contratación (p6dx-8zbt)" },
     { v: "secop2_contratos", l: "SECOP II — Contratos Electrónicos (jbjy-vk9h)" },
     { v: "secop1", l: "SECOP I (e985-4d7e)" },
@@ -119,9 +119,6 @@ export default function Sincronizacion() {
           <Field label="Máximo de páginas" hint="Cada página trae hasta 1.000 registros.">
             <Input type="number" min={1} max={50} value={maxPages} onChange={(e) => setMaxPages(e.target.value)} />
           </Field>
-          <Field label="Filtro SoQL adicional ($where, opcional)" hint="P. ej. departamento_entidad = 'Bogotá D.C.'">
-            <Input value={extraWhere} onChange={(e) => setExtraWhere(e.target.value)} />
-          </Field>
         </div>
         <div className="flex flex-wrap items-center gap-3 px-5 pb-5">
           <Button onClick={ejecutar} disabled={corriendo} className="w-full sm:w-auto">{corriendo ? "Sincronizando…" : "Ejecutar sincronización"}</Button>
@@ -130,7 +127,7 @@ export default function Sincronizacion() {
       </Card>
 
       <Card>
-        <CardHeader title="Auditoría de sincronizaciones" subtitle="Últimas 20 corridas registradas" />
+        <CardHeader title="Historial de sincronizaciones" subtitle="Últimas 20 ejecuciones de tu cuenta. “Nuevas” son procesos incorporados; “ya existentes” ya estaban cargados." />
         {!runs ? (
           <Spinner />
         ) : runsError ? (
@@ -143,7 +140,7 @@ export default function Sincronizacion() {
               <thead>
                 <tr className="border-b border-base text-muted">
                   <th className="px-5 py-2">ID</th><th className="px-3 py-2">Dataset</th><th className="px-3 py-2">Inicio</th>
-                  <th className="px-3 py-2">Nuevas</th><th className="px-3 py-2">Duplicadas</th><th className="px-3 py-2">Errores</th>
+                  <th className="px-3 py-2">Nuevas</th><th className="px-3 py-2">Ya existentes</th><th className="px-3 py-2">Errores</th>
                 </tr>
               </thead>
               <tbody>

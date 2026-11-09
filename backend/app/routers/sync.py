@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/sync", tags=["secop"])
 
 @router.post("/secop")
 def run_sync(data: SyncIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Ejecuta una ingesta incremental del dataset solicitado (paginación + upsert idempotente)."""
+    """Ejecuta una ingesta incremental de una o todas las fuentes oficiales."""
     is_pro = subscription_is_pro(get_subscription(db, user))
     month = datetime.utcnow().strftime("%Y-%m")
     usage = db.query(SyncUsage).filter(SyncUsage.user_id == user.id, SyncUsage.month == month).first()
@@ -23,11 +23,15 @@ def run_sync(data: SyncIn, user: User = Depends(get_current_user), db: Session =
     if not is_pro and used >= 3:
         raise HTTPException(402, "Has utilizado tus 3 sincronizaciones gratuitas de este mes. Actualiza a MySECOP Pro para mantener tus oportunidades actualizadas.")
     try:
-        run = sync_source(db, data.source, user_id=user.id, max_pages=data.max_pages, extra_where=data.extra_where)
+        sources = ("secop2_procesos", "secop2_contratos", "secop1") if data.source == "todas" else (data.source,)
+        runs = [sync_source(db, source, user_id=user.id, max_pages=data.max_pages) for source in sources]
     except Exception as exc:
         db.rollback()
         raise HTTPException(status_code=502, detail=f"No fue posible consultar SECOP: {str(exc)[:300]}") from exc
-    if not is_pro and run.errors == 0:
+    errors = sum(r.errors for r in runs)
+    upserted = sum(r.upserted for r in runs)
+    duplicates = sum(r.duplicates for r in runs)
+    if not is_pro and errors == 0:
         if not usage:
             usage = SyncUsage(user_id=user.id, month=month, successful_runs=0)
             db.add(usage)
@@ -35,10 +39,10 @@ def run_sync(data: SyncIn, user: User = Depends(get_current_user), db: Session =
         db.commit()
         used += 1
     return {
-        "id": run.id, "dataset": run.dataset, "upserted": run.upserted,
-        "duplicates": run.duplicates, "errors": run.errors,
-        "started_at": run.started_at, "finished_at": run.finished_at,
-        "detail": run.detail,
+        "id": runs[-1].id, "dataset": data.source, "upserted": upserted,
+        "duplicates": duplicates, "errors": errors,
+        "started_at": min(r.started_at for r in runs), "finished_at": max(r.finished_at for r in runs),
+        "detail": {"fuentes": [r.dataset for r in runs]},
         "sync_free_used": used if not is_pro else None,
         "sync_free_limit": 3 if not is_pro else None,
     }
