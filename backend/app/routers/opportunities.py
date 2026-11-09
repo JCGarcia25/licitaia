@@ -50,6 +50,11 @@ def _location_condition(column, value: str):
     return or_(*[column.ilike(f"%{variant}%") for variant in _location_variants(value)])
 
 
+def _text_variants(value: str) -> list[str]:
+    folded = "".join(c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn")
+    return list({value, folded})
+
+
 def _public_document_count(value) -> int:
     if isinstance(value, dict):
         return sum(_public_document_count(v) for v in value.values())
@@ -170,11 +175,15 @@ def list_opportunities(
             # coincidencia de la frase completa cuando exista.
             term_conditions = []
             for word in words:
-                like = f"%{word}%"
-                term_conditions.append(or_(
-                    Opportunity.objeto.ilike(like), Opportunity.entidad.ilike(like), Opportunity.descripcion.ilike(like),
-                    Opportunity.modalidad.ilike(like), Opportunity.tipo_contrato.ilike(like),
-                ))
+                term_conditions.append(or_(*[
+                    clause
+                    for variant in _text_variants(word)
+                    for clause in (
+                        Opportunity.objeto.ilike(f"%{variant}%"), Opportunity.entidad.ilike(f"%{variant}%"),
+                        Opportunity.descripcion.ilike(f"%{variant}%"), Opportunity.modalidad.ilike(f"%{variant}%"),
+                        Opportunity.tipo_contrato.ilike(f"%{variant}%"),
+                    )
+                ]))
             query = query.filter(or_(*term_conditions))
             phrase = " ".join(words)
             query = query.order_by(
@@ -320,7 +329,7 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         # que consultas naturales razonables terminaran siempre sin resultados.
         term_clauses = []
         for word in filtros["q"].split():
-            variants = [word]
+            variants = _text_variants(word)
             if word in {"movil", "moviles"}: variants += ["móvil", "móviles"]
             term_clauses.append(or_(*[
                 clause for variant in variants for clause in (
