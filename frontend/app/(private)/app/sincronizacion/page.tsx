@@ -26,6 +26,10 @@ export default function Sincronizacion() {
   const [esPro, setEsPro] = useState<boolean | null>(null);
   const [planCargado, setPlanCargado] = useState(false);
   const [avisoInicialMostrado, setAvisoInicialMostrado] = useState(false);
+  const fechaLocal = (value: string) => {
+    const normalizada = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value) ? value : `${value}Z`;
+    return new Date(normalizada).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" });
+  };
 
   const cargarRuns = useCallback(async () => {
     try {
@@ -103,14 +107,14 @@ export default function Sincronizacion() {
       <div>
         <h1 className="text-xl font-bold tracking-tight">Sincronización con SECOP</h1>
         <p className="text-muted text-sm">
-          Ingesta incremental vía API Socrata de datos.gov.co. El agendamiento automático (cada 30 minutos) corre en el worker de Celery.
+          Actualiza tus oportunidades consultando las fuentes oficiales de SECOP. MySECOP también puede mantener esta información actualizada automáticamente cada 30 minutos.
         </p>
         {usoGratis ? <p className="mt-2 text-xs text-teal">Sincronizaciones gratuitas usadas este mes: {usoGratis.used} de {usoGratis.limit}.</p> : null}
       </div>
 
       <Card>
         <CardHeader title="Ejecutar ingesta manual" subtitle="Paginación segura con upsert idempotente (sin duplicados)" />
-        <div className="grid gap-4 p-5 lg:grid-cols-3">
+        <div className="grid gap-4 p-5 md:grid-cols-2">
           <Field label="Fuente">
             <Select value={source} onChange={(e) => setSource(e.target.value)}>
               {FUENTES.map((f) => <option key={f.v} value={f.v}>{f.l}</option>)}
@@ -148,7 +152,7 @@ export default function Sincronizacion() {
                   <tr key={r.id} className="border-b border-base">
                     <td className="px-5 py-2">{r.id}</td>
                     <td className="px-3 py-2"><button type="button" onClick={() => verProcesos(r.dataset)} title="Ver procesos de este dataset"><Badge tone="blue">{r.dataset}</Badge></button></td>
-                    <td className="px-3 py-2">{new Date(r.started_at).toLocaleString("es-CO")}</td>
+                    <td className="whitespace-nowrap px-3 py-2">{fechaLocal(r.started_at)}</td>
                     <td className="px-3 py-2 font-medium text-teal">{r.upserted}</td>
                     <td className="px-3 py-2">{r.duplicates}</td>
                     <td className={`px-3 py-2 ${r.errors ? "text-red-600 font-medium" : ""}`}>{r.errors}</td>
@@ -182,6 +186,16 @@ export default function Sincronizacion() {
           registrada por el usuario. La fuente oficial es siempre la referencia definitiva del estado del expediente.
         </p>
       </Card>
+      {corriendo ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-label="Sincronización en curso">
+          <div className="w-full max-w-sm rounded-2xl border border-base bg-surface p-7 text-center shadow-2xl">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-teal/15 text-3xl animate-pulse" aria-hidden="true">◌</div>
+            <h2 className="mt-5 text-lg font-bold">Estamos actualizando tus oportunidades</h2>
+            <p className="text-muted mt-2 text-sm leading-relaxed">Estamos consultando las fuentes oficiales de SECOP. Puedes esperar aquí; te avisaremos cuando termine.</p>
+            <div className="mx-auto mt-5 h-1.5 w-40 overflow-hidden rounded-full bg-base"><div className="h-full w-1/2 animate-[pulse_1.5s_ease-in-out_infinite] rounded-full bg-teal" /></div>
+          </div>
+        </div>
+      ) : null}
       {modal ? <MessageModal {...modal} onClose={() => setModal(null)} /> : null}
     </div>
   );
