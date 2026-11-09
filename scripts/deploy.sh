@@ -12,6 +12,7 @@ API_PORT="${LICITAIA_API_PORT:-8001}"
 FRONTEND_PORT="${LICITAIA_FRONTEND_PORT:-3000}"
 APP_ENV="${APP_ENV:-production}"
 PROJECT_NAME="${PROJECT_NAME:-licitaia-${APP_ENV}}"
+PREBUILT_IMAGES="${PREBUILT_IMAGES:-false}"
 COMPOSE=(docker compose -p "$PROJECT_NAME" -f docker-compose.yml -f docker-compose.prod.yml)
 
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
@@ -66,6 +67,9 @@ info "Ejecutando migraciones"
 info "Construyendo imágenes de LicitaIA"
 # Construir antes de crear contenedores evita una condición de carrera de
 # BuildKit cuando varios servicios se levantan simultáneamente.
+if [[ "$PREBUILT_IMAGES" == "true" ]]; then
+  info "Usando imÃ¡genes construidas por GitHub Actions"
+else
 for intento in 1 2 3; do
   if "${COMPOSE[@]}" build api worker beat frontend; then
     break
@@ -76,6 +80,7 @@ for intento in 1 2 3; do
   info "El build fallÃ³; reintentando en $((intento * 10)) segundos..."
   sleep $((intento * 10))
 done
+fi
 
 info "Levantando LicitaIA"
 "${COMPOSE[@]}" up -d --remove-orphans api worker beat frontend
