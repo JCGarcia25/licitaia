@@ -46,7 +46,11 @@ def run_sync(data: SyncIn, user: User = Depends(get_current_user), db: Session =
 
 @router.get("/runs")
 def list_runs(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    runs = db.query(SyncRun).filter(SyncRun.user_id == user.id).order_by(SyncRun.started_at.desc()).limit(20).all()
+    # Las oportunidades y sus ingestas son un catálogo compartido de SECOP.
+    # El límite Free sí es por usuario (ver /usage), pero el historial no debe
+    # desaparecer al cambiar de cuenta: cualquier usuario autenticado puede
+    # consultar las últimas corridas globales.
+    runs = db.query(SyncRun).order_by(SyncRun.started_at.desc()).limit(20).all()
     return [{
         "id": r.id, "dataset": r.dataset, "started_at": r.started_at, "finished_at": r.finished_at,
         "pages": r.pages, "upserted": r.upserted, "duplicates": r.duplicates, "errors": r.errors,
