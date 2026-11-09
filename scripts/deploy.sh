@@ -66,7 +66,16 @@ info "Ejecutando migraciones"
 info "Construyendo imágenes de LicitaIA"
 # Construir antes de crear contenedores evita una condición de carrera de
 # BuildKit cuando varios servicios se levantan simultáneamente.
-"${COMPOSE[@]}" build api worker beat frontend
+for intento in 1 2 3; do
+  if "${COMPOSE[@]}" build api worker beat frontend; then
+    break
+  fi
+  if [[ "$intento" -eq 3 ]]; then
+    die "No fue posible construir las imÃ¡genes tras 3 intentos; revisa el acceso del daemon a Docker Hub"
+  fi
+  info "El build fallÃ³; reintentando en $((intento * 10)) segundos..."
+  sleep $((intento * 10))
+done
 
 info "Levantando LicitaIA"
 "${COMPOSE[@]}" up -d --remove-orphans api worker beat frontend
