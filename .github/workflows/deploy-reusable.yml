@@ -25,6 +25,9 @@ jobs:
       group: licitaia-${{ inputs.environment_name }}
       cancel-in-progress: true
     steps:
+      - name: Checkout del commit a desplegar
+        uses: actions/checkout@v4
+
       - name: Configure SSH
         shell: bash
         env:
@@ -37,7 +40,22 @@ jobs:
           chmod 600 "$HOME/.ssh/licitaia_deploy"
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 644 "$HOME/.ssh/known_hosts"
-      - name: Pull and deploy on VPS
+
+      - name: Copiar código al VPS
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          APP_DIR: ${{ inputs.app_dir }}
+        run: |
+          set -Eeuo pipefail
+          : "${VPS_PORT:=22}"
+          ssh_args=(-i "$HOME/.ssh/licitaia_deploy" -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15)
+          tar --exclude=.git --exclude=.env --exclude=node_modules --exclude=.next -czf - . \
+            | ssh "${ssh_args[@]}" "$VPS_USER@$VPS_HOST" "mkdir -p '$APP_DIR' && tar -xzf - -C '$APP_DIR'"
+
+      - name: Deploy on VPS
         shell: bash
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
@@ -57,17 +75,6 @@ jobs:
           set -Eeuo pipefail
           APP_DIR="$1"; DOMAIN="$2"; PROJECT_NAME="$3"; APP_ENV="$4"; API_PORT="$5"; FRONTEND_PORT="$6"
           cd "$APP_DIR"
-          for intento in 1 2 3; do
-            if GIT_TERMINAL_PROMPT=0 timeout 60s git pull --ff-only; then
-              break
-            fi
-            if [[ "$intento" -eq 3 ]]; then
-              echo "No fue posible actualizar el checkout después de 3 intentos" >&2
-              exit 1
-            fi
-            echo "git pull falló; reintentando en $((intento * 10)) segundos..." >&2
-            sleep $((intento * 10))
-          done
           DOMAIN="$DOMAIN" PROJECT_NAME="$PROJECT_NAME" APP_ENV="$APP_ENV" \
             LICITAIA_API_PORT="$API_PORT" LICITAIA_FRONTEND_PORT="$FRONTEND_PORT" ./scripts/deploy.sh
           REMOTE
