@@ -210,6 +210,11 @@ def list_opportunities(
         UserOpportunity.user_id == user.id,
         UserOpportunity.opportunity_id == Opportunity.id,
     )
+    user_project = db.query(OfferProject).filter(
+        OfferProject.user_id == user.id,
+        OfferProject.opportunity_id == Opportunity.id,
+        OfferProject.status != "archivado",
+    )
     # Descartar es persistente para este usuario: no debe reaparecer en nuevas
     # búsquedas, salvo que se solicite explícitamente el filtro de descartadas.
     if triage != "descartada":
@@ -217,7 +222,13 @@ def list_opportunities(
     if solo_con_score or profile_match:
         min_score = PROFILE_MATCH_MIN_SCORE if profile_match else 1
         query = query.filter(user_opp.filter(UserOpportunity.score >= min_score).exists())
-    if triage:
+    if triage == "guardada":
+        query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "guardada").exists(), user_project.exists()))
+    elif triage == "proyecto":
+        query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "proyecto").exists(), user_project.exists()))
+    elif triage == "detectada":
+        query = query.filter(or_(~user_opp.exists(), user_opp.filter(UserOpportunity.triage == "detectada").exists()))
+    elif triage:
         query = query.filter(user_opp.filter(UserOpportunity.triage == triage).exists())
     if score_min is not None:
         query = query.filter(user_opp.filter(UserOpportunity.score >= score_min).exists())
@@ -345,6 +356,11 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         UserOpportunity.user_id == user.id,
         UserOpportunity.opportunity_id == Opportunity.id,
     )
+    user_project = db.query(OfferProject).filter(
+        OfferProject.user_id == user.id,
+        OfferProject.opportunity_id == Opportunity.id,
+        OfferProject.status != "archivado",
+    )
     if triage != "descartada":
         query = query.filter(~user_opp.filter(UserOpportunity.triage == "descartada").exists())
     if solo_con_score:
@@ -356,7 +372,13 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
             query = query.filter(user_opp.filter(UserOpportunity.score >= float(score_min)).exists())
         except (TypeError, ValueError):
             raise HTTPException(422, "El puntaje mínimo no es válido")
-    if triage:
+    if triage == "guardada":
+        query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "guardada").exists(), user_project.exists()))
+    elif triage == "proyecto":
+        query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "proyecto").exists(), user_project.exists()))
+    elif triage == "detectada":
+        query = query.filter(or_(~user_opp.exists(), user_opp.filter(UserOpportunity.triage == "detectada").exists()))
+    elif triage:
         query = query.filter(user_opp.filter(UserOpportunity.triage == triage).exists())
     total = query.count()
     rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
