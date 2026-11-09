@@ -193,7 +193,7 @@ export default function DetalleOportunidad() {
       </div>
 
       {/* Datos del proceso */}
-      <Card className="grid gap-4 p-5 md:grid-cols-3">
+      <Card className="grid gap-4 p-5 lg:grid-cols-3">
         <div><p className="text-muted text-xs">Valor estimado</p><p className="mt-1 font-semibold">{fmtCOP(opp.valor)}</p></div>
         <div><p className="text-muted text-xs">Estado · Nº de proceso SECOP</p><p className="mt-1 font-semibold">{opp.estado || "N/D"}{opp.source_id && !opp.source_id.includes("DEMO") ? ` · ${opp.source_id}` : " · Número oficial no disponible"}</p></div>
         <div><p className="text-muted text-xs">Fecha de publicación (fuente)</p><p className="mt-1 font-semibold">{fmtFecha(opp.fecha_publicacion)}</p></div>
@@ -212,7 +212,7 @@ export default function DetalleOportunidad() {
 
       <Card>
         <CardHeader title="Proceso y cronograma" subtitle="Fechas disponibles en la fuente oficial" />
-        <div className="grid gap-3 p-5 text-sm md:grid-cols-3">
+        <div className="grid gap-3 p-5 text-sm lg:grid-cols-3">
           <div><p className="text-muted text-xs">Publicación</p><p className="mt-1 font-semibold">{fmtFecha(opp.fecha_publicacion)}</p></div>
           <div><p className="text-muted text-xs">Última actualización</p><p className="mt-1 font-semibold">{fmtFecha(opp.updated_at)}</p></div>
           <div><p className="text-muted text-xs">Cierre de ofertas</p><p className="mt-1 font-semibold">{opp.fecha_cierre ? fmtFecha(opp.fecha_cierre) : "No expuesto por SECOP"}</p></div>
@@ -266,7 +266,7 @@ export default function DetalleOportunidad() {
                 <Button size="sm" variant="outline" disabled={!docsSeleccionados.length || cargando === "eliminar"} onClick={eliminarDocumentosSeleccionados}>{cargando === "eliminar" ? "Eliminando…" : `Eliminar seleccionados (${docsSeleccionados.length})`}</Button>
               </div>
               <ul className="text-muted min-w-0 space-y-1 text-xs">
-                {docs.map((d) => <li key={d.id} className="flex items-center justify-between gap-2"><label className="flex min-w-0 items-center gap-2"><input type="checkbox" checked={docsSeleccionados.includes(d.id)} onChange={(e) => setDocsSeleccionados((seleccionados) => e.target.checked ? [...seleccionados, d.id] : seleccionados.filter((docId) => docId !== d.id))} /><span className="truncate">📎 {d.filename}</span></label><span className="flex shrink-0 gap-1"><Button size="sm" variant="ghost" onClick={() => abrirDocumento(d)}>Ver</Button><Button size="sm" variant="ghost" onClick={() => eliminarDocumento(d.id)}>Eliminar</Button></span></li>)}
+                {docs.map((d) => <li key={d.id} className="flex flex-wrap items-center justify-between gap-2"><label className="flex min-w-0 flex-1 items-center gap-2"><input type="checkbox" checked={docsSeleccionados.includes(d.id)} onChange={(e) => setDocsSeleccionados((seleccionados) => e.target.checked ? [...seleccionados, d.id] : seleccionados.filter((docId) => docId !== d.id))} /><span className="truncate">📎 {d.filename}</span></label><span className="flex shrink-0 gap-1"><Button size="sm" variant="ghost" onClick={() => abrirDocumento(d)}>Ver</Button><Button size="sm" variant="ghost" onClick={() => eliminarDocumento(d.id)}>Eliminar</Button></span></li>)}
               </ul>
             </div>
           ) : (

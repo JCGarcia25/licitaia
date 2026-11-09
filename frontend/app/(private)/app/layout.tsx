@@ -54,7 +54,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
       <RequireAuth>
       <div className="flex min-h-screen bg-[var(--bg)]">
         {/* Sidebar */}
-        <aside className="hidden w-64 shrink-0 border-r border-base bg-[var(--surface)] md:block">
+        <aside className="hidden w-64 shrink-0 border-r border-base bg-[var(--surface)] lg:block">
           <div className="flex h-20 items-center gap-3 border-b border-base px-6">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-900 text-[9px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
             <span className="font-bold tracking-tight">MySECOP</span>
@@ -87,7 +87,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
         {/* Contenido */}
         <div className="min-w-0 flex-1">
           <header className="sticky top-0 z-30 flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-base bg-[var(--bg)]/90 px-4 py-3 backdrop-blur sm:px-6">
-            <div className="order-2 grid w-full grid-cols-2 gap-2 border-t border-base pt-3 md:order-1 md:hidden">
+            <div className="order-2 grid w-full grid-cols-2 gap-2 border-t border-base pt-3 lg:order-1 lg:hidden">
               {NAV.map((n) => (
                 <Link key={n.href} href={n.href} className={`flex min-w-0 items-center gap-2 rounded-xl border border-base px-3 py-2.5 text-xs transition hover:border-teal hover:bg-teal/10 ${pathname === n.href || (n.href !== "/app" && pathname.startsWith(n.href)) ? "border-teal/60 bg-teal/10 text-teal" : "text-muted"}`}>
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-[11px] dark:bg-slate-700">{n.icon}</span><span className="truncate">{n.label}</span>
@@ -95,9 +95,9 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
               ))}
               {user?.email?.toLowerCase() === "jorge@zorbagames.com" ? <Link href="/app/admin" className={`flex min-w-0 items-center gap-2 rounded-xl border border-teal/40 px-3 py-2.5 text-xs text-teal transition hover:bg-teal/10 ${pathname.startsWith("/app/admin") ? "bg-teal/10" : ""}`}><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-teal/15 text-[11px]">◈</span><span className="truncate">Centro de control</span></Link> : null}
             </div>
-            <div className="hidden md:block" />
-            <div className="order-1 ml-auto flex items-center gap-2 sm:gap-3 md:order-2">
-              <Link href="/app" className="mr-1 flex items-center gap-2 font-semibold md:hidden"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal text-[9px] font-bold text-slate-950">MS</span><span className="hidden xs:inline">MySECOP</span></Link>
+            <div className="hidden lg:block" />
+            <div className="order-1 ml-auto flex items-center gap-2 sm:gap-3 lg:order-2">
+              <Link href="/app" className="mr-1 flex items-center gap-2 font-semibold lg:hidden"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal text-[9px] font-bold text-slate-950">MS</span><span className="hidden xs:inline">MySECOP</span></Link>
               <ThemeToggle />
               <Link href="/app/plan" className={`hidden rounded-full border px-3 py-1 text-[11px] font-semibold sm:inline ${plan?.es_pro ? "border-teal/40 bg-teal/10 text-teal" : "border-amber-300/60 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200"}`}>
                 {plan?.nombre || "MySECOP Free"}

@@ -125,7 +125,7 @@ export default function Dashboard() {
       </Card>
 
       {/* KPIs */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((k) => (
           <Card key={k.t} className="p-4">
             <p className="text-muted text-xs">{k.t}</p>
@@ -135,7 +135,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-2">
         {/* Top oportunidades */}
         <Card>
           <CardHeader
