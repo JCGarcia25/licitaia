@@ -131,11 +131,24 @@ def list_opportunities(
         stopwords = {"procesos", "proceso", "contratación", "contratacion", "pública", "publica", "superior", "millones", "pesos", "buscar", "para", "con", "los", "las", "del", "una"}
         words = [w for w in re.split(r"[^\wáéíóúñü]+", q.lower()) if len(w) > 3 and w not in stopwords][:8]
         if words:
+            # La búsqueda debe ser tolerante: una consulta en lenguaje natural
+            # no debe exigir que cada palabra aparezca literalmente en el mismo
+            # campo. SECOP distribuye el texto entre objeto, descripción y
+            # entidad; se acepta cualquier término relevante y se prioriza la
+            # coincidencia de la frase completa cuando exista.
+            term_conditions = []
             for word in words:
                 like = f"%{word}%"
-                query = query.filter(or_(
+                term_conditions.append(or_(
                     Opportunity.objeto.ilike(like), Opportunity.entidad.ilike(like), Opportunity.descripcion.ilike(like),
+                    Opportunity.modalidad.ilike(like), Opportunity.tipo_contrato.ilike(like),
                 ))
+            query = query.filter(or_(*term_conditions))
+            phrase = " ".join(words)
+            query = query.order_by(
+                (func.lower(func.coalesce(Opportunity.objeto, "")).like(f"%{phrase}%")).desc(),
+                Opportunity.updated_at.desc(), Opportunity.id.desc(),
+            )
         if any(term in q.lower() for term in ("abierto", "abiertos", "publicado", "publicados")):
             query = query.filter(
                 ~Opportunity.estado.ilike("%cancel%"),
