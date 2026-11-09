@@ -74,8 +74,6 @@ info "Levantando LicitaIA"
 info "Limpiando caché e imágenes antiguas"
 # Conserva la caché reciente para que el siguiente despliegue no reinstale
 # todas las dependencias; elimina únicamente caché con más de 7 días.
-docker builder prune -af --filter until=168h
-docker image prune -af
 
 info "Esperando healthcheck de la API"
 for _ in {1..30}; do
