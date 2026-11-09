@@ -41,6 +41,19 @@ def overview(user: User = Depends(get_current_user), db: Session = Depends(get_d
             "busquedas_puntuadas": db.query(UserOpportunity).count(),
         },
         "usuarios_activos": [{"id": u.id, "email": u.email, "nombre": u.full_name or "", "ruta": u.current_path or "/", "ultimo_acceso": u.last_seen_at, "dispositivo": (u.last_user_agent or "Desconocido")[:100], "pro": bool(u.role == "admin")} for u in active],
-        "usuarios": [{"id": u.id, "email": u.email, "nombre": u.full_name or "", "ruta": u.current_path or "—", "ultimo_acceso": u.last_seen_at, "creado": u.created_at} for u in users],
+        "usuarios": [{"id": u.id, "email": u.email, "nombre": u.full_name or "", "ruta": u.current_path or "—", "ultimo_acceso": u.last_seen_at, "creado": u.created_at, "activo": bool(u.is_active)} for u in users],
         "eventos": [{"accion": a.action, "entidad": a.entity, "fecha": a.created_at, "usuario_id": a.user_id} for a in db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(12).all()],
     }
+
+@router.patch("/users/{user_id}/status")
+def change_user_status(user_id: int, payload: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    require_super_admin(user)
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(404, "Usuario no encontrado")
+    if target.id == user.id:
+        raise HTTPException(400, "No puedes desactivar tu propio usuario administrador")
+    activo = bool(payload.get("activo"))
+    target.is_active = activo
+    db.commit()
+    return {"id": target.id, "activo": activo, "mensaje": "Usuario activado" if activo else "Usuario desactivado"}
