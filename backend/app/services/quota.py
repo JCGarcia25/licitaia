@@ -47,13 +47,18 @@ def get_subscription(db: Session, user: User) -> Subscription:
     return sub
 
 
-def subscription_is_pro(sub: Subscription) -> bool:
+def subscription_is_pro(sub: Subscription, now: datetime | None = None) -> bool:
     """Pro permanece activo hasta el fin del periodo ya pagado."""
     if sub.plan not in {"profesional", "corporativo"}:
         return False
+    # Las pruebas y las suscripciones con periodo explícito expiran sin una
+    # tarea destructiva: el siguiente acceso simplemente deja de ser Pro.
+    current_time = now or datetime.utcnow()
+    if sub.current_period_end is not None and sub.current_period_end <= current_time:
+        return False
     if sub.status == "activa":
         return True
-    return sub.status == "cancelada_pendiente" and sub.current_period_end is not None and sub.current_period_end > datetime.utcnow()
+    return sub.status == "cancelada_pendiente" and sub.current_period_end is not None and sub.current_period_end > current_time
 
 
 def check_quota(db: Session, user: User) -> dict:
