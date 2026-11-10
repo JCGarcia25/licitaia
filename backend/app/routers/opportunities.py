@@ -4,7 +4,7 @@ import re
 import unicodedata
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy import and_, cast, func, or_, Text
 from sqlalchemy.orm import Session
 
@@ -14,8 +14,29 @@ from app.db.session import get_db
 from app.schemas import FeedbackIn, TriajeIn
 from app.services import alerts as alerts_service
 from app.services import nlq
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
+
+class OpportunitySearchState(BaseModel):
+    q: str = ""
+    departamento: str = ""
+    municipio: str = ""
+    modalidad: str = ""
+    valorMin: str = ""
+    scoreMin: str = ""
+    triage: str = ""
+    soloScore: bool = False
+
+@router.get("/opportunities/last-search")
+def get_last_opportunity_search(user: User = Depends(get_current_user)):
+    return {"search": user.last_opportunity_search}
+
+@router.put("/opportunities/last-search")
+def save_last_opportunity_search(payload: OpportunitySearchState = Body(...), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    user.last_opportunity_search = payload.model_dump()
+    db.commit()
+    return {"search": user.last_opportunity_search}
 PROFILE_MATCH_MIN_SCORE = 40
 
 

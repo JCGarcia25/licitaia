@@ -275,7 +275,8 @@ def create_project(payload: dict, user: User = Depends(get_current_user), db: Se
 @router.get("/offer-projects")
 def list_projects(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     rows = db.query(OfferProject).filter(OfferProject.user_id == user.id).order_by(OfferProject.updated_at.desc()).all()
-    return [{"id": p.id, "name": p.name, "opportunity_id": p.opportunity_id, "status": p.status,
+    return [{"id": p.id, "name": p.name, "opportunity_id": p.opportunity_id,
+             "url_oficial": (db.query(Opportunity.url_oficial).filter(Opportunity.id == p.opportunity_id).scalar()), "status": p.status,
              "version": p.version, "updated_at": p.updated_at,
              "pendientes": sum(1 for c in (p.checklist or []) if c.get("estado") != "listo")} for p in rows]
 
