@@ -81,6 +81,9 @@ export default function Oportunidades() {
       }
       setItems(res.items);
       setTotal(res.total);
+      if (estado.scoreMin && res.total === 0) {
+        setModal({ title: "No encontramos coincidencias", message: `No se encontraron oportunidades con una compatibilidad mínima de ${estado.scoreMin}%. Intenta con otro rango de probabilidad o ajusta los demás filtros.`, tone: "info" });
+      }
       if (typeof window !== "undefined") {
         const url = new URL(window.location.href);
         params.set("pagina", String(paginaSolicitada));
@@ -110,7 +113,9 @@ export default function Oportunidades() {
       municipio: params.get("municipio") || "",
       modalidad: params.get("modalidad") || "",
       valorMin: params.get("valor_min") || "",
-      scoreMin: params.get("score_min") || "",
+      // El módulo siempre inicia sin umbral para no ocultar oportunidades.
+      // El usuario puede seleccionar luego cualquier probabilidad disponible.
+      scoreMin: "",
       triage: params.get("triage") || "",
       soloScore: params.has("solo_con_score") ? params.get("solo_con_score") === "true" : false,
     };
@@ -179,9 +184,8 @@ export default function Oportunidades() {
           </Select>
           <Input value={valorMin} onChange={(e) => setValorMin(e.target.value)} placeholder="Valor mínimo (COP)" />
           <Select value={scoreMin} onChange={(e) => setScoreMin(e.target.value)}>
-            <option value="">Cualquier puntaje</option>
-            <option value="70">≥ 70 (alta)</option>
-            <option value="45">≥ 45 (media)</option>
+            <option value="">Cualquier probabilidad</option>
+            {[1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((value) => <option key={value} value={value}>≥ {value}%</option>)}
           </Select>
           <Select value={triage} onChange={(e) => setTriage(e.target.value)}>
             <option value="">Todo el triage</option>
@@ -192,7 +196,12 @@ export default function Oportunidades() {
           </Select>
         </div>
         <label className="text-muted flex items-center gap-2 text-xs">
-          <input type="checkbox" checked={soloScore} onChange={(e) => setSoloScore(e.target.checked)} className="accent-teal" />
+          <input type="checkbox" checked={soloScore} onChange={(e) => {
+            const next = e.target.checked;
+            setSoloScore(next);
+            setPagina(1);
+            cargar(undefined, busquedaConPerfil, 1, { q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore: next });
+          }} className="accent-teal" />
           Mostrar solo oportunidades ya puntuadas por el agente
         </label>
       </Card>

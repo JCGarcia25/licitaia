@@ -9,8 +9,15 @@ from app.schemas import AlertPrefsIn
 from app.services import alerts as alerts_service
 from app.services.notifier import send_email
 from app.services.quota import require_pro
+import re
+from app.core.config import get_settings
 
 router = APIRouter(prefix="/api/alerts", tags=["alertas"])
+
+def _recipients(value: str | None, fallback: str) -> list[str]:
+    candidates = [x.strip() for x in re.split(r"[,;\n]+", value or "") if x.strip()]
+    valid = [x for x in candidates if re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", x)]
+    return valid or [fallback]
 
 
 @router.get("")
@@ -51,7 +58,7 @@ def get_prefs(user: User = Depends(get_current_user), db: Session = Depends(get_
         prefs = AlertPrefs(user_id=user.id)
         db.add(prefs)
         db.commit()
-    return {"email_enabled": prefs.email_enabled, "high_score_threshold": prefs.high_score_threshold,
+    return {"email_enabled": prefs.email_enabled, "email_to": prefs.email_to or user.email, "high_score_threshold": prefs.high_score_threshold,
             "close_days": prefs.close_days or [10, 5, 1], "digest_hour": prefs.digest_hour}
 
 
@@ -62,6 +69,7 @@ def put_prefs(data: AlertPrefsIn, user: User = Depends(get_current_user), db: Se
         prefs = AlertPrefs(user_id=user.id)
         db.add(prefs)
     prefs.email_enabled = data.email_enabled
+    prefs.email_to = data.email_to or user.email
     prefs.high_score_threshold = data.high_score_threshold
     prefs.close_days = data.close_days
     prefs.digest_hour = data.digest_hour
@@ -79,7 +87,7 @@ def put_prefs(data: AlertPrefsIn, user: User = Depends(get_current_user), db: Se
     # Recalcula las alertas de compatibilidad con el nuevo umbral para que la
     # bandeja se actualice inmediatamente, sin esperar al worker programado.
     created = alerts_service.create_alerts_for_user(db, user.id, high_score=data.high_score_threshold)
-    return {"ok": True, "alertas_creadas": created, **data.model_dump()}
+    return {"ok": True, "alertas_creadas": created, **data.model_dump(), "email_to": prefs.email_to}
 
 
 @router.delete("/prefs")
@@ -102,16 +110,28 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
     reminders = alerts_service.close_reminders(db, user.id, days=(prefs.close_days if prefs else None) or [10, 5, 1])
     # resumen por correo solo si está habilitado
     sent = False
-    if prefs and prefs.email_enabled and user.email_verified:
+    reason = "desactivado"
+    if prefs and prefs.email_enabled and not user.email_verified:
+        reason = "correo_no_verificado"
+    elif prefs and prefs.email_enabled and user.email_verified:
+        reason = "envio_no_confirmado"
         uos = db.query(UserOpportunity).filter(UserOpportunity.user_id == user.id).all()
         alta = [u for u in uos if u.score >= threshold]
-        cuerpo = [
-            f"Resumen LicitaIA para {user.email}",
-            f"Oportunidades puntuadas: {len(uos)}",
-            f"Alta compatibilidad (>= {threshold}%): {len(alta)}",
-            f"Alertas nuevas creadas: {created + reminders}",
-            "",
-            "La fuente oficial de referencia es siempre el expediente en SECOP.",
-        ]
-        sent = send_email(user.email, "LicitaIA — Resumen diario", "\n".join(cuerpo))
-    return {"alertas_creadas": created, "recordatorios_cierre": reminders, "correo_enviado": sent}
+        cuerpo = ["Estas son las oportunidades compatibles visibles en tu bandeja de MySECOP:"]
+        alert_rows = db.query(Alert).filter(Alert.user_id == user.id).order_by(Alert.created_at.desc()).limit(20).all()
+        if alert_rows:
+            cuerpo.extend([f"• {a.title} — {a.body}" for a in alert_rows])
+        else:
+            cuerpo.append("No hay oportunidades nuevas en este momento. Revisa tu bandeja para consultar las oportunidades disponibles.")
+        cuerpo.append("La fuente oficial de referencia es siempre el expediente en SECOP.")
+        texto = "\n".join(cuerpo)
+        for destinatario in _recipients(prefs.email_to, user.email):
+            try:
+                enviado = send_email(destinatario, "MySECOP — Resumen de tus oportunidades compatibles", texto,
+                                     html_body=alerts_service.email_html("Tus oportunidades compatibles", cuerpo,
+                                         f"{get_settings().frontend_url.rstrip('/')}/app/alertas"))
+            except TypeError:
+                enviado = send_email(destinatario, "MySECOP — Resumen de tus oportunidades compatibles", texto)
+            sent = sent or enviado
+        reason = "enviado" if sent else ("smtp_no_configurado" if not get_settings().smtp_host else "error_smtp")
+    return {"alertas_creadas": created, "recordatorios_cierre": reminders, "correo_enviado": sent, "correo_motivo": reason}

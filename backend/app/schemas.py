@@ -59,13 +59,14 @@ class TriajeIn(BaseModel):
 
 
 class SyncIn(BaseModel):
-    source: str = Field(default="secop2_procesos", pattern="^(secop2_procesos|secop2_contratos|secop1)$")
+    source: str = Field(default="todas", pattern="^(todas|secop2_procesos|secop2_contratos|secop1)$")
     max_pages: int = Field(default=5, ge=1, le=50)
     extra_where: Optional[str] = None  # cláusula SoQL adicional ($where), opcional
 
 
 class AlertPrefsIn(BaseModel):
     email_enabled: bool = False
+    email_to: Optional[str] = Field(default=None, max_length=1000)
     high_score_threshold: int = Field(default=70, ge=0, le=100)
     close_days: list[int] = [10, 5, 1]
     digest_hour: int = Field(default=7, ge=0, le=23)
