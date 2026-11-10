@@ -55,6 +55,29 @@ def _text_variants(value: str) -> list[str]:
     return list({value, folded})
 
 
+def _modality_variants(value: str) -> list[str]:
+    """Reconoce el nombre corto del selector y la denominación SECOP."""
+    variants = set(_text_variants(value))
+    folded = "".join(c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn").lower()
+    if "minima cuantia" in folded:
+        variants.update({"Mínima Cuantía", "Mínima cuantía", "Contratación Mínima Cuantía"})
+    if "seleccion abreviada" in folded:
+        variants.update({"Selección Abreviada", "Selección Abreviada de Menor Cuantía", "Selección Abreviada de Mayor Cuantía"})
+    if "contratacion directa" in folded:
+        variants.update({"Contratación Directa", "Contratación Directa (con ofertas)"})
+    if "concurso de meritos" in folded:
+        variants.update({"Concurso de Méritos", "Concurso de méritos abierto"})
+    if "regimen especial" in folded:
+        variants.update({"Régimen Especial", "Contratación régimen especial"})
+    if "subasta" in folded:
+        variants.update({"Subasta", "Subasta Inversa Electrónica"})
+    return [v for v in variants if v]
+
+
+def _modality_condition(value: str):
+    return or_(*[Opportunity.modalidad.ilike(f"%{variant}%") for variant in _modality_variants(value)])
+
+
 def _public_document_count(value) -> int:
     if isinstance(value, dict):
         return sum(_public_document_count(v) for v in value.values())
@@ -151,7 +174,7 @@ def list_opportunities(
         if not municipio and municipios:
             profile_conditions.append(or_(*[_location_condition(Opportunity.ciudad, x) for x in municipios]))
         if not modalidad and modalidades:
-            profile_conditions.append(or_(*[Opportunity.modalidad.ilike(f"%{x}%") for x in modalidades]))
+            profile_conditions.append(or_(*[_modality_condition(x) for x in modalidades]))
         if valor_min is None and profile.presupuesto_min is not None:
             profile_conditions.append(Opportunity.valor >= profile.presupuesto_min)
         if valor_max is None and profile.presupuesto_max is not None:
@@ -202,7 +225,7 @@ def list_opportunities(
     if municipio:
         query = query.filter(_location_condition(Opportunity.ciudad, municipio))
     if modalidad:
-        query = query.filter(Opportunity.modalidad.ilike(f"%{modalidad}%"))
+        query = query.filter(_modality_condition(modalidad))
     if source:
         query = query.filter(Opportunity.source == source)
     if estado:
@@ -346,7 +369,7 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
     if filtros.get("municipio"):
         query = query.filter(_location_condition(Opportunity.ciudad, filtros["municipio"]))
     if filtros.get("modalidad"):
-        query = query.filter(Opportunity.modalidad.ilike(f"%{filtros['modalidad']}%"))
+        query = query.filter(_modality_condition(filtros["modalidad"]))
     if filtros.get("estado") == "abiertos":
         query = query.filter(~Opportunity.estado.ilike("%adjudicado%"), ~Opportunity.estado.ilike("%cerrado%"), ~Opportunity.estado.ilike("%cancelado%"))
     if filtros.get("valor_min") is not None:
