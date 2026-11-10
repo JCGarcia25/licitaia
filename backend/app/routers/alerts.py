@@ -115,6 +115,12 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
             "La fuente oficial de referencia es siempre el expediente en SECOP.",
         ]
         destinatario = (prefs.email_to or user.email).strip()
-        sent = send_email(destinatario, "MySECOP — Resumen de oportunidades", "\n".join(cuerpo),
-                          html_body=alerts_service.email_html("Resumen de oportunidades", cuerpo[1:]))
+        texto = "\n".join(cuerpo)
+        # Mantiene compatibilidad con adaptadores SMTP sencillos y con
+        # integraciones que solo implementan el contrato texto plano.
+        try:
+            sent = send_email(destinatario, "MySECOP — Resumen de oportunidades", texto,
+                              html_body=alerts_service.email_html("Resumen de oportunidades", cuerpo[1:]))
+        except TypeError:
+            sent = send_email(destinatario, "MySECOP — Resumen de oportunidades", texto)
     return {"alertas_creadas": created, "recordatorios_cierre": reminders, "correo_enviado": sent}
