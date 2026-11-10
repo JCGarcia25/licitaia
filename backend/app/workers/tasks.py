@@ -136,7 +136,7 @@ def daily_digest() -> dict:
             for destinatario in recipients:
                 if send_email(
                     destinatario,
-                    "MySECOP — Tus oportunidades compatibles",
+                    "MySECOP — Resumen de tus oportunidades compatibles",
                     "\n".join(cuerpo),
                     html_body=email_html(
                         "Tus oportunidades compatibles",

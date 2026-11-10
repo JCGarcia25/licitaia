@@ -127,11 +127,11 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
         texto = "\n".join(cuerpo)
         for destinatario in _recipients(prefs.email_to, user.email):
             try:
-                enviado = send_email(destinatario, "MySECOP — Tus oportunidades compatibles", texto,
+                enviado = send_email(destinatario, "MySECOP — Resumen de tus oportunidades compatibles", texto,
                                      html_body=alerts_service.email_html("Tus oportunidades compatibles", cuerpo,
                                          f"{get_settings().frontend_url.rstrip('/')}/app/alertas"))
             except TypeError:
-                enviado = send_email(destinatario, "MySECOP — Tus oportunidades compatibles", texto)
+                enviado = send_email(destinatario, "MySECOP — Resumen de tus oportunidades compatibles", texto)
             sent = sent or enviado
         reason = "enviado" if sent else ("smtp_no_configurado" if not get_settings().smtp_host else "error_smtp")
     return {"alertas_creadas": created, "recordatorios_cierre": reminders, "correo_enviado": sent, "correo_motivo": reason}
