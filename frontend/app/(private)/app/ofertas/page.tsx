@@ -7,7 +7,7 @@ import { Badge, Button, Card, CardHeader, EmptyState, Input, Select, Spinner, Te
 
 type Project = {
   id: number; name: string; opportunity_id: number; status: string; version: number;
-  updated_at: string; pendientes: number;
+  updated_at: string; pendientes: number; url_oficial?: string | null;
 };
 type ProjectDetail = {
   id: number; name: string; status: string; version: number; approved_by: string;
@@ -113,7 +113,10 @@ export default function Ofertas() {
                   <p className="text-muted mt-1 text-[11px]">v{p.version} · {p.pendientes} pendiente(s) de checklist</p>
                   <div className="mt-2"><Badge tone={p.status === "aprobado" ? "green" : p.status === "archivado" ? "gray" : "blue"}>{p.status}</Badge></div>
                 </button>
-                <Button size="sm" variant="ghost" className="mt-2 text-red-600" onClick={() => eliminarOferta(p.id)}>Eliminar oferta</Button>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="ghost" className="text-red-600" onClick={() => eliminarOferta(p.id)}>Eliminar oferta</Button>
+                  {p.url_oficial ? <a href={p.url_oficial} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}><Button size="sm" variant="outline">Ver en SECOP ↗</Button></a> : null}
+                </div>
               </Card>
             ))
           )}
