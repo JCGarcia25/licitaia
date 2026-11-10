@@ -111,6 +111,7 @@ def close_reminders_all() -> int:
 
 
 def daily_digest() -> dict:
+    from app.core.config import get_settings
     from app.db.models import AlertPrefs, User
     from app.db.session import SessionLocal
     from app.services.notifier import send_email
@@ -124,18 +125,25 @@ def daily_digest() -> dict:
                 .filter(AlertPrefs.email_enabled.is_(True), User.email_verified.is_(True))
                 .all())
         for prefs, user in rows:
-            cuerpo = [
-                "Resumen diario LicitaIA",
-                f"Umbral de alta compatibilidad: {prefs.high_score_threshold}%",
-                f"Recordatorios de cierre activos: D-{', D-'.join(str(d) for d in (prefs.close_days or [10, 5, 1]))}",
-                "",
-                "Revise su panel en LicitaIA. La fuente oficial de referencia es siempre el expediente en SECOP.",
-            ]
+            from app.db.models import Alert
+            cuerpo = ["Estas son las oportunidades compatibles visibles en tu bandeja de MySECOP:"]
+            rows_alert = db.query(Alert).filter(Alert.user_id == user.id).order_by(Alert.created_at.desc()).limit(20).all()
+            cuerpo.extend([f"• {a.title} — {a.body}" for a in rows_alert] or ["No hay oportunidades nuevas en este momento."])
+            cuerpo.append("La fuente oficial de referencia es siempre el expediente en SECOP.")
             import re
             recipients = [x.strip() for x in re.split(r"[,;\n]+", prefs.email_to or "") if x.strip()] or [user.email]
             delivered = False
             for destinatario in recipients:
-                if send_email(destinatario, "MySECOP — Resumen diario", "\n".join(cuerpo), html_body=email_html("Resumen diario", cuerpo[1:])):
+                if send_email(
+                    destinatario,
+                    "MySECOP — Tus oportunidades compatibles",
+                    "\n".join(cuerpo),
+                    html_body=email_html(
+                        "Tus oportunidades compatibles",
+                        cuerpo,
+                        f"{get_settings().frontend_url.rstrip('/')}/app/alertas",
+                    ),
+                ):
                     delivered = True
             if delivered: sent += 1
             else: skipped += 1

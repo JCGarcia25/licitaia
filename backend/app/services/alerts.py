@@ -9,12 +9,13 @@ from app.db.models import Alert, CompanyProfile, Opportunity, UserOpportunity
 from app.services.embeddings import embed
 from app.services.matcher import score_opportunity
 
-def email_html(title: str, lines: list[str]) -> str:
+def email_html(title: str, lines: list[str], cta_url: str | None = None) -> str:
     rows = "".join(f"<p style='margin:8px 0;color:#cbd5e1'>{line}</p>" for line in lines)
+    cta = f"<p style='margin:26px 0 8px'><a href='{cta_url}' style='display:inline-block;background:#2dd4bf;color:#062238;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:8px'>Ir a MySECOP</a></p>" if cta_url else ""
     return f"""<div style='background:#07182b;padding:32px;font-family:Arial,sans-serif;color:#f8fafc'>
       <div style='max-width:620px;margin:auto;background:#102942;border:1px solid #234766;border-radius:16px;padding:28px'>
       <div style='font-size:22px;font-weight:700;color:#2dd4bf;margin-bottom:24px'>MS&nbsp; MySECOP</div>
-      <h1 style='font-size:22px;margin:0 0 16px'>{title}</h1>{rows}
+      <h1 style='font-size:22px;margin:0 0 16px'>{title}</h1>{rows}{cta}
       <p style='margin-top:24px;color:#94a3b8;font-size:12px'>La fuente oficial de referencia es siempre el expediente en SECOP.</p>
       </div></div>"""
 

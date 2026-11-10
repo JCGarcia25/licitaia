@@ -117,21 +117,21 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
         reason = "envio_no_confirmado"
         uos = db.query(UserOpportunity).filter(UserOpportunity.user_id == user.id).all()
         alta = [u for u in uos if u.score >= threshold]
-        cuerpo = [
-            f"Resumen LicitaIA para {user.email}",
-            f"Oportunidades puntuadas: {len(uos)}",
-            f"Alta compatibilidad (>= {threshold}%): {len(alta)}",
-            f"Alertas nuevas creadas: {created + reminders}",
-            "",
-            "La fuente oficial de referencia es siempre el expediente en SECOP.",
-        ]
+        cuerpo = ["Estas son las oportunidades compatibles visibles en tu bandeja de MySECOP:"]
+        alert_rows = db.query(Alert).filter(Alert.user_id == user.id).order_by(Alert.created_at.desc()).limit(20).all()
+        if alert_rows:
+            cuerpo.extend([f"• {a.title} — {a.body}" for a in alert_rows])
+        else:
+            cuerpo.append("No hay oportunidades nuevas en este momento. Revisa tu bandeja para consultar las oportunidades disponibles.")
+        cuerpo.append("La fuente oficial de referencia es siempre el expediente en SECOP.")
         texto = "\n".join(cuerpo)
         for destinatario in _recipients(prefs.email_to, user.email):
             try:
-                enviado = send_email(destinatario, "MySECOP — Resumen de oportunidades", texto,
-                                     html_body=alerts_service.email_html("Resumen de oportunidades", cuerpo[1:]))
+                enviado = send_email(destinatario, "MySECOP — Tus oportunidades compatibles", texto,
+                                     html_body=alerts_service.email_html("Tus oportunidades compatibles", cuerpo,
+                                         f"{get_settings().frontend_url.rstrip('/')}/app/alertas"))
             except TypeError:
-                enviado = send_email(destinatario, "MySECOP — Resumen de oportunidades", texto)
+                enviado = send_email(destinatario, "MySECOP — Tus oportunidades compatibles", texto)
             sent = sent or enviado
         reason = "enviado" if sent else ("smtp_no_configurado" if not get_settings().smtp_host else "error_smtp")
     return {"alertas_creadas": created, "recordatorios_cierre": reminders, "correo_enviado": sent, "correo_motivo": reason}
