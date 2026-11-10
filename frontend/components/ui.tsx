@@ -103,6 +103,20 @@ export function Spinner({ label = "Cargando…" }: { label?: string }) {
   );
 }
 
+export function WorkOverlay({ label = "Estamos trabajando…", detail = "No cierres esta ventana; te avisaremos cuando termine." }: { label?: string; detail?: string }) {
+  return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-[2px]" role="status" aria-live="polite" aria-label={label}>
+    <div className="surface-card w-full max-w-sm p-7 text-center shadow-2xl">
+      <div className="relative mx-auto h-20 w-20 overflow-hidden rounded-2xl border border-teal/40 bg-slate-950/80" aria-hidden="true">
+        <span className="absolute bottom-3 left-4 h-4 w-4 rounded-sm bg-teal animate-[tetris-fall-1_2.4s_linear_infinite]" />
+        <span className="absolute bottom-3 left-9 h-4 w-4 rounded-sm bg-cyan-300 animate-[tetris-fall-2_2.8s_linear_infinite_.35s]" />
+        <span className="absolute bottom-3 left-14 h-4 w-4 rounded-sm bg-amber-300 animate-[tetris-fall-3_3s_linear_infinite_.8s]" />
+      </div>
+      <h2 className="mt-5 text-lg font-bold">{label}</h2>
+      <p className="text-muted mt-2 text-sm">{detail}</p>
+    </div>
+  </div>;
+}
+
 export function EmptyState({ title, body }: { title: string; body?: string }) {
   return (
     <div className="py-10 text-center">
