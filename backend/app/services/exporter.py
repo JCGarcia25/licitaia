@@ -17,7 +17,7 @@ def export_docx(titulo: str, secciones: list[tuple[str, list[list[str]]]]) -> by
 
     doc = docx.Document()
     doc.add_heading(titulo, level=0)
-    doc.add_paragraph(f"Generado por LicitaIA · {datetime.utcnow():%d/%m/%Y %H:%M} UTC · Documento borrador: requiere revisión y aprobación humana.")
+    doc.add_paragraph(f"Generado por MySECOP · {datetime.utcnow():%d/%m/%Y %H:%M} UTC · Documento borrador: requiere revisión y aprobación humana.")
     for nombre, filas in secciones:
         if not filas:
             continue
@@ -54,8 +54,8 @@ def export_xlsx(hojas: dict[str, list[list]]) -> bytes:
     return buf.getvalue()
 
 
-def export_pdf_matriz(titulo: str, filas: list[list[str]]) -> bytes:
-    """Genera un PDF sencillo de la matriz de cumplimiento."""
+def export_pdf_matriz(titulo: str, secciones: list[tuple[str, list[list[str]]]]) -> bytes:
+    """Genera un PDF de la oferta con el estilo visual de MySECOP."""
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter, landscape
     from reportlab.lib.styles import getSampleStyleSheet
@@ -65,17 +65,25 @@ def export_pdf_matriz(titulo: str, filas: list[list[str]]) -> bytes:
     doc = SimpleDocTemplate(buf, pagesize=landscape(letter), title=titulo)
     styles = getSampleStyleSheet()
     story = [Paragraph(titulo, styles["Title"]),
-             Paragraph(f"Generado por LicitaIA · {datetime.utcnow():%d/%m/%Y} · Borrador sujeto a revisión humana.", styles["Normal"]),
+             Paragraph(f"Generado por MySECOP · {datetime.utcnow():%d/%m/%Y} · Borrador sujeto a revisión humana.", styles["Normal"]),
              Spacer(1, 12)]
-    data = [[Paragraph(str(c), styles["Normal"]) for c in fila] for fila in filas]
-    table = Table(data, repeatRows=1)
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0B3B67")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("FONTSIZE", (0, 0), (-1, -1), 7),
-    ]))
-    story.append(table)
+    for nombre, filas in secciones:
+        if not filas:
+            continue
+        story.append(Paragraph(nombre, styles["Heading2"]))
+        if len(filas[0]) == 1:
+            story.extend([Paragraph(str(fila[0]), styles["Normal"]) for fila in filas])
+        else:
+            data = [[Paragraph(str(c), styles["Normal"]) for c in fila] for fila in filas]
+            table = Table(data, repeatRows=1)
+            table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0B3B67")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#B8C7D9")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("FONTSIZE", (0, 0), (-1, -1), 7),
+            ]))
+            story.append(table)
+        story.append(Spacer(1, 8))
     doc.build(story)
     return buf.getvalue()

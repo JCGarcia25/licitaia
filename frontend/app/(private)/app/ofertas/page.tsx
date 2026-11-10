@@ -60,6 +60,7 @@ export default function Ofertas() {
       method: "POST", body: JSON.stringify({ status, approved_by: status === "aprobado" ? "Aprobación humana desde la app" : undefined }),
     });
     abrir(sel.id);
+    await cargarLista();
     if (status === "aprobado") setMsg(`Oferta aprobada por ${r.approved_by}. Recuerda: la presentación en SECOP se realiza manualmente.`);
   }
 

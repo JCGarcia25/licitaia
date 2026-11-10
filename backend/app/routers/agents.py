@@ -391,28 +391,32 @@ def export_project(project_id: int, formato: str = "docx", user: User = Depends(
     if not p:
         raise HTTPException(404, "Proyecto no encontrado")
     opp = db.query(Opportunity).filter(Opportunity.id == p.opportunity_id).first()
+    proceso_rows = [["Campo", "Información"], ["Entidad", opp.entidad if opp else "N/D"], ["Objeto", opp.objeto if opp else "N/D"], ["Estado de la oferta", p.status], ["Expediente SECOP", opp.url_oficial if opp else "N/D"]]
     checklist_rows = [["#", "Documento", "Tipo", "Estado", "Evidencia"]] + [
         [str(i + 1), c.get("item", ""), c.get("tipo", ""), c.get("estado", ""), c.get("evidencia", "")]
         for i, c in enumerate(p.checklist or [])
     ]
     matriz = list(p.matriz_cumplimiento or [])
     matriz_rows = (matriz if matriz and isinstance(matriz[0], list) else [["Matriz de cumplimiento pendiente"]])
+    cronograma_rows = [["Tarea", "Plazo", "Tipo"]] + [[c.get("tarea", ""), c.get("plazo", ""), "Estimado" if c.get("estimado") else "Plan oficial"] for c in (p.cronograma or [])]
+    borradores_rows = [["Tipo", "Versión", "Fecha", "Contenido"]] + [[b.get("tipo", ""), str(b.get("version", 1)), b.get("fecha", ""), b.get("contenido", "")] for b in (p.borradores or [])]
+    comentarios_rows = [["Autor", "Fecha", "Comentario"]] + [[c.get("autor", ""), c.get("fecha", ""), c.get("texto", "")] for c in (p.comentarios or [])]
+    secciones = [("Información del proceso", proceso_rows), ("Checklist documental", checklist_rows), ("Cronograma interno sugerido", cronograma_rows), ("Borradores", borradores_rows), ("Comentarios y aprobaciones", comentarios_rows)]
     formato = formato.lower()
     if formato == "xlsx":
         content = export_xlsx({
+            "Proceso": proceso_rows,
             "Checklist": checklist_rows,
             "Matriz": matriz_rows,
-            "Cronograma": [["Tarea", "Plazo"]] + [[c.get("tarea", ""), c.get("plazo", "")] for c in (p.cronograma or [])],
+            "Cronograma": cronograma_rows,
+            "Borradores": borradores_rows,
+            "Comentarios": comentarios_rows,
         })
         media, filename = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "oferta_checklist.xlsx"
     elif formato == "pdf":
-        content = export_pdf_matriz(f"Checklist de oferta — {p.name}", checklist_rows)
+        content = export_pdf_matriz(f"Oferta — {p.name}", secciones)
         media, filename = "application/pdf", "oferta_checklist.pdf"
     else:
-        secciones = [("Datos del proceso", [[f"Entidad: {opp.entidad if opp else 'N/D'}"], [f"Objeto: {opp.objeto if opp else 'N/D'}"], [f"Expediente: {opp.url_oficial if opp else 'N/D'}"]]),
-                     ("Checklist documental", checklist_rows),
-                     ("Cronograma interno", [["Tarea", "Plazo"]] + [[c.get("tarea", ""), c.get("plazo", "")] for c in (p.cronograma or [])]),
-                     ("Borradores", [[b.get("tipo", "") + f" (v{b.get('version', 1)})"] for b in (p.borradores or [])] or [["Sin borradores generados"]])]
         content = export_docx(p.name, secciones)
         media, filename = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "oferta_checklist.docx"
     return Response(content, media_type=media, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
