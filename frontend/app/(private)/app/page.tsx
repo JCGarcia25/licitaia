@@ -197,21 +197,12 @@ export default function Dashboard() {
         </Card>
         <Card className="p-5">
           <h2 className="text-sm font-semibold">Qué puedes hacer ahora</h2>
-          <div className="relative overflow-hidden rounded-xl border border-teal/20 bg-teal/5 px-4 py-4 dark:bg-teal/10">
-            <div className="flex items-center gap-4 sm:gap-5">
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/70 p-1 dark:bg-slate-900/50 sm:h-28 sm:w-28">
-                <img src={personaje.src} alt={personaje.alt} className="h-full w-full object-contain" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-serif text-base italic leading-relaxed text-slate-700 dark:text-slate-200">“{fraseCalma}”</p>
-                <p className="text-muted mt-2 text-[10px] uppercase tracking-[0.18em]">Un momento de calma para enfocar tu siguiente paso</p>
-              </div>
+          <div className="relative overflow-hidden rounded-xl border border-teal/20 bg-teal/5 px-4 py-6 text-center dark:bg-teal/10 sm:px-6 sm:py-7">
+            <p className="font-serif text-base italic leading-relaxed text-slate-700 dark:text-slate-200 sm:text-lg">“{fraseCalma}”</p>
+            <p className="text-muted mt-2 text-[10px] uppercase tracking-[0.18em]">Un momento de calma para enfocar tu siguiente paso</p>
+            <div className="mx-auto mt-5 flex h-44 w-full max-w-[15rem] items-center justify-center overflow-hidden rounded-2xl bg-white/70 p-2 dark:bg-slate-900/50 sm:h-52 sm:max-w-[18rem]">
+              <img src={personaje.src} alt={personaje.alt} className="h-full w-full object-contain" />
             </div>
-          </div>
-          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
-            <Link href="/app/perfil" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">Afinar mi perfil</span><span className="text-muted mt-1 block text-xs">Haz que las coincidencias se parezcan más a tu negocio.</span></Link>
-            <Link href="/app/oportunidades" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">Explorar oportunidades</span><span className="text-muted mt-1 block text-xs">Encuentra procesos y revisa sus detalles.</span></Link>
-            <Link href="/app/alertas" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">Recibir novedades</span><span className="text-muted mt-1 block text-xs">Configura avisos para no dejar pasar una oportunidad.</span></Link>
           </div>
         </Card>
       </div>
