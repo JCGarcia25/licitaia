@@ -100,3 +100,27 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   h1 { overflow-wrap: anywhere; }
   button, a { -webkit-tap-highlight-color: transparent; }
 }
+
+/* Ajustes de lectura y navegación para teléfonos y tabletas. */
+@media (max-width: 1023px) {
+  .app-main { padding-inline: clamp(.75rem, 3vw, 1.5rem); }
+  .app-main h1 { font-size: clamp(1.35rem, 4vw, 1.8rem); line-height: 1.2; }
+  .app-main h2 { overflow-wrap: anywhere; }
+  .app-main .surface-card { max-width: 100%; }
+  .app-main table { min-width: 620px; }
+}
+
+@media (max-width: 640px) {
+  .app-main { padding-block: 1rem 2rem; }
+  .app-main .surface-card { border-radius: 12px; }
+  .app-main p, .app-main label, .app-main button, .app-main input,
+  .app-main select, .app-main textarea { max-width: 100%; }
+  .app-main button { min-height: 2.5rem; }
+  header { padding-inline: .75rem; }
+}
+
+@media (max-width: 420px) {
+  header > div.grid { grid-template-columns: 1fr; }
+  .app-main .flex-wrap > .shrink-0 { width: 100%; }
+  .app-main .flex-wrap > .shrink-0 button { width: 100%; }
+}

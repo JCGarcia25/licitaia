@@ -13,7 +13,7 @@ from app.db.models import (
     Analysis, CompanyProfile, Document, OfferProject, Opportunity, User, UserOpportunity, Viability,
 )
 from app.db.session import get_db
-from app.schemas import BorradorIn, ChecklistItemIn, CommentIn, OfferStatusIn, ViabilityIn
+from app.schemas import BorradorIn, ChecklistItemIn, CommentIn, CronogramaItemIn, OfferStatusIn, ViabilityIn
 from app.services import alerts as alerts_service
 from app.services.audit import log_action
 from app.services.eligibility import evaluar_elegibilidad
@@ -35,6 +35,46 @@ DEFAULT_CHECKLIST = [
 ]
 
 _PALABRAS_COMUNES = {"para", "del", "las", "los", "una", "uno", "con", "por", "de", "en", "y", "el", "la", "que", "servicios", "adquisicion", "adquisición", "contratacion", "contratación", "proceso"}
+
+
+def _cronograma_sugerido(opp: Opportunity, analysis: Analysis | None) -> list[dict]:
+    """Construye un plan interno desde el cierre oficial cuando existe.
+
+    SECOP no siempre publica la fecha de cierre en el dataset. En ese caso se
+    conserva una guía relativa y se marca explícitamente como estimada.
+    """
+    requisitos = list(analysis.requisitos or []) if analysis else []
+    documentales = sum(1 for r in requisitos if r.get("tipo") == "documental")
+    tareas = [
+        ("Análisis de pliegos y aclaratorios", "análisis"),
+        (f"Recolección de documentos y certificaciones ({documentales or 'base'} requisito(s))", "documentos"),
+        ("Elaboración de propuesta técnica", "técnica"),
+        ("Propuesta económica y revisión de márgenes", "económica"),
+        ("Revisión jurídica y aprobación humana", "revisión"),
+        ("Carga final y presentación manual en SECOP", "presentación"),
+    ]
+    cierre = opp.fecha_cierre
+    if not cierre:
+        return [{"tarea": tarea, "plazo": f"D+{2 + i * 2}", "tipo": tipo, "estimado": True, "estado": "pendiente"}
+                for i, (tarea, tipo) in enumerate(tareas)]
+    ahora = datetime.utcnow()
+    dias = max(0, (cierre - ahora).days)
+    resultado = []
+    for i, (tarea, tipo) in enumerate(tareas):
+        # Distribuye hitos hasta el cierre; con poco tiempo se concentran en
+        # hoy y el cierre, pero nunca se inventa tiempo adicional.
+        fecha = ahora + (cierre - ahora) * ((i + 1) / len(tareas))
+        resultado.append({
+            "tarea": tarea,
+            "plazo": fecha.strftime("%d/%m/%Y"),
+            "fecha": fecha.isoformat(timespec="minutes"),
+            "tipo": tipo,
+            "estimado": False,
+            "estado": "pendiente",
+            "dias_disponibles": dias,
+            "vencido": cierre <= ahora,
+        })
+    return resultado
 
 
 def _documento_corresponde(doc: Document, opp: Opportunity, data: bytes) -> bool:
@@ -217,14 +257,7 @@ def create_project(payload: dict, user: User = Depends(get_current_user), db: Se
         user_id=user.id, company_id=user.company_id, opportunity_id=opp.id,
         name=payload.get("name") or f"Propuesta — {(opp.objeto or 'Proceso')[:80]}",
         checklist=checklist,
-        cronograma=[
-            {"tarea": "Análisis de pliegos y aclaratorios", "plazo": "D+2"},
-            {"tarea": "Recolección de documentos y certificaciones", "plazo": "D+5"},
-            {"tarea": "Elaboración de propuesta técnica", "plazo": "D+8"},
-            {"tarea": "Propuesta económica y revisión de márgenes", "plazo": "D+10"},
-            {"tarea": "Revisión jurídica y aprobación humana", "plazo": "D+12"},
-            {"tarea": "Carga final y presentación (manual en SECOP)", "plazo": "D+14"},
-        ],
+        cronograma=_cronograma_sugerido(opp, analysis),
         borradores=[],
         comentarios=[],
     )
@@ -288,6 +321,22 @@ def update_checklist(project_id: int, item: ChecklistItemIn, user: User = Depend
     flag_modified(p, "checklist")  # fuerza la marca de columna modificada
     db.commit()
     return {"checklist": p.checklist}
+
+
+@router.patch("/offer-projects/{project_id}/cronograma")
+def update_cronograma(project_id: int, item: CronogramaItemIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    p = db.query(OfferProject).filter(OfferProject.id == project_id, OfferProject.user_id == user.id).first()
+    if not p:
+        raise HTTPException(404, "Proyecto no encontrado")
+    cronograma = [dict(c) for c in (p.cronograma or [])]
+    if item.index < 0 or item.index >= len(cronograma):
+        raise HTTPException(400, "Índice de cronograma inválido")
+    cronograma[item.index]["estado"] = item.estado
+    p.cronograma = cronograma
+    p.version += 1
+    flag_modified(p, "cronograma")
+    db.commit()
+    return {"cronograma": cronograma}
 
 
 @router.post("/offer-projects/{project_id}/borradores")
@@ -359,28 +408,36 @@ def export_project(project_id: int, formato: str = "docx", user: User = Depends(
     if not p:
         raise HTTPException(404, "Proyecto no encontrado")
     opp = db.query(Opportunity).filter(Opportunity.id == p.opportunity_id).first()
+    proceso_rows = [["Campo", "Información"], ["Entidad", opp.entidad if opp else "N/D"], ["Objeto", opp.objeto if opp else "N/D"], ["Estado de la oferta", p.status], ["Expediente SECOP", opp.url_oficial if opp else "N/D"]]
     checklist_rows = [["#", "Documento", "Tipo", "Estado", "Evidencia"]] + [
         [str(i + 1), c.get("item", ""), c.get("tipo", ""), c.get("estado", ""), c.get("evidencia", "")]
         for i, c in enumerate(p.checklist or [])
     ]
     matriz = list(p.matriz_cumplimiento or [])
     matriz_rows = (matriz if matriz and isinstance(matriz[0], list) else [["Matriz de cumplimiento pendiente"]])
+    cronograma = list(p.cronograma or [])
+    avance = round(sum(1 for c in cronograma if c.get("estado") == "listo") / len(cronograma) * 100) if cronograma else 0
+    bloques = round(avance / 10)
+    barra = "█" * bloques + "░" * (10 - bloques)
+    cronograma_rows = [["Avance del cronograma", f"{barra} {avance}%"], ["Tarea", "Plazo", "Estado", "Tipo"]] + [[c.get("tarea", ""), c.get("plazo", ""), "Lista" if c.get("estado") == "listo" else "Pendiente", "Estimado" if c.get("estimado") else "Plan oficial"] for c in cronograma]
+    borradores_rows = [["Tipo", "Versión", "Fecha", "Contenido"]] + [[b.get("tipo", ""), str(b.get("version", 1)), b.get("fecha", ""), b.get("contenido", "")] for b in (p.borradores or [])]
+    comentarios_rows = [["Autor", "Fecha", "Comentario"]] + [[c.get("autor", ""), c.get("fecha", ""), c.get("texto", "")] for c in (p.comentarios or [])]
+    secciones = [("Información del proceso", proceso_rows), ("Checklist documental", checklist_rows), ("Cronograma interno sugerido · avance total", cronograma_rows), ("Borradores", borradores_rows), ("Comentarios y aprobaciones", comentarios_rows)]
     formato = formato.lower()
     if formato == "xlsx":
         content = export_xlsx({
+            "Proceso": proceso_rows,
             "Checklist": checklist_rows,
             "Matriz": matriz_rows,
-            "Cronograma": [["Tarea", "Plazo"]] + [[c.get("tarea", ""), c.get("plazo", "")] for c in (p.cronograma or [])],
+            "Cronograma": cronograma_rows,
+            "Borradores": borradores_rows,
+            "Comentarios": comentarios_rows,
         })
         media, filename = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "oferta_checklist.xlsx"
     elif formato == "pdf":
-        content = export_pdf_matriz(f"Checklist de oferta — {p.name}", checklist_rows)
+        content = export_pdf_matriz(f"Oferta — {p.name}", secciones)
         media, filename = "application/pdf", "oferta_checklist.pdf"
     else:
-        secciones = [("Datos del proceso", [[f"Entidad: {opp.entidad if opp else 'N/D'}"], [f"Objeto: {opp.objeto if opp else 'N/D'}"], [f"Expediente: {opp.url_oficial if opp else 'N/D'}"]]),
-                     ("Checklist documental", checklist_rows),
-                     ("Cronograma interno", [["Tarea", "Plazo"]] + [[c.get("tarea", ""), c.get("plazo", "")] for c in (p.cronograma or [])]),
-                     ("Borradores", [[b.get("tipo", "") + f" (v{b.get('version', 1)})"] for b in (p.borradores or [])] or [["Sin borradores generados"]])]
         content = export_docx(p.name, secciones)
         media, filename = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "oferta_checklist.docx"
     return Response(content, media_type=media, headers={"Content-Disposition": f'attachment; filename="{filename}"'})

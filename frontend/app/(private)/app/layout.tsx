@@ -6,6 +6,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { AuthProvider, RequireAuth, useAuth } from "@/components/auth";
 import { ThemeToggle } from "@/components/theme";
 import { api } from "@/lib/api";
+import { WorkOverlay } from "@/components/ui";
 
 const NAV = [
   { href: "/app", label: "Dashboard", icon: "▤" },
@@ -29,6 +30,34 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [plan, setPlan] = useState<{ nombre: string; es_pro: boolean; status: string } | null>(null);
+  const [requests, setRequests] = useState(0);
+  const [showWork, setShowWork] = useState(false);
+
+  useEffect(() => {
+    let timer: number | undefined;
+    const start = () => {
+      setRequests((value) => value + 1);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setShowWork(true), 180);
+    };
+    const end = () => {
+      setRequests((value) => {
+        const next = Math.max(0, value - 1);
+        if (next === 0) {
+          window.clearTimeout(timer);
+          setShowWork(false);
+        }
+        return next;
+      });
+    };
+    window.addEventListener("mysecop:request-start", start);
+    window.addEventListener("mysecop:request-end", end);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("mysecop:request-start", start);
+      window.removeEventListener("mysecop:request-end", end);
+    };
+  }, []);
 
   useEffect(() => {
     api<{ nombre: string; es_pro: boolean; status: string }>("/api/billing")
@@ -52,6 +81,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
 
   return (
       <RequireAuth>
+      {showWork && requests > 0 ? <WorkOverlay /> : null}
       <div className="flex min-h-screen bg-[var(--bg)]">
         {/* Sidebar */}
         <aside className="hidden w-64 shrink-0 border-r border-base bg-[var(--surface)] lg:block">
@@ -109,7 +139,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
               </button>
             </div>
           </header>
-          <main className="mx-auto w-full max-w-7xl min-w-0 overflow-x-hidden p-4 sm:p-6 lg:p-8">
+          <main className="app-main mx-auto w-full max-w-7xl min-w-0 overflow-x-hidden p-4 sm:p-6 lg:p-8">
             {plan && !plan.es_pro && <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/50 bg-amber-50/80 px-4 py-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/25 dark:text-amber-100">
               <span><strong>MySECOP Free:</strong> análisis de pliegos, alertas por correo, sincronización avanzada y preparador de ofertas están identificados como funciones Pro.</span>
               <Link href="/app/plan" className="font-bold underline underline-offset-2">Ver MySECOP Pro</Link>

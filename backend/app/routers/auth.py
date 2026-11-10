@@ -73,6 +73,8 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
         # técnicos al usuario: la verificación se mantiene disponible para
         # flujos internos/dev mediante el token de la respuesta.
         enviado = send_email(email, welcome_subject, welcome_plain, html_body=welcome_html)
+        # El enlace siempre se genera con el dominio del ambiente configurado
+        # (DEV, STG o producción); nunca debe quedar fijado al dominio de DEV.
         verification_link = f"{settings.frontend_url.rstrip('/')}/verificar-correo?token={token_ver}"
         verify_subject, verify_plain, verify_html = _verification_email(data.full_name, verification_link)
         send_email(email, verify_subject, verify_plain, html_body=verify_html)
