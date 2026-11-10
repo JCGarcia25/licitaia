@@ -41,6 +41,28 @@ jobs:
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 644 "$HOME/.ssh/known_hosts"
 
+      - name: Liberar basura Docker en el VPS
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+        run: |
+          set -Eeuo pipefail
+          : "${VPS_PORT:=22}"
+          ssh_args=(-i "$HOME/.ssh/licitaia_deploy" -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15)
+          ssh "${ssh_args[@]}" "$VPS_USER@$VPS_HOST" bash -s <<'REMOTE'
+          set -Eeuo pipefail
+          exec 9>/tmp/licitaia-docker-cleanup.lock
+          if flock -w 120 9; then
+            docker container prune -f || true
+            docker image prune -af --filter until=24h || true
+            docker builder prune -af --filter until=24h || true
+          else
+            echo "Otra limpieza Docker está activa; se omite esta ejecución" >&2
+          fi
+          REMOTE
+
       - name: Construir y transferir imágenes
         shell: bash
         env:
