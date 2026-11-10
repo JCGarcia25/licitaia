@@ -17,7 +17,6 @@ export default function Alertas() {
   const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [msg, setMsg] = useState("");
   const [soloNoLeidas, setSoloNoLeidas] = useState(false);
-  const [emailModal, setEmailModal] = useState(false);
   const router = useRouter();
 
   const cargar = useCallback(async () => {
@@ -123,10 +122,13 @@ export default function Alertas() {
           {prefs ? (
             <div className="space-y-4 p-5">
               <label className="flex items-start gap-2 text-sm">
-                <input type="checkbox" checked={prefs.email_enabled} onChange={(e) => { const enabled = e.target.checked; setPrefs({ ...prefs, email_enabled: enabled }); if (enabled) setEmailModal(true); }} className="accent-teal" />
+                <input type="checkbox" checked={prefs.email_enabled} onChange={(e) => setPrefs({ ...prefs, email_enabled: e.target.checked })} className="accent-teal" />
                 Enviar resumen por correo
               </label>
-              {prefs.email_enabled ? <p className="text-muted -mt-2 text-xs">El resumen se enviará a <strong className="text-slate-200">{prefs.email_to || "tu correo registrado"}</strong>.</p> : null}
+              <Field label="Correos destinatarios" hint="Separa varios correos con coma. El correo registrado se usará si lo dejas vacío.">
+                <Input type="text" value={prefs.email_to} disabled={!prefs.email_enabled} onChange={(e) => setPrefs({ ...prefs, email_to: e.target.value })} placeholder="correo@empresa.com, equipo@empresa.com" />
+              </Field>
+              <p className="text-muted -mt-2 text-xs">{prefs.email_enabled ? "El resumen se enviará a los destinatarios configurados." : "Activa esta casilla para configurar destinatarios y enviar resúmenes."}</p>
               <Field label="Umbral de alta compatibilidad (%)" hint="Alerta cuando el puntaje del agente supera este valor.">
                 <Input type="number" min={0} max={100} value={prefs.high_score_threshold}
                   onChange={(e) => setPrefs({ ...prefs, high_score_threshold: Number(e.target.value) })} />
@@ -140,7 +142,7 @@ export default function Alertas() {
                   onChange={(e) => setPrefs({ ...prefs, digest_hour: Number(e.target.value) })} />
               </Field>
               <Button onClick={guardarPrefs} className="w-full">Guardar preferencias</Button>
-              <Button onClick={enviarResumenAhora} variant="outline" className="w-full">Enviar resumen ahora</Button>
+              <Button onClick={enviarResumenAhora} variant="outline" disabled={!prefs.email_enabled} className="w-full">Enviar resumen ahora</Button>
               <Button onClick={restablecerPrefs} variant="outline" className="w-full">Restablecer preferencias</Button>
               <p className="text-muted text-[11px] leading-relaxed">Las alertas dentro de MySECOP siempre están activas. El resumen por correo es opcional.</p>
             </div>
@@ -157,14 +159,6 @@ export default function Alertas() {
           </div>
         </div>
       ) : null}
-      {emailModal ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4" role="dialog" aria-modal="true">
-        <div className="surface-card w-full max-w-md p-7">
-          <h2 className="text-xl font-bold">¿A qué correo enviamos tus alertas?</h2>
-          <p className="text-muted mt-2 text-sm">Escribe uno o varios correos separados por coma. El resumen programado se enviará a todos los destinatarios guardados.</p>
-          <Input type="text" className="mt-5" value={prefs.email_to} onChange={(e) => setPrefs({ ...prefs, email_to: e.target.value })} placeholder="correo@empresa.com, equipo@empresa.com" />
-          <div className="mt-5 flex gap-2"><Button variant="outline" className="flex-1" onClick={() => { setPrefs({ ...prefs, email_enabled: false }); setEmailModal(false); }}>Cancelar</Button><Button className="flex-1" onClick={() => setEmailModal(false)}>Confirmar correo</Button></div>
-        </div>
-      </div> : null}
     </div>
   );
 }
