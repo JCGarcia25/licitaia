@@ -108,6 +108,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .app-main h2 { overflow-wrap: anywhere; }
   .app-main .surface-card { max-width: 100%; }
   .app-main table { min-width: 620px; }
+  .app-main .overflow-x-auto { max-width: 100%; -webkit-overflow-scrolling: touch; }
+  .app-main input, .app-main select, .app-main textarea { min-width: 0; }
 }
 
 @media (max-width: 640px) {
@@ -117,10 +119,26 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .app-main select, .app-main textarea { max-width: 100%; }
   .app-main button { min-height: 2.5rem; }
   header { padding-inline: .75rem; }
+  /* Evita el zoom automático de Safari y mantiene una lectura cómoda. */
+  .app-main input, .app-main select, .app-main textarea { font-size: 16px; }
+  .app-main .grid { min-width: 0; }
+  .app-main [class*="justify-between"] { min-width: 0; }
+  .app-main [class*="justify-between"] > * { min-width: 0; }
+  .app-main .fixed > div { max-height: calc(100dvh - 2rem); overflow-y: auto; }
 }
 
 @media (max-width: 420px) {
   header > div.grid { grid-template-columns: 1fr; }
   .app-main .flex-wrap > .shrink-0 { width: 100%; }
   .app-main .flex-wrap > .shrink-0 button { width: 100%; }
+  .app-main { padding-inline: .75rem; }
+  .app-main h1 { font-size: 1.3rem; }
+  .app-main h2 { font-size: 1.05rem; }
+}
+
+/* Controles y tarjetas se apilan sin desbordarse en teléfonos estrechos. */
+@media (max-width: 767px) {
+  .app-main .surface-card { overflow-wrap: anywhere; }
+  .app-main button, .app-main a { white-space: normal; text-align: center; }
+  .app-main .overflow-x-auto table { font-size: .75rem; }
 }
