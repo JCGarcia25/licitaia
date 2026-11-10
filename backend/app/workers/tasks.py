@@ -34,9 +34,19 @@ def sync_mercadopago_subscription(external_id: str) -> dict:
         if not sub:
             return {"ok": True, "ignored": True, "reason": "subscription_not_found"}
         remote_status = remote.get("status")
-        new_status = "activa" if remote_status == "authorized" else (
-            "cancelada" if remote_status in {"cancelled", "paused"} else "pendiente_pago"
-        )
+        # Mercado Pago reports a cancelled preapproval immediately after the
+        # user disables renewal. Keep Pro access through the already-paid
+        # period instead of downgrading the account on the next webhook.
+        if remote_status == "authorized":
+            new_status = "activa"
+        elif remote_status in {"cancelled", "paused"}:
+            new_status = (
+                "cancelada_pendiente"
+                if sub.current_period_end and sub.current_period_end > datetime.utcnow()
+                else "cancelada"
+            )
+        else:
+            new_status = "pendiente_pago"
         sub.status = new_status
         if new_status == "activa":
             sub.plan = "profesional"
