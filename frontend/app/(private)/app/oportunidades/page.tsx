@@ -113,7 +113,9 @@ export default function Oportunidades() {
       municipio: params.get("municipio") || "",
       modalidad: params.get("modalidad") || "",
       valorMin: params.get("valor_min") || "",
-      scoreMin: params.get("score_min") || "",
+      // El módulo siempre inicia sin umbral para no ocultar oportunidades.
+      // El usuario puede seleccionar luego cualquier probabilidad disponible.
+      scoreMin: "",
       triage: params.get("triage") || "",
       soloScore: params.has("solo_con_score") ? params.get("solo_con_score") === "true" : false,
     };
