@@ -417,7 +417,9 @@ def export_project(project_id: int, formato: str = "docx", user: User = Depends(
     matriz_rows = (matriz if matriz and isinstance(matriz[0], list) else [["Matriz de cumplimiento pendiente"]])
     cronograma = list(p.cronograma or [])
     avance = round(sum(1 for c in cronograma if c.get("estado") == "listo") / len(cronograma) * 100) if cronograma else 0
-    cronograma_rows = [["Avance del cronograma", f"{avance}%"], ["Tarea", "Plazo", "Estado", "Tipo"]] + [[c.get("tarea", ""), c.get("plazo", ""), "Lista" if c.get("estado") == "listo" else "Pendiente", "Estimado" if c.get("estimado") else "Plan oficial"] for c in cronograma]
+    bloques = round(avance / 10)
+    barra = "█" * bloques + "░" * (10 - bloques)
+    cronograma_rows = [["Avance del cronograma", f"{barra} {avance}%"], ["Tarea", "Plazo", "Estado", "Tipo"]] + [[c.get("tarea", ""), c.get("plazo", ""), "Lista" if c.get("estado") == "listo" else "Pendiente", "Estimado" if c.get("estimado") else "Plan oficial"] for c in cronograma]
     borradores_rows = [["Tipo", "Versión", "Fecha", "Contenido"]] + [[b.get("tipo", ""), str(b.get("version", 1)), b.get("fecha", ""), b.get("contenido", "")] for b in (p.borradores or [])]
     comentarios_rows = [["Autor", "Fecha", "Comentario"]] + [[c.get("autor", ""), c.get("fecha", ""), c.get("texto", "")] for c in (p.comentarios or [])]
     secciones = [("Información del proceso", proceso_rows), ("Checklist documental", checklist_rows), ("Cronograma interno sugerido · avance total", cronograma_rows), ("Borradores", borradores_rows), ("Comentarios y aprobaciones", comentarios_rows)]

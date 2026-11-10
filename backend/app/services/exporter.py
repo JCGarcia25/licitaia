@@ -5,6 +5,18 @@ import io
 from datetime import datetime
 
 
+def _logo_png() -> bytes:
+    """Genera el isotipo MS en PNG para incrustarlo en los reportes."""
+    from PIL import Image, ImageDraw
+    image = Image.new("RGBA", (256, 256), "#082f52")
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((0, 0, 255, 255), radius=48, fill="#082f52")
+    draw.text((42, 70), "MS", fill="#35d0c0", stroke_width=1)
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 def _formato_cop(valor: float | None) -> str:
     if valor is None:
         return "N/D"
@@ -16,6 +28,7 @@ def export_docx(titulo: str, secciones: list[tuple[str, list[list[str]]]]) -> by
     import docx
 
     doc = docx.Document()
+    doc.add_picture(io.BytesIO(_logo_png()), width=docx.shared.Inches(0.55))
     doc.add_heading(titulo, level=0)
     doc.add_paragraph(f"Generado por MySECOP · {datetime.utcnow():%d/%m/%Y %H:%M} UTC · Documento borrador: requiere revisión y aprobación humana.")
     for nombre, filas in secciones:
@@ -39,11 +52,16 @@ def export_docx(titulo: str, secciones: list[tuple[str, list[list[str]]]]) -> by
 def export_xlsx(hojas: dict[str, list[list]]) -> bytes:
     """Genera un .xlsx con hojas (checklist, matriz de cumplimiento)."""
     import openpyxl
+    from openpyxl.drawing.image import Image as XLImage
 
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     for nombre, filas in hojas.items():
         ws = wb.create_sheet(title=nombre[:31])
+        if nombre == "Proceso":
+            logo = XLImage(io.BytesIO(_logo_png()))
+            logo.width, logo.height = 42, 42
+            ws.add_image(logo, "D1")
         for fila in filas:
             ws.append(list(fila))
         for column_cells in ws.columns:
@@ -59,12 +77,13 @@ def export_pdf_matriz(titulo: str, secciones: list[tuple[str, list[list[str]]]])
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter, landscape
     from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=landscape(letter), title=titulo)
     styles = getSampleStyleSheet()
-    story = [Paragraph(titulo, styles["Title"]),
+    logo = Image(io.BytesIO(_logo_png()), width=42, height=42)
+    story = [logo, Paragraph("MySECOP", styles["Heading2"]), Paragraph(titulo, styles["Title"]),
              Paragraph(f"Generado por MySECOP · {datetime.utcnow():%d/%m/%Y} · Borrador sujeto a revisión humana.", styles["Normal"]),
              Spacer(1, 12)]
     for nombre, filas in secciones:
