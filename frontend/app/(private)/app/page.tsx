@@ -34,6 +34,14 @@ const FRASES_CALMA = [
   "Respira. Lo importante se construye con paciencia.",
   "La imperfección de hoy puede ser la semilla de mañana.",
 ];
+const PERSONAJES = [
+  { src: "/characters/enemigos-01.png", alt: "Personaje de MySECOP" },
+  { src: "/characters/enemigos-02.png", alt: "Personaje de MySECOP" },
+  { src: "/characters/kato.png", alt: "Personaje de MySECOP" },
+  { src: "/characters/mongo.png", alt: "Personaje de MySECOP" },
+  { src: "/characters/osun.png", alt: "Personaje de MySECOP" },
+  { src: "/characters/quanchi.png", alt: "Personaje de MySECOP" },
+];
 
 export default function Dashboard() {
   const [m, setM] = useState<Metrics | null>(null);
@@ -45,6 +53,7 @@ export default function Dashboard() {
   const [guardandoCriterios, setGuardandoCriterios] = useState(false);
   const [cargandoTop, setCargandoTop] = useState(true);
   const [fraseCalma] = useState(() => FRASES_CALMA[Math.floor(Math.random() * FRASES_CALMA.length)]);
+  const [personaje] = useState(() => PERSONAJES[Math.floor(Math.random() * PERSONAJES.length)]);
   const router = useRouter();
 
   async function cargar(umbralActual = umbral, diasActuales = diasNuevos) {
@@ -188,14 +197,21 @@ export default function Dashboard() {
         </Card>
         <Card className="p-5">
           <h2 className="text-sm font-semibold">Qué puedes hacer ahora</h2>
-          <div className="rounded-xl border border-teal/20 bg-teal/5 px-4 py-5 text-center dark:bg-teal/10">
-            <p className="font-serif text-base italic leading-relaxed text-slate-700 dark:text-slate-200">“{fraseCalma}”</p>
-            <p className="text-muted mt-2 text-[10px] uppercase tracking-[0.18em]">Un momento de calma para enfocar tu siguiente paso</p>
+          <div className="relative overflow-hidden rounded-xl border border-teal/20 bg-teal/5 px-4 py-4 dark:bg-teal/10">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/70 p-1 dark:bg-slate-900/50 sm:h-28 sm:w-28">
+                <img src={personaje.src} alt={personaje.alt} className="h-full w-full object-contain" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-serif text-base italic leading-relaxed text-slate-700 dark:text-slate-200">“{fraseCalma}”</p>
+                <p className="text-muted mt-2 text-[10px] uppercase tracking-[0.18em]">Un momento de calma para enfocar tu siguiente paso</p>
+              </div>
+            </div>
           </div>
-          <div className="mt-4 space-y-3 text-sm">
-            <Link href="/app/perfil" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">1. Completa tu perfil</span><span className="text-muted mt-1 block text-xs">Define actividades, ubicaciones, presupuesto y modalidades.</span></Link>
-            <Link href="/app/oportunidades" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">2. Revisa oportunidades</span><span className="text-muted mt-1 block text-xs">Filtra procesos y abre el expediente oficial en SECOP.</span></Link>
-            <Link href="/app/alertas" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">3. Activa alertas</span><span className="text-muted mt-1 block text-xs">Recibe avisos cuando aparezcan procesos compatibles.</span></Link>
+          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+            <Link href="/app/perfil" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">Afinar mi perfil</span><span className="text-muted mt-1 block text-xs">Haz que las coincidencias se parezcan más a tu negocio.</span></Link>
+            <Link href="/app/oportunidades" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">Explorar oportunidades</span><span className="text-muted mt-1 block text-xs">Encuentra procesos y revisa sus detalles.</span></Link>
+            <Link href="/app/alertas" className="block rounded-lg border border-base p-3 transition hover:border-teal"><span className="font-semibold">Recibir novedades</span><span className="text-muted mt-1 block text-xs">Configura avisos para no dejar pasar una oportunidad.</span></Link>
           </div>
         </Card>
       </div>
