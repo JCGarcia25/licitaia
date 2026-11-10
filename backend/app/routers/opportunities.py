@@ -1,6 +1,7 @@
 """Dashboard y oportunidades: filtros, buscador de lenguaje natural, triage, métricas."""
 from datetime import datetime, timedelta
 import re
+import unicodedata
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -16,6 +17,65 @@ from app.services import nlq
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
 PROFILE_MATCH_MIN_SCORE = 40
+
+
+def _vigente_condition():
+    """Procesos publicados y no terminales según el estado disponible en SECOP.
+
+    El dataset p6dx-8zbt no expone fecha de cierre; por eso la vigencia se
+    determina con la fecha de publicación (no futura) y los estados oficiales
+    de cierre/cancelación/adjudicación. Nunca se infiere una fecha de cierre.
+    """
+    estado = func.lower(func.coalesce(Opportunity.estado, ""))
+    terminales = ("cancelad", "cerrad", "adjudic", "terminad", "desiert", "retirad", "suspendid")
+    return and_(
+        or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)),
+        or_(Opportunity.fecha_publicacion.is_(None), Opportunity.fecha_publicacion <= datetime.utcnow()),
+        *[~estado.like(f"%{term}%") for term in terminales],
+    )
+
+
+def _location_variants(value: str) -> list[str]:
+    """Acepta nombres de SECOP con/sin tildes y abreviaturas habituales."""
+    raw = value.strip()
+    folded = "".join(c for c in unicodedata.normalize("NFD", raw) if unicodedata.category(c) != "Mn")
+    variants = {raw, folded}
+    key = folded.lower().replace(".", "").strip()
+    if key in {"bogota", "bogota dc", "bogota d c"}:
+        variants.update({"Bogotá", "Bogotá D.C.", "Bogota", "Bogota D.C."})
+    return [v for v in variants if v]
+
+
+def _location_condition(column, value: str):
+    return or_(*[column.ilike(f"%{variant}%") for variant in _location_variants(value)])
+
+
+def _text_variants(value: str) -> list[str]:
+    folded = "".join(c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn")
+    return list({value, folded})
+
+
+def _modality_variants(value: str) -> list[str]:
+    """Reconoce el nombre corto del selector y la denominación SECOP."""
+    variants = set(_text_variants(value))
+    folded = "".join(c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn").lower()
+    if "minima cuantia" in folded:
+        variants.update({"Mínima Cuantía", "Mínima cuantía", "Contratación Mínima Cuantía"})
+    if "seleccion abreviada" in folded:
+        variants.update({"Selección Abreviada", "Selección Abreviada de Menor Cuantía", "Selección Abreviada de Mayor Cuantía"})
+    if "contratacion directa" in folded:
+        variants.update({"Contratación Directa", "Contratación Directa (con ofertas)"})
+    if "concurso de meritos" in folded:
+        variants.update({"Concurso de Méritos", "Concurso de méritos abierto"})
+    if "regimen especial" in folded:
+        variants.update({"Régimen Especial", "Contratación régimen especial"})
+    if "subasta" in folded:
+        variants.update({"Subasta", "Subasta Inversa Electrónica"})
+    return [v for v in variants if v]
+
+
+def _modality_condition(value: str):
+    return or_(*[Opportunity.modalidad.ilike(f"%{variant}%") for variant in _modality_variants(value)])
 
 
 def _public_document_count(value) -> int:
@@ -110,11 +170,11 @@ def list_opportunities(
         modalidades = [x for x in (profile.modalidades or []) if x and "toda" not in x.lower()]
         profile_conditions = []
         if not departamento and departamentos:
-            profile_conditions.append(or_(*[Opportunity.departamento.ilike(f"%{x}%") for x in departamentos]))
+            profile_conditions.append(or_(*[_location_condition(Opportunity.departamento, x) for x in departamentos]))
         if not municipio and municipios:
-            profile_conditions.append(or_(*[Opportunity.ciudad.ilike(f"%{x}%") for x in municipios]))
+            profile_conditions.append(or_(*[_location_condition(Opportunity.ciudad, x) for x in municipios]))
         if not modalidad and modalidades:
-            profile_conditions.append(or_(*[Opportunity.modalidad.ilike(f"%{x}%") for x in modalidades]))
+            profile_conditions.append(or_(*[_modality_condition(x) for x in modalidades]))
         if valor_min is None and profile.presupuesto_min is not None:
             profile_conditions.append(Opportunity.valor >= profile.presupuesto_min)
         if valor_max is None and profile.presupuesto_max is not None:
@@ -126,7 +186,7 @@ def list_opportunities(
             match_condition = and_(*profile_conditions)
             query = query.filter(or_(match_condition, Opportunity.id.in_(preserved_ids))) if preserved_ids else query.filter(match_condition)
     if not include_cancelled:
-        query = query.filter(or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)))
+        query = query.filter(_vigente_condition())
     if q:
         stopwords = {"procesos", "proceso", "contratación", "contratacion", "pública", "publica", "superior", "millones", "pesos", "buscar", "para", "con", "los", "las", "del", "una"}
         words = [w for w in re.split(r"[^\wáéíóúñü]+", q.lower()) if len(w) > 3 and w not in stopwords][:8]
@@ -138,11 +198,15 @@ def list_opportunities(
             # coincidencia de la frase completa cuando exista.
             term_conditions = []
             for word in words:
-                like = f"%{word}%"
-                term_conditions.append(or_(
-                    Opportunity.objeto.ilike(like), Opportunity.entidad.ilike(like), Opportunity.descripcion.ilike(like),
-                    Opportunity.modalidad.ilike(like), Opportunity.tipo_contrato.ilike(like),
-                ))
+                term_conditions.append(or_(*[
+                    clause
+                    for variant in _text_variants(word)
+                    for clause in (
+                        Opportunity.objeto.ilike(f"%{variant}%"), Opportunity.entidad.ilike(f"%{variant}%"),
+                        Opportunity.descripcion.ilike(f"%{variant}%"), Opportunity.modalidad.ilike(f"%{variant}%"),
+                        Opportunity.tipo_contrato.ilike(f"%{variant}%"),
+                    )
+                ]))
             query = query.filter(or_(*term_conditions))
             phrase = " ".join(words)
             query = query.order_by(
@@ -157,11 +221,11 @@ def list_opportunities(
                 ~Opportunity.estado.ilike("%terminado%"),
             )
     if departamento:
-        query = query.filter(Opportunity.departamento.ilike(f"%{departamento}%"))
+        query = query.filter(_location_condition(Opportunity.departamento, departamento))
     if municipio:
-        query = query.filter(Opportunity.ciudad.ilike(f"%{municipio}%"))
+        query = query.filter(_location_condition(Opportunity.ciudad, municipio))
     if modalidad:
-        query = query.filter(Opportunity.modalidad.ilike(f"%{modalidad}%"))
+        query = query.filter(_modality_condition(modalidad))
     if source:
         query = query.filter(Opportunity.source == source)
     if estado:
@@ -178,6 +242,11 @@ def list_opportunities(
         UserOpportunity.user_id == user.id,
         UserOpportunity.opportunity_id == Opportunity.id,
     )
+    user_project = db.query(OfferProject).filter(
+        OfferProject.user_id == user.id,
+        OfferProject.opportunity_id == Opportunity.id,
+        OfferProject.status != "archivado",
+    )
     # Descartar es persistente para este usuario: no debe reaparecer en nuevas
     # búsquedas, salvo que se solicite explícitamente el filtro de descartadas.
     if triage != "descartada":
@@ -185,7 +254,13 @@ def list_opportunities(
     if solo_con_score or profile_match:
         min_score = PROFILE_MATCH_MIN_SCORE if profile_match else 1
         query = query.filter(user_opp.filter(UserOpportunity.score >= min_score).exists())
-    if triage:
+    if triage == "guardada":
+        query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "guardada").exists(), user_project.exists()))
+    elif triage == "proyecto":
+        query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "proyecto").exists(), user_project.exists()))
+    elif triage == "detectada":
+        query = query.filter(or_(~user_opp.exists(), user_opp.filter(UserOpportunity.triage == "detectada").exists()))
+    elif triage:
         query = query.filter(user_opp.filter(UserOpportunity.triage == triage).exists())
     if score_min is not None:
         query = query.filter(user_opp.filter(UserOpportunity.score >= score_min).exists())
@@ -269,15 +344,15 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
     if payload.get("valor_min"):
         filtros["valor_min"] = float(payload["valor_min"])
     query = db.query(Opportunity)
-    if not filtros.get("estado"):
-        query = query.filter(or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)))
+    if not filtros.get("estado") or filtros.get("estado") == "abiertos":
+        query = query.filter(_vigente_condition())
     if filtros.get("q"):
         # La búsqueda manual es flexible: basta con que el proceso coincida
         # con al menos un término relevante. Exigir todos los términos hacía
         # que consultas naturales razonables terminaran siempre sin resultados.
         term_clauses = []
         for word in filtros["q"].split():
-            variants = [word]
+            variants = _text_variants(word)
             if word in {"movil", "moviles"}: variants += ["móvil", "móviles"]
             term_clauses.append(or_(*[
                 clause for variant in variants for clause in (
@@ -290,11 +365,11 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
             # registro SECOP, incluidos entidad, descripción y datos crudos.
             query = query.filter(or_(*term_clauses))
     if filtros.get("departamento"):
-        query = query.filter(Opportunity.departamento.ilike(f"%{filtros['departamento']}%"))
+        query = query.filter(_location_condition(Opportunity.departamento, filtros["departamento"]))
     if filtros.get("municipio"):
-        query = query.filter(Opportunity.ciudad.ilike(f"%{filtros['municipio']}%"))
+        query = query.filter(_location_condition(Opportunity.ciudad, filtros["municipio"]))
     if filtros.get("modalidad"):
-        query = query.filter(Opportunity.modalidad.ilike(f"%{filtros['modalidad']}%"))
+        query = query.filter(_modality_condition(filtros["modalidad"]))
     if filtros.get("estado") == "abiertos":
         query = query.filter(~Opportunity.estado.ilike("%adjudicado%"), ~Opportunity.estado.ilike("%cerrado%"), ~Opportunity.estado.ilike("%cancelado%"))
     if filtros.get("valor_min") is not None:
@@ -313,6 +388,11 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         UserOpportunity.user_id == user.id,
         UserOpportunity.opportunity_id == Opportunity.id,
     )
+    user_project = db.query(OfferProject).filter(
+        OfferProject.user_id == user.id,
+        OfferProject.opportunity_id == Opportunity.id,
+        OfferProject.status != "archivado",
+    )
     if triage != "descartada":
         query = query.filter(~user_opp.filter(UserOpportunity.triage == "descartada").exists())
     if solo_con_score:
@@ -324,7 +404,13 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
             query = query.filter(user_opp.filter(UserOpportunity.score >= float(score_min)).exists())
         except (TypeError, ValueError):
             raise HTTPException(422, "El puntaje mínimo no es válido")
-    if triage:
+    if triage == "guardada":
+        query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "guardada").exists(), user_project.exists()))
+    elif triage == "proyecto":
+        query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "proyecto").exists(), user_project.exists()))
+    elif triage == "detectada":
+        query = query.filter(or_(~user_opp.exists(), user_opp.filter(UserOpportunity.triage == "detectada").exists()))
+    elif triage:
         query = query.filter(user_opp.filter(UserOpportunity.triage == triage).exists())
     total = query.count()
     rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
@@ -341,7 +427,7 @@ def metrics(
     db: Session = Depends(get_db),
 ):
     scores = _user_scores(db, user.id)
-    base = db.query(Opportunity).filter(or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)))
+    base = db.query(Opportunity).filter(_vigente_condition())
     prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user.id).first()
     umbral_compatibilidad = compatibility_threshold if compatibility_threshold is not None else (prefs.high_score_threshold if prefs else 70)
     ahora = datetime.utcnow()

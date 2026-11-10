@@ -12,7 +12,7 @@ type Run = {
 type Process = { id: number; source_id: string; entidad: string | null; objeto: string | null; estado: string | null; modalidad: string | null; fecha_publicacion: string | null; url_oficial: string | null };
 
 export default function Sincronizacion() {
-  const [source, setSource] = useState("secop2_procesos");
+  const [source, setSource] = useState("todas");
   const [maxPages, setMaxPages] = useState("1");
   const [extraWhere, setExtraWhere] = useState("");
   const [corriendo, setCorriendo] = useState(false);
@@ -26,6 +26,10 @@ export default function Sincronizacion() {
   const [esPro, setEsPro] = useState<boolean | null>(null);
   const [planCargado, setPlanCargado] = useState(false);
   const [avisoInicialMostrado, setAvisoInicialMostrado] = useState(false);
+  const fechaLocal = (value: string) => {
+    const normalizada = /(?:Z|[+-]\d{2}:?\d{2})$/.test(value) ? value : `${value}Z`;
+    return new Date(normalizada).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" });
+  };
 
   const cargarRuns = useCallback(async () => {
     try {
@@ -66,7 +70,6 @@ export default function Sincronizacion() {
     setResultado(null);
     try {
       const body: Record<string, unknown> = { source, max_pages: Number(maxPages) };
-      if (extraWhere.trim()) body.extra_where = extraWhere.trim();
       const r = await api<Record<string, unknown>>("/api/sync/secop", { method: "POST", body: JSON.stringify(body) });
       setResultado(r);
       const usoActual = await api<{ es_pro: boolean; used: number; limit: number | null }>("/api/sync/usage");
@@ -93,6 +96,7 @@ export default function Sincronizacion() {
   }
 
   const FUENTES = [
+    { v: "todas", l: "Todas las fuentes oficiales SECOP" },
     { v: "secop2_procesos", l: "SECOP II — Procesos de Contratación (p6dx-8zbt)" },
     { v: "secop2_contratos", l: "SECOP II — Contratos Electrónicos (jbjy-vk9h)" },
     { v: "secop1", l: "SECOP I (e985-4d7e)" },
@@ -103,14 +107,14 @@ export default function Sincronizacion() {
       <div>
         <h1 className="text-xl font-bold tracking-tight">Sincronización con SECOP</h1>
         <p className="text-muted text-sm">
-          Ingesta incremental vía API Socrata de datos.gov.co. El agendamiento automático (cada 30 minutos) corre en el worker de Celery.
+          Actualiza tus oportunidades consultando las fuentes oficiales de SECOP. MySECOP también puede mantener esta información actualizada automáticamente cada 30 minutos.
         </p>
         {usoGratis ? <p className="mt-2 text-xs text-teal">Sincronizaciones gratuitas usadas este mes: {usoGratis.used} de {usoGratis.limit}.</p> : null}
       </div>
 
       <Card>
         <CardHeader title="Ejecutar ingesta manual" subtitle="Paginación segura con upsert idempotente (sin duplicados)" />
-        <div className="grid gap-4 p-5 lg:grid-cols-3">
+        <div className="grid gap-4 p-5 md:grid-cols-2">
           <Field label="Fuente">
             <Select value={source} onChange={(e) => setSource(e.target.value)}>
               {FUENTES.map((f) => <option key={f.v} value={f.v}>{f.l}</option>)}
@@ -118,9 +122,6 @@ export default function Sincronizacion() {
           </Field>
           <Field label="Máximo de páginas" hint="Cada página trae hasta 1.000 registros.">
             <Input type="number" min={1} max={50} value={maxPages} onChange={(e) => setMaxPages(e.target.value)} />
-          </Field>
-          <Field label="Filtro SoQL adicional ($where, opcional)" hint="P. ej. departamento_entidad = 'Bogotá D.C.'">
-            <Input value={extraWhere} onChange={(e) => setExtraWhere(e.target.value)} />
           </Field>
         </div>
         <div className="flex flex-wrap items-center gap-3 px-5 pb-5">
@@ -130,7 +131,7 @@ export default function Sincronizacion() {
       </Card>
 
       <Card>
-        <CardHeader title="Auditoría de sincronizaciones" subtitle="Últimas 20 corridas registradas" />
+        <CardHeader title="Historial de sincronizaciones" subtitle="Últimas 20 ejecuciones de tu cuenta. “Nuevas” son procesos incorporados; “ya existentes” ya estaban cargados." />
         {!runs ? (
           <Spinner />
         ) : runsError ? (
@@ -143,7 +144,7 @@ export default function Sincronizacion() {
               <thead>
                 <tr className="border-b border-base text-muted">
                   <th className="px-5 py-2">ID</th><th className="px-3 py-2">Dataset</th><th className="px-3 py-2">Inicio</th>
-                  <th className="px-3 py-2">Nuevas</th><th className="px-3 py-2">Duplicadas</th><th className="px-3 py-2">Errores</th>
+                  <th className="px-3 py-2">Nuevas</th><th className="px-3 py-2">Ya existentes</th><th className="px-3 py-2">Errores</th>
                 </tr>
               </thead>
               <tbody>
@@ -151,7 +152,7 @@ export default function Sincronizacion() {
                   <tr key={r.id} className="border-b border-base">
                     <td className="px-5 py-2">{r.id}</td>
                     <td className="px-3 py-2"><button type="button" onClick={() => verProcesos(r.dataset)} title="Ver procesos de este dataset"><Badge tone="blue">{r.dataset}</Badge></button></td>
-                    <td className="px-3 py-2">{new Date(r.started_at).toLocaleString("es-CO")}</td>
+                    <td className="whitespace-nowrap px-3 py-2">{fechaLocal(r.started_at)}</td>
                     <td className="px-3 py-2 font-medium text-teal">{r.upserted}</td>
                     <td className="px-3 py-2">{r.duplicates}</td>
                     <td className={`px-3 py-2 ${r.errors ? "text-red-600 font-medium" : ""}`}>{r.errors}</td>
@@ -185,6 +186,26 @@ export default function Sincronizacion() {
           registrada por el usuario. La fuente oficial es siempre la referencia definitiva del estado del expediente.
         </p>
       </Card>
+      {corriendo ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-label="Sincronización en curso">
+          <div className="w-full max-w-sm rounded-2xl border border-teal/40 bg-surface p-7 text-center text-[var(--text)] shadow-2xl">
+            <div className="mx-auto h-24 w-24 rounded-xl border border-teal/30 bg-slate-100 p-2 shadow-inner dark:bg-slate-950/70" aria-hidden="true">
+              <div className="relative h-full overflow-hidden rounded-lg">
+                <span className="absolute bottom-1 left-2 h-3 w-3 rounded-sm bg-teal animate-[tetris-fall-1_2.4s_linear_infinite]" />
+                <span className="absolute bottom-1 left-5 h-3 w-3 rounded-sm bg-cyan-300 animate-[tetris-fall-2_2.8s_linear_infinite_.35s]" />
+                <span className="absolute bottom-1 left-8 h-3 w-3 rounded-sm bg-amber-300 animate-[tetris-fall-3_3s_linear_infinite_.8s]" />
+                <span className="absolute bottom-1 left-11 h-3 w-3 rounded-sm bg-violet-300 animate-[tetris-fall-4_2.6s_linear_infinite_1.15s]" />
+                <span className="absolute bottom-4 left-5 h-3 w-3 rounded-sm bg-teal animate-[tetris-fall-2_2.8s_linear_infinite_1.5s]" />
+                <span className="absolute bottom-4 left-8 h-3 w-3 rounded-sm bg-cyan-300 animate-[tetris-fall-1_2.4s_linear_infinite_1.8s]" />
+                <span className="absolute bottom-4 left-11 h-3 w-3 rounded-sm bg-amber-300 animate-[tetris-fall-3_3s_linear_infinite_2s]" />
+              </div>
+            </div>
+            <h2 className="mt-5 text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Estamos actualizando tus oportunidades</h2>
+            <p className="mt-3 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">Estamos consultando las fuentes oficiales de SECOP. Puedes esperar aquí; te avisaremos cuando termine.</p>
+            <div className="mx-auto mt-5 h-1.5 w-40 overflow-hidden rounded-full bg-base"><div className="h-full w-1/2 animate-[pulse_1.5s_ease-in-out_infinite] rounded-full bg-teal" /></div>
+          </div>
+        </div>
+      ) : null}
       {modal ? <MessageModal {...modal} onClose={() => setModal(null)} /> : null}
     </div>
   );

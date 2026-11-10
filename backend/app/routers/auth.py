@@ -38,6 +38,13 @@ def _welcome_email(full_name: str | None) -> tuple[str, str, str]:
 <tr><td style="padding:18px 32px;background:#f8fafc;color:#718096;font-size:11px;line-height:1.5">MySECOP es un producto independiente y no es una plataforma oficial del Gobierno colombiano. Consulta siempre la fuente oficial del proceso.</td></tr></table></td></tr></table></body></html>'''
     return subject, plain, html
 
+def _verification_email(full_name: str | None, link: str) -> tuple[str, str, str]:
+    nombre = escape((full_name or "").strip() or "usuario/a")
+    subject = "Verifica tu correo en MySECOP"
+    plain = f"Hola {full_name or 'usuario/a'},\n\nConfirma tu correo para activar los envíos de alertas de MySECOP:\n{link}\n\nEste enlace solo puede utilizarse una vez."
+    html = f'''<!doctype html><html lang="es"><body style="margin:0;background:#f4f7fb;font-family:Arial;color:#132238"><table width="100%" cellpadding="0" cellspacing="0" style="padding:28px 12px"><tr><td align="center"><table width="100%" style="max-width:600px;background:#fff;border-radius:16px;overflow:hidden"><tr><td style="background:#082b55;padding:26px 30px;color:#fff;font-size:21px;font-weight:bold"><span style="background:#14b8a6;color:#062238;border-radius:8px;padding:7px;font-size:13px">MS</span> MySECOP</td></tr><tr><td style="padding:30px"><h2 style="margin-top:0">Verifica tu correo</h2><p style="color:#52657d;line-height:1.6">Hola {nombre}, confirma tu dirección para recibir resúmenes y recordatorios de alertas.</p><p><a href="{link}" style="display:inline-block;background:#14b8a6;color:#062238;text-decoration:none;font-weight:bold;padding:13px 22px;border-radius:8px">Verificar mi correo</a></p><p style="font-size:12px;color:#718096">Si no creaste esta cuenta, puedes ignorar este mensaje.</p></td></tr></table></td></tr></table></body></html>'''
+    return subject, plain, html
+
 
 def _reset_email(name: str | None, link: str) -> tuple[str, str, str]:
     subject = "Restablece tu contraseña de MySECOP"
@@ -66,6 +73,9 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
         # técnicos al usuario: la verificación se mantiene disponible para
         # flujos internos/dev mediante el token de la respuesta.
         enviado = send_email(email, welcome_subject, welcome_plain, html_body=welcome_html)
+        verification_link = f"{settings.frontend_url.rstrip('/')}/verificar-correo?token={token_ver}"
+        verify_subject, verify_plain, verify_html = _verification_email(data.full_name, verification_link)
+        send_email(email, verify_subject, verify_plain, html_body=verify_html)
     # Sin SMTP el token se devuelve en la respuesta (dev); con SMTP se envía por correo
     return TokenOut(access_token=create_access_token(user.email),
                     verification_token=None if enviado else token_ver)
@@ -112,6 +122,20 @@ def verify_email(data: VerifyEmailIn, db: Session = Depends(get_db)):
     user.verification_token = None
     db.commit()
     return {"verificado": True, "email": user.email}
+
+@router.post("/resend-verification")
+def resend_verification(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Reenvía el enlace de verificación al correo de la sesión actual."""
+    if user.email_verified:
+        return {"enviado": False, "ya_verificado": True}
+    settings = get_settings()
+    if not settings.smtp_host:
+        return {"enviado": False, "smtp_configurado": False}
+    user.verification_token = secrets.token_hex(16)
+    db.commit()
+    link = f"{settings.frontend_url.rstrip('/')}/verificar-correo?token={user.verification_token}"
+    subject, plain, html = _verification_email(user.full_name, link)
+    return {"enviado": send_email(user.email, subject, plain, html_body=html), "smtp_configurado": True}
 
 
 @router.post("/forgot-password")

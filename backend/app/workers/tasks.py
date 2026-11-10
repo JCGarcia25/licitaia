@@ -34,9 +34,19 @@ def sync_mercadopago_subscription(external_id: str) -> dict:
         if not sub:
             return {"ok": True, "ignored": True, "reason": "subscription_not_found"}
         remote_status = remote.get("status")
-        new_status = "activa" if remote_status == "authorized" else (
-            "cancelada" if remote_status in {"cancelled", "paused"} else "pendiente_pago"
-        )
+        # Mercado Pago reports a cancelled preapproval immediately after the
+        # user disables renewal. Keep Pro access through the already-paid
+        # period instead of downgrading the account on the next webhook.
+        if remote_status == "authorized":
+            new_status = "activa"
+        elif remote_status in {"cancelled", "paused"}:
+            new_status = (
+                "cancelada_pendiente"
+                if sub.current_period_end and sub.current_period_end > datetime.utcnow()
+                else "cancelada"
+            )
+        else:
+            new_status = "pendiente_pago"
         sub.status = new_status
         if new_status == "activa":
             sub.plan = "profesional"
@@ -84,24 +94,38 @@ def rescore_all() -> dict:
 
 
 def close_reminders_all() -> int:
-    from app.db.models import UserOpportunity
+    from app.db.models import UserOpportunity, AlertPrefs, User
     from app.db.session import SessionLocal
     from app.services.alerts import close_reminders
+    from app.services.notifier import send_email
+    from app.services.alerts import email_html
 
     db = SessionLocal()
     try:
         created = 0
         for (user_id,) in db.query(UserOpportunity.user_id).distinct().all():
-            created += close_reminders(db, user_id)
+            count = close_reminders(db, user_id)
+            created += count
+            if count:
+                prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user_id, AlertPrefs.email_enabled.is_(True)).first()
+                user = db.query(User).filter(User.id == user_id, User.email_verified.is_(True)).first()
+                if prefs and user:
+                    body = [f"Se generaron {count} recordatorio(s) de cierre según tus preferencias.", "Revisa las oportunidades en MySECOP para consultar fechas y documentos."]
+                    import re
+                    recipients = [x.strip() for x in re.split(r"[,;\n]+", prefs.email_to or "") if x.strip()] or [user.email]
+                    for recipient in recipients:
+                        send_email(recipient, "MySECOP — Recordatorios de cierre", "\n".join(body), email_html("Recordatorios de cierre", body))
         return created
     finally:
         db.close()
 
 
 def daily_digest() -> dict:
+    from app.core.config import get_settings
     from app.db.models import AlertPrefs, User
     from app.db.session import SessionLocal
     from app.services.notifier import send_email
+    from app.services.alerts import email_html
 
     db = SessionLocal()
     try:
@@ -111,17 +135,28 @@ def daily_digest() -> dict:
                 .filter(AlertPrefs.email_enabled.is_(True), User.email_verified.is_(True))
                 .all())
         for prefs, user in rows:
-            cuerpo = [
-                "Resumen diario LicitaIA",
-                f"Umbral de alta compatibilidad: {prefs.high_score_threshold}%",
-                f"Recordatorios de cierre activos: D-{', D-'.join(str(d) for d in (prefs.close_days or [10, 5, 1]))}",
-                "",
-                "Revise su panel en LicitaIA. La fuente oficial de referencia es siempre el expediente en SECOP.",
-            ]
-            if send_email(user.email, "LicitaIA — Resumen diario", "\n".join(cuerpo)):
-                sent += 1
-            else:
-                skipped += 1
+            from app.db.models import Alert
+            cuerpo = ["Estas son las oportunidades compatibles visibles en tu bandeja de MySECOP:"]
+            rows_alert = db.query(Alert).filter(Alert.user_id == user.id).order_by(Alert.created_at.desc()).limit(20).all()
+            cuerpo.extend([f"• {a.title} — {a.body}" for a in rows_alert] or ["No hay oportunidades nuevas en este momento."])
+            cuerpo.append("La fuente oficial de referencia es siempre el expediente en SECOP.")
+            import re
+            recipients = [x.strip() for x in re.split(r"[,;\n]+", prefs.email_to or "") if x.strip()] or [user.email]
+            delivered = False
+            for destinatario in recipients:
+                if send_email(
+                    destinatario,
+                    "MySECOP — Resumen de tus oportunidades compatibles",
+                    "\n".join(cuerpo),
+                    html_body=email_html(
+                        "Tus oportunidades compatibles",
+                        cuerpo,
+                        f"{get_settings().frontend_url.rstrip('/')}/app/alertas",
+                    ),
+                ):
+                    delivered = True
+            if delivered: sent += 1
+            else: skipped += 1
         return {"correos_enviados": sent, "omitidos": skipped}
     finally:
         db.close()
