@@ -10,6 +10,7 @@ from app.services import alerts as alerts_service
 from app.services.notifier import send_email
 from app.services.quota import require_pro
 import re
+from app.core.config import get_settings
 
 router = APIRouter(prefix="/api/alerts", tags=["alertas"])
 
@@ -109,7 +110,13 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
     reminders = alerts_service.close_reminders(db, user.id, days=(prefs.close_days if prefs else None) or [10, 5, 1])
     # resumen por correo solo si está habilitado
     sent = False
-    if prefs and prefs.email_enabled and user.email_verified:
+    reason = "desactivado"
+    if prefs and prefs.email_enabled and not user.email_verified:
+        reason = "correo_no_verificado"
+    elif prefs and prefs.email_enabled and not get_settings().smtp_host:
+        reason = "smtp_no_configurado"
+    elif prefs and prefs.email_enabled and user.email_verified:
+        reason = "envio_no_confirmado"
         uos = db.query(UserOpportunity).filter(UserOpportunity.user_id == user.id).all()
         alta = [u for u in uos if u.score >= threshold]
         cuerpo = [
@@ -128,4 +135,5 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
             except TypeError:
                 enviado = send_email(destinatario, "MySECOP — Resumen de oportunidades", texto)
             sent = sent or enviado
-    return {"alertas_creadas": created, "recordatorios_cierre": reminders, "correo_enviado": sent}
+        reason = "enviado" if sent else "error_smtp"
+    return {"alertas_creadas": created, "recordatorios_cierre": reminders, "correo_enviado": sent, "correo_motivo": reason}

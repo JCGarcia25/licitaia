@@ -55,8 +55,13 @@ export default function Alertas() {
         return;
       }
       await api("/api/alerts/prefs", { method: "PUT", body: JSON.stringify(prefs) });
-      const r = await api<{ correo_enviado: boolean }>("/api/alerts/digest", { method: "POST" });
-      setMsg(r.correo_enviado ? "Enviamos el resumen a los destinatarios configurados." : "No fue posible enviar el resumen. Verifica la configuración de correo del servidor.");
+      const r = await api<{ correo_enviado: boolean; correo_motivo?: string }>("/api/alerts/digest", { method: "POST" });
+      const detalle = r.correo_motivo === "smtp_no_configurado"
+        ? "El servidor de correo aún no está configurado. Tus alertas siguen disponibles dentro de MySECOP."
+        : r.correo_motivo === "correo_no_verificado"
+          ? "Verifica tu correo registrado antes de solicitar el envío."
+          : "No fue posible completar el envío. Revisa la configuración SMTP del servidor.";
+      setMsg(r.correo_enviado ? "Enviamos el resumen a los destinatarios configurados." : detalle);
     } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible enviar el resumen."); }
   }
 
