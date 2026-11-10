@@ -98,6 +98,19 @@ for _ in {1..30}; do
 done
 curl -fsS "http://127.0.0.1:${API_PORT}/health" || die "La API no respondió; revisa los logs del servicio api"
 
+info "Limpiando imágenes y caché Docker no utilizadas"
+if command -v flock >/dev/null 2>&1; then
+  exec 9>/tmp/licitaia-docker-cleanup.lock
+  if flock -w 120 9; then
+    docker image prune -af --filter until=72h || true
+    docker builder prune -af --filter until=72h || true
+  else
+    info "Otra limpieza Docker está activa; se omite esta ejecución"
+  fi
+else
+  info "flock no está disponible; se omite la limpieza automática"
+fi
+
 info "Estado final"
 "${COMPOSE[@]}" ps
 cat <<EOF
