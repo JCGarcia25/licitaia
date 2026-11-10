@@ -82,6 +82,11 @@ class ChecklistItemIn(BaseModel):
     evidencia: Optional[str] = None
 
 
+class CronogramaItemIn(BaseModel):
+    index: int
+    estado: str = Field(pattern="^(pendiente|listo)$")
+
+
 class BorradorIn(BaseModel):
     tipo: str = Field(pattern="^(carta_presentacion|matriz_cumplimiento|respuestas_tecnicas)$")
     contenido: str = ""

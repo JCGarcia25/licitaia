@@ -13,7 +13,7 @@ from app.db.models import (
     Analysis, CompanyProfile, Document, OfferProject, Opportunity, User, UserOpportunity, Viability,
 )
 from app.db.session import get_db
-from app.schemas import BorradorIn, ChecklistItemIn, CommentIn, OfferStatusIn, ViabilityIn
+from app.schemas import BorradorIn, ChecklistItemIn, CommentIn, CronogramaItemIn, OfferStatusIn, ViabilityIn
 from app.services import alerts as alerts_service
 from app.services.audit import log_action
 from app.services.eligibility import evaluar_elegibilidad
@@ -55,7 +55,7 @@ def _cronograma_sugerido(opp: Opportunity, analysis: Analysis | None) -> list[di
     ]
     cierre = opp.fecha_cierre
     if not cierre:
-        return [{"tarea": tarea, "plazo": f"D+{2 + i * 2}", "tipo": tipo, "estimado": True}
+        return [{"tarea": tarea, "plazo": f"D+{2 + i * 2}", "tipo": tipo, "estimado": True, "estado": "pendiente"}
                 for i, (tarea, tipo) in enumerate(tareas)]
     ahora = datetime.utcnow()
     dias = max(0, (cierre - ahora).days)
@@ -70,6 +70,7 @@ def _cronograma_sugerido(opp: Opportunity, analysis: Analysis | None) -> list[di
             "fecha": fecha.isoformat(timespec="minutes"),
             "tipo": tipo,
             "estimado": False,
+            "estado": "pendiente",
             "dias_disponibles": dias,
             "vencido": cierre <= ahora,
         })
@@ -322,6 +323,22 @@ def update_checklist(project_id: int, item: ChecklistItemIn, user: User = Depend
     return {"checklist": p.checklist}
 
 
+@router.patch("/offer-projects/{project_id}/cronograma")
+def update_cronograma(project_id: int, item: CronogramaItemIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    p = db.query(OfferProject).filter(OfferProject.id == project_id, OfferProject.user_id == user.id).first()
+    if not p:
+        raise HTTPException(404, "Proyecto no encontrado")
+    cronograma = [dict(c) for c in (p.cronograma or [])]
+    if item.index < 0 or item.index >= len(cronograma):
+        raise HTTPException(400, "Índice de cronograma inválido")
+    cronograma[item.index]["estado"] = item.estado
+    p.cronograma = cronograma
+    p.version += 1
+    flag_modified(p, "cronograma")
+    db.commit()
+    return {"cronograma": cronograma}
+
+
 @router.post("/offer-projects/{project_id}/borradores")
 def add_borrador(project_id: int, data: BorradorIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Genera o guarda un borrador. El contenido de respuestas técnicas SOLO usa
@@ -398,10 +415,12 @@ def export_project(project_id: int, formato: str = "docx", user: User = Depends(
     ]
     matriz = list(p.matriz_cumplimiento or [])
     matriz_rows = (matriz if matriz and isinstance(matriz[0], list) else [["Matriz de cumplimiento pendiente"]])
-    cronograma_rows = [["Tarea", "Plazo", "Tipo"]] + [[c.get("tarea", ""), c.get("plazo", ""), "Estimado" if c.get("estimado") else "Plan oficial"] for c in (p.cronograma or [])]
+    cronograma = list(p.cronograma or [])
+    avance = round(sum(1 for c in cronograma if c.get("estado") == "listo") / len(cronograma) * 100) if cronograma else 0
+    cronograma_rows = [["Avance del cronograma", f"{avance}%"], ["Tarea", "Plazo", "Estado", "Tipo"]] + [[c.get("tarea", ""), c.get("plazo", ""), "Lista" if c.get("estado") == "listo" else "Pendiente", "Estimado" if c.get("estimado") else "Plan oficial"] for c in cronograma]
     borradores_rows = [["Tipo", "Versión", "Fecha", "Contenido"]] + [[b.get("tipo", ""), str(b.get("version", 1)), b.get("fecha", ""), b.get("contenido", "")] for b in (p.borradores or [])]
     comentarios_rows = [["Autor", "Fecha", "Comentario"]] + [[c.get("autor", ""), c.get("fecha", ""), c.get("texto", "")] for c in (p.comentarios or [])]
-    secciones = [("Información del proceso", proceso_rows), ("Checklist documental", checklist_rows), ("Cronograma interno sugerido", cronograma_rows), ("Borradores", borradores_rows), ("Comentarios y aprobaciones", comentarios_rows)]
+    secciones = [("Información del proceso", proceso_rows), ("Checklist documental", checklist_rows), ("Cronograma interno sugerido · avance total", cronograma_rows), ("Borradores", borradores_rows), ("Comentarios y aprobaciones", comentarios_rows)]
     formato = formato.lower()
     if formato == "xlsx":
         content = export_xlsx({
