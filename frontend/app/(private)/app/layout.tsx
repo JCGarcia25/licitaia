@@ -139,7 +139,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
               </button>
             </div>
           </header>
-          <main className="mx-auto w-full max-w-7xl min-w-0 overflow-x-hidden p-4 sm:p-6 lg:p-8">
+          <main className="app-main mx-auto w-full max-w-7xl min-w-0 overflow-x-hidden p-4 sm:p-6 lg:p-8">
             {plan && !plan.es_pro && <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/50 bg-amber-50/80 px-4 py-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/25 dark:text-amber-100">
               <span><strong>MySECOP Free:</strong> análisis de pliegos, alertas por correo, sincronización avanzada y preparador de ofertas están identificados como funciones Pro.</span>
               <Link href="/app/plan" className="font-bold underline underline-offset-2">Ver MySECOP Pro</Link>

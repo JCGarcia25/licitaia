@@ -13,7 +13,7 @@ type ProjectDetail = {
   id: number; name: string; status: string; version: number; approved_by: string;
   opportunity: { id: number; objeto: string; entidad: string; url_oficial: string | null } | null;
   checklist: { item: string; tipo: string; estado: string; evidencia: string }[];
-  cronograma: { tarea: string; plazo: string }[];
+  cronograma: { tarea: string; plazo: string; fecha?: string; estimado?: boolean; vencido?: boolean; dias_disponibles?: number; estado?: "pendiente" | "listo" }[];
   borradores: { tipo: string; contenido: string; version: number; fecha: string }[];
   comentarios: { autor: string; texto: string; fecha: string }[];
 };
@@ -43,6 +43,13 @@ export default function Ofertas() {
     abrir(sel.id);
   }
 
+  async function toggleCronograma(index: number, estado?: string) {
+    if (!sel) return;
+    await api(`/api/offer-projects/${sel.id}/cronograma`, { method: "PATCH", body: JSON.stringify({ index, estado: estado === "listo" ? "pendiente" : "listo" }) });
+    await abrir(sel.id);
+    await cargarLista();
+  }
+
   async function generarBorrador(tipo: string) {
     if (!sel) return;
     try {
@@ -60,6 +67,7 @@ export default function Ofertas() {
       method: "POST", body: JSON.stringify({ status, approved_by: status === "aprobado" ? "Aprobación humana desde la app" : undefined }),
     });
     abrir(sel.id);
+    await cargarLista();
     if (status === "aprobado") setMsg(`Oferta aprobada por ${r.approved_by}. Recuerda: la presentación en SECOP se realiza manualmente.`);
   }
 
@@ -160,11 +168,17 @@ export default function Ofertas() {
 
               {/* Cronograma */}
               <Card>
-                <CardHeader title="Cronograma interno sugerido" />
+                <CardHeader title="Cronograma interno sugerido" subtitle="Plan de trabajo calculado con la información disponible del proceso" />
+                {(() => {
+                  const avance = sel.cronograma.length ? Math.round(sel.cronograma.filter((c) => c.estado === "listo").length / sel.cronograma.length * 100) : 0;
+                  return <div className="px-5 pt-3"><div className="flex items-center justify-between text-xs"><span className="font-medium">Avance del cronograma</span><span className="font-bold text-teal">{avance}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-800"><div className="h-full rounded-full bg-teal transition-all" style={{ width: `${avance}%` }} /></div></div>;
+                })()}
+                <p className="text-muted px-5 pt-3 text-xs">Las fechas se calculan hasta el cierre oficial cuando SECOP lo informa. Si no está disponible, verás plazos estimados relativos.</p>
                 <ul className="divide-y divide-[var(--border)]">
                   {sel.cronograma.map((c, i) => (
                     <li key={i} className="flex flex-wrap justify-between gap-2 px-5 py-2 text-sm">
-                      <span className="text-muted">{c.tarea}</span><span className="font-medium">{c.plazo}</span>
+                      <button onClick={() => toggleCronograma(i, c.estado)} className="flex min-w-0 items-center gap-2 text-left"><span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[10px] ${c.estado === "listo" ? "border-teal bg-teal text-white" : "border-base"}`}>{c.estado === "listo" ? "✓" : ""}</span><span className={`text-muted ${c.estado === "listo" ? "line-through" : ""}`}>{c.tarea}</span></button>
+                      <span className={`font-medium ${c.vencido ? "text-red-500" : "text-[var(--text)]"}`}>{c.plazo}{c.estimado ? " · estimado" : ""}{c.vencido ? " · vencido" : ""}</span>
                     </li>
                   ))}
                 </ul>
