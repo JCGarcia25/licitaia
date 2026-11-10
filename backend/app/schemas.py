@@ -66,6 +66,7 @@ class SyncIn(BaseModel):
 
 class AlertPrefsIn(BaseModel):
     email_enabled: bool = False
+    email_to: Optional[EmailStr] = None
     high_score_threshold: int = Field(default=70, ge=0, le=100)
     close_days: list[int] = [10, 5, 1]
     digest_hour: int = Field(default=7, ge=0, le=23)

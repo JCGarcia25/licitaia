@@ -51,7 +51,7 @@ def get_prefs(user: User = Depends(get_current_user), db: Session = Depends(get_
         prefs = AlertPrefs(user_id=user.id)
         db.add(prefs)
         db.commit()
-    return {"email_enabled": prefs.email_enabled, "high_score_threshold": prefs.high_score_threshold,
+    return {"email_enabled": prefs.email_enabled, "email_to": prefs.email_to or user.email, "high_score_threshold": prefs.high_score_threshold,
             "close_days": prefs.close_days or [10, 5, 1], "digest_hour": prefs.digest_hour}
 
 
@@ -62,6 +62,7 @@ def put_prefs(data: AlertPrefsIn, user: User = Depends(get_current_user), db: Se
         prefs = AlertPrefs(user_id=user.id)
         db.add(prefs)
     prefs.email_enabled = data.email_enabled
+    prefs.email_to = data.email_to or user.email
     prefs.high_score_threshold = data.high_score_threshold
     prefs.close_days = data.close_days
     prefs.digest_hour = data.digest_hour
@@ -79,7 +80,7 @@ def put_prefs(data: AlertPrefsIn, user: User = Depends(get_current_user), db: Se
     # Recalcula las alertas de compatibilidad con el nuevo umbral para que la
     # bandeja se actualice inmediatamente, sin esperar al worker programado.
     created = alerts_service.create_alerts_for_user(db, user.id, high_score=data.high_score_threshold)
-    return {"ok": True, "alertas_creadas": created, **data.model_dump()}
+    return {"ok": True, "alertas_creadas": created, **data.model_dump(), "email_to": prefs.email_to}
 
 
 @router.delete("/prefs")
@@ -113,5 +114,7 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
             "",
             "La fuente oficial de referencia es siempre el expediente en SECOP.",
         ]
-        sent = send_email(user.email, "LicitaIA — Resumen diario", "\n".join(cuerpo))
+        destinatario = (prefs.email_to or user.email).strip()
+        sent = send_email(destinatario, "MySECOP — Resumen de oportunidades", "\n".join(cuerpo),
+                          html_body=alerts_service.email_html("Resumen de oportunidades", cuerpo[1:]))
     return {"alertas_creadas": created, "recordatorios_cierre": reminders, "correo_enviado": sent}

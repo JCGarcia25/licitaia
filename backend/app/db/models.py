@@ -215,6 +215,7 @@ class AlertPrefs(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
     email_enabled = Column(Boolean, default=False)
+    email_to = Column(String(255), nullable=True)
     high_score_threshold = Column(Integer, default=70)
     close_days = Column(JSON, default=list)                 # [10, 5, 1]
     digest_hour = Column(Integer, default=7)                # hora local America/Bogota

@@ -2,7 +2,7 @@
 /* Detalle de oportunidad: Agentes 2 (pliegos) y 3 (viabilidad). */
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { Badge, Button, Card, CardHeader, EmptyState, fmtCOP, fmtFecha, scoreTone, Select, Spinner } from "@/components/ui";
 
@@ -30,7 +30,9 @@ const ESTADO_TONE: Record<string, "green" | "red" | "amber" | "gray"> = {
 
 export default function DetalleOportunidad() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const id = params.id;
+  const fromAlertas = searchParams.get("from") === "alertas";
   const [opp, setOpp] = useState<Opp | null>(null);
   const [viab, setViab] = useState<Viab | null>(null);
   const [docs, setDocs] = useState<{ id: number; filename: string }[]>([]);
@@ -184,7 +186,7 @@ export default function DetalleOportunidad() {
   return (
     <div className="space-y-5">
       <div>
-        <Link href="/app/oportunidades" className="text-muted text-xs hover:text-teal">← Volver a oportunidades</Link>
+        <Link href={fromAlertas ? "/app/alertas" : "/app/oportunidades"} className="text-muted text-xs hover:text-teal">← {fromAlertas ? "Volver a alertas" : "Volver a oportunidades"}</Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
           <h1 className="max-w-3xl text-xl font-bold tracking-tight">{opp.objeto || "Proceso"}</h1>
           <Badge tone={scoreTone(opp.score)}>{opp.score !== null ? `${Math.round(opp.score)}% de compatibilidad` : "sin puntuar"}</Badge>

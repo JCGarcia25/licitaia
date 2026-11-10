@@ -84,15 +84,25 @@ def rescore_all() -> dict:
 
 
 def close_reminders_all() -> int:
-    from app.db.models import UserOpportunity
+    from app.db.models import UserOpportunity, AlertPrefs, User
     from app.db.session import SessionLocal
     from app.services.alerts import close_reminders
+    from app.services.notifier import send_email
+    from app.services.alerts import email_html
 
     db = SessionLocal()
     try:
         created = 0
         for (user_id,) in db.query(UserOpportunity.user_id).distinct().all():
-            created += close_reminders(db, user_id)
+            count = close_reminders(db, user_id)
+            created += count
+            if count:
+                prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user_id, AlertPrefs.email_enabled.is_(True)).first()
+                user = db.query(User).filter(User.id == user_id, User.email_verified.is_(True)).first()
+                if prefs and user:
+                    recipient = (prefs.email_to or user.email).strip()
+                    body = [f"Se generaron {count} recordatorio(s) de cierre según tus preferencias.", "Revisa las oportunidades en MySECOP para consultar fechas y documentos."]
+                    send_email(recipient, "MySECOP — Recordatorios de cierre", "\n".join(body), email_html("Recordatorios de cierre", body))
         return created
     finally:
         db.close()
@@ -102,6 +112,7 @@ def daily_digest() -> dict:
     from app.db.models import AlertPrefs, User
     from app.db.session import SessionLocal
     from app.services.notifier import send_email
+    from app.services.alerts import email_html
 
     db = SessionLocal()
     try:
@@ -118,7 +129,8 @@ def daily_digest() -> dict:
                 "",
                 "Revise su panel en LicitaIA. La fuente oficial de referencia es siempre el expediente en SECOP.",
             ]
-            if send_email(user.email, "LicitaIA — Resumen diario", "\n".join(cuerpo)):
+            destinatario = (prefs.email_to or user.email).strip()
+            if send_email(destinatario, "MySECOP — Resumen diario", "\n".join(cuerpo), html_body=email_html("Resumen diario", cuerpo[1:])):
                 sent += 1
             else:
                 skipped += 1
