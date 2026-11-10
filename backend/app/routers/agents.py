@@ -37,6 +37,45 @@ DEFAULT_CHECKLIST = [
 _PALABRAS_COMUNES = {"para", "del", "las", "los", "una", "uno", "con", "por", "de", "en", "y", "el", "la", "que", "servicios", "adquisicion", "adquisición", "contratacion", "contratación", "proceso"}
 
 
+def _cronograma_sugerido(opp: Opportunity, analysis: Analysis | None) -> list[dict]:
+    """Construye un plan interno desde el cierre oficial cuando existe.
+
+    SECOP no siempre publica la fecha de cierre en el dataset. En ese caso se
+    conserva una guía relativa y se marca explícitamente como estimada.
+    """
+    requisitos = list(analysis.requisitos or []) if analysis else []
+    documentales = sum(1 for r in requisitos if r.get("tipo") == "documental")
+    tareas = [
+        ("Análisis de pliegos y aclaratorios", "análisis"),
+        (f"Recolección de documentos y certificaciones ({documentales or 'base'} requisito(s))", "documentos"),
+        ("Elaboración de propuesta técnica", "técnica"),
+        ("Propuesta económica y revisión de márgenes", "económica"),
+        ("Revisión jurídica y aprobación humana", "revisión"),
+        ("Carga final y presentación manual en SECOP", "presentación"),
+    ]
+    cierre = opp.fecha_cierre
+    if not cierre:
+        return [{"tarea": tarea, "plazo": f"D+{2 + i * 2}", "tipo": tipo, "estimado": True}
+                for i, (tarea, tipo) in enumerate(tareas)]
+    ahora = datetime.utcnow()
+    dias = max(0, (cierre - ahora).days)
+    resultado = []
+    for i, (tarea, tipo) in enumerate(tareas):
+        # Distribuye hitos hasta el cierre; con poco tiempo se concentran en
+        # hoy y el cierre, pero nunca se inventa tiempo adicional.
+        fecha = ahora + (cierre - ahora) * ((i + 1) / len(tareas))
+        resultado.append({
+            "tarea": tarea,
+            "plazo": fecha.strftime("%d/%m/%Y"),
+            "fecha": fecha.isoformat(timespec="minutes"),
+            "tipo": tipo,
+            "estimado": False,
+            "dias_disponibles": dias,
+            "vencido": cierre <= ahora,
+        })
+    return resultado
+
+
 def _documento_corresponde(doc: Document, opp: Opportunity, data: bytes) -> bool:
     """Comprueba que el texto del archivo mencione el proceso seleccionado.
 
@@ -217,14 +256,7 @@ def create_project(payload: dict, user: User = Depends(get_current_user), db: Se
         user_id=user.id, company_id=user.company_id, opportunity_id=opp.id,
         name=payload.get("name") or f"Propuesta — {(opp.objeto or 'Proceso')[:80]}",
         checklist=checklist,
-        cronograma=[
-            {"tarea": "Análisis de pliegos y aclaratorios", "plazo": "D+2"},
-            {"tarea": "Recolección de documentos y certificaciones", "plazo": "D+5"},
-            {"tarea": "Elaboración de propuesta técnica", "plazo": "D+8"},
-            {"tarea": "Propuesta económica y revisión de márgenes", "plazo": "D+10"},
-            {"tarea": "Revisión jurídica y aprobación humana", "plazo": "D+12"},
-            {"tarea": "Carga final y presentación (manual en SECOP)", "plazo": "D+14"},
-        ],
+        cronograma=_cronograma_sugerido(opp, analysis),
         borradores=[],
         comentarios=[],
     )

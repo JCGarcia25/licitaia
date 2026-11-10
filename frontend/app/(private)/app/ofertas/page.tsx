@@ -13,7 +13,7 @@ type ProjectDetail = {
   id: number; name: string; status: string; version: number; approved_by: string;
   opportunity: { id: number; objeto: string; entidad: string; url_oficial: string | null } | null;
   checklist: { item: string; tipo: string; estado: string; evidencia: string }[];
-  cronograma: { tarea: string; plazo: string }[];
+  cronograma: { tarea: string; plazo: string; fecha?: string; estimado?: boolean; vencido?: boolean; dias_disponibles?: number }[];
   borradores: { tipo: string; contenido: string; version: number; fecha: string }[];
   comentarios: { autor: string; texto: string; fecha: string }[];
 };
@@ -160,11 +160,13 @@ export default function Ofertas() {
 
               {/* Cronograma */}
               <Card>
-                <CardHeader title="Cronograma interno sugerido" />
+                <CardHeader title="Cronograma interno sugerido" subtitle="Plan de trabajo calculado con la información disponible del proceso" />
+                <p className="text-muted px-5 pt-3 text-xs">Las fechas se calculan hasta el cierre oficial cuando SECOP lo informa. Si no está disponible, verás plazos estimados relativos.</p>
                 <ul className="divide-y divide-[var(--border)]">
                   {sel.cronograma.map((c, i) => (
                     <li key={i} className="flex flex-wrap justify-between gap-2 px-5 py-2 text-sm">
-                      <span className="text-muted">{c.tarea}</span><span className="font-medium">{c.plazo}</span>
+                      <span className="text-muted">{c.tarea}</span>
+                      <span className={`font-medium ${c.vencido ? "text-red-500" : "text-[var(--text)]"}`}>{c.plazo}{c.estimado ? " · estimado" : ""}{c.vencido ? " · vencido" : ""}</span>
                     </li>
                   ))}
                 </ul>
