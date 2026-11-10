@@ -100,9 +100,11 @@ def close_reminders_all() -> int:
                 prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user_id, AlertPrefs.email_enabled.is_(True)).first()
                 user = db.query(User).filter(User.id == user_id, User.email_verified.is_(True)).first()
                 if prefs and user:
-                    recipient = (prefs.email_to or user.email).strip()
                     body = [f"Se generaron {count} recordatorio(s) de cierre según tus preferencias.", "Revisa las oportunidades en MySECOP para consultar fechas y documentos."]
-                    send_email(recipient, "MySECOP — Recordatorios de cierre", "\n".join(body), email_html("Recordatorios de cierre", body))
+                    import re
+                    recipients = [x.strip() for x in re.split(r"[,;\n]+", prefs.email_to or "") if x.strip()] or [user.email]
+                    for recipient in recipients:
+                        send_email(recipient, "MySECOP — Recordatorios de cierre", "\n".join(body), email_html("Recordatorios de cierre", body))
         return created
     finally:
         db.close()
@@ -129,11 +131,14 @@ def daily_digest() -> dict:
                 "",
                 "Revise su panel en LicitaIA. La fuente oficial de referencia es siempre el expediente en SECOP.",
             ]
-            destinatario = (prefs.email_to or user.email).strip()
-            if send_email(destinatario, "MySECOP — Resumen diario", "\n".join(cuerpo), html_body=email_html("Resumen diario", cuerpo[1:])):
-                sent += 1
-            else:
-                skipped += 1
+            import re
+            recipients = [x.strip() for x in re.split(r"[,;\n]+", prefs.email_to or "") if x.strip()] or [user.email]
+            delivered = False
+            for destinatario in recipients:
+                if send_email(destinatario, "MySECOP — Resumen diario", "\n".join(cuerpo), html_body=email_html("Resumen diario", cuerpo[1:])):
+                    delivered = True
+            if delivered: sent += 1
+            else: skipped += 1
         return {"correos_enviados": sent, "omitidos": skipped}
     finally:
         db.close()

@@ -49,6 +49,18 @@ export default function Alertas() {
     await cargar();
   }
 
+  async function enviarResumenAhora() {
+    try {
+      if (!prefs?.email_enabled) {
+        setMsg("Activa primero el resumen por correo y confirma al menos un destinatario.");
+        return;
+      }
+      await api("/api/alerts/prefs", { method: "PUT", body: JSON.stringify(prefs) });
+      const r = await api<{ correo_enviado: boolean }>("/api/alerts/digest", { method: "POST" });
+      setMsg(r.correo_enviado ? "Enviamos el resumen a los destinatarios configurados." : "No fue posible enviar el resumen. Verifica la configuración de correo del servidor.");
+    } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible enviar el resumen."); }
+  }
+
   async function marcarTodo() {
     await api("/api/alerts/read-all", { method: "POST" });
     cargar();
@@ -128,6 +140,7 @@ export default function Alertas() {
                   onChange={(e) => setPrefs({ ...prefs, digest_hour: Number(e.target.value) })} />
               </Field>
               <Button onClick={guardarPrefs} className="w-full">Guardar preferencias</Button>
+              <Button onClick={enviarResumenAhora} variant="outline" className="w-full">Enviar resumen ahora</Button>
               <Button onClick={restablecerPrefs} variant="outline" className="w-full">Restablecer preferencias</Button>
               <p className="text-muted text-[11px] leading-relaxed">Las alertas dentro de MySECOP siempre están activas. El resumen por correo es opcional.</p>
             </div>
@@ -147,8 +160,8 @@ export default function Alertas() {
       {emailModal ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4" role="dialog" aria-modal="true">
         <div className="surface-card w-full max-w-md p-7">
           <h2 className="text-xl font-bold">¿A qué correo enviamos tus alertas?</h2>
-          <p className="text-muted mt-2 text-sm">Puedes usar tu correo registrado o indicar otro destinatario. Verifica que tengas autorización para recibir esta información.</p>
-          <Input type="email" className="mt-5" value={prefs.email_to} onChange={(e) => setPrefs({ ...prefs, email_to: e.target.value })} placeholder="correo@empresa.com" />
+          <p className="text-muted mt-2 text-sm">Escribe uno o varios correos separados por coma. El resumen programado se enviará a todos los destinatarios guardados.</p>
+          <Input type="text" className="mt-5" value={prefs.email_to} onChange={(e) => setPrefs({ ...prefs, email_to: e.target.value })} placeholder="correo@empresa.com, equipo@empresa.com" />
           <div className="mt-5 flex gap-2"><Button variant="outline" className="flex-1" onClick={() => { setPrefs({ ...prefs, email_enabled: false }); setEmailModal(false); }}>Cancelar</Button><Button className="flex-1" onClick={() => setEmailModal(false)}>Confirmar correo</Button></div>
         </div>
       </div> : null}

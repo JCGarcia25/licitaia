@@ -9,8 +9,14 @@ from app.schemas import AlertPrefsIn
 from app.services import alerts as alerts_service
 from app.services.notifier import send_email
 from app.services.quota import require_pro
+import re
 
 router = APIRouter(prefix="/api/alerts", tags=["alertas"])
+
+def _recipients(value: str | None, fallback: str) -> list[str]:
+    candidates = [x.strip() for x in re.split(r"[,;\n]+", value or "") if x.strip()]
+    valid = [x for x in candidates if re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", x)]
+    return valid or [fallback]
 
 
 @router.get("")
@@ -114,13 +120,12 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
             "",
             "La fuente oficial de referencia es siempre el expediente en SECOP.",
         ]
-        destinatario = (prefs.email_to or user.email).strip()
         texto = "\n".join(cuerpo)
-        # Mantiene compatibilidad con adaptadores SMTP sencillos y con
-        # integraciones que solo implementan el contrato texto plano.
-        try:
-            sent = send_email(destinatario, "MySECOP — Resumen de oportunidades", texto,
-                              html_body=alerts_service.email_html("Resumen de oportunidades", cuerpo[1:]))
-        except TypeError:
-            sent = send_email(destinatario, "MySECOP — Resumen de oportunidades", texto)
+        for destinatario in _recipients(prefs.email_to, user.email):
+            try:
+                enviado = send_email(destinatario, "MySECOP — Resumen de oportunidades", texto,
+                                     html_body=alerts_service.email_html("Resumen de oportunidades", cuerpo[1:]))
+            except TypeError:
+                enviado = send_email(destinatario, "MySECOP — Resumen de oportunidades", texto)
+            sent = sent or enviado
     return {"alertas_creadas": created, "recordatorios_cierre": reminders, "correo_enviado": sent}
