@@ -6,6 +6,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { AuthProvider, RequireAuth, useAuth } from "@/components/auth";
 import { ThemeToggle } from "@/components/theme";
 import { api } from "@/lib/api";
+import { WorkOverlay } from "@/components/ui";
 
 const NAV = [
   { href: "/app", label: "Dashboard", icon: "▤" },
@@ -29,6 +30,34 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [plan, setPlan] = useState<{ nombre: string; es_pro: boolean; status: string } | null>(null);
+  const [requests, setRequests] = useState(0);
+  const [showWork, setShowWork] = useState(false);
+
+  useEffect(() => {
+    let timer: number | undefined;
+    const start = () => {
+      setRequests((value) => value + 1);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => setShowWork(true), 180);
+    };
+    const end = () => {
+      setRequests((value) => {
+        const next = Math.max(0, value - 1);
+        if (next === 0) {
+          window.clearTimeout(timer);
+          setShowWork(false);
+        }
+        return next;
+      });
+    };
+    window.addEventListener("mysecop:request-start", start);
+    window.addEventListener("mysecop:request-end", end);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("mysecop:request-start", start);
+      window.removeEventListener("mysecop:request-end", end);
+    };
+  }, []);
 
   useEffect(() => {
     api<{ nombre: string; es_pro: boolean; status: string }>("/api/billing")
@@ -52,6 +81,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
 
   return (
       <RequireAuth>
+      {showWork && requests > 0 ? <WorkOverlay /> : null}
       <div className="flex min-h-screen bg-[var(--bg)]">
         {/* Sidebar */}
         <aside className="hidden w-64 shrink-0 border-r border-base bg-[var(--surface)] lg:block">

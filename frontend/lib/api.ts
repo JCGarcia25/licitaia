@@ -17,7 +17,7 @@ export function clearToken() {
   sessionStorage.removeItem("licitaia_token");
 }
 
-export async function api<T = any>(path: string, opts: RequestInit = {}): Promise<T> {
+async function requestApi<T = any>(path: string, opts: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = { ...(opts.headers as Record<string, string>) };
   if (opts.body && !(opts.body instanceof FormData) && !headers["Content-Type"]) {
     headers["Content-Type"] = "application/json";
@@ -74,6 +74,16 @@ export async function api<T = any>(path: string, opts: RequestInit = {}): Promis
   }
   const ct = res.headers.get("content-type") || "";
   return (ct.includes("application/json") ? res.json() : res.blob()) as Promise<T>;
+}
+
+/** Cliente público con señal global para mostrar actividad durante cualquier espera. */
+export async function api<T = any>(path: string, opts: RequestInit = {}): Promise<T> {
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("mysecop:request-start"));
+  try {
+    return await requestApi<T>(path, opts);
+  } finally {
+    if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("mysecop:request-end"));
+  }
 }
 
 export function descargarBlob(blob: Blob, filename: string) {
