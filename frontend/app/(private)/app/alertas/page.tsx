@@ -17,6 +17,7 @@ export default function Alertas() {
   const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [msg, setMsg] = useState("");
   const [soloNoLeidas, setSoloNoLeidas] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
   const router = useRouter();
 
   const cargar = useCallback(async () => {
@@ -63,6 +64,15 @@ export default function Alertas() {
           : "No fue posible completar el envío. Revisa la configuración SMTP del servidor.";
       setMsg(r.correo_enviado ? "Enviamos el resumen a los destinatarios configurados." : detalle);
     } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible enviar el resumen."); }
+  }
+
+  async function verificarAhora() {
+    setReenviando(true);
+    try {
+      const r = await api<{ enviado: boolean; ya_verificado?: boolean; smtp_configurado?: boolean }>("/api/auth/resend-verification", { method: "POST" });
+      setMsg(r.ya_verificado ? "Tu correo ya está verificado. Puedes enviar el resumen ahora." : r.enviado ? "Te enviamos un nuevo enlace de verificación. Revisa tu bandeja de entrada y spam." : "No se pudo enviar el enlace porque el servidor de correo no está configurado.");
+    } catch (e) { setMsg(e instanceof Error ? e.message : "No fue posible solicitar la verificación."); }
+    finally { setReenviando(false); }
   }
 
   async function marcarTodo() {
@@ -162,6 +172,7 @@ export default function Alertas() {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal/15 text-3xl text-teal">✓</div>
             <h2 className="mt-4 text-xl font-bold">Preferencias de alertas</h2>
             <p className="text-muted mt-2 text-sm">{msg}</p>
+            {msg.toLowerCase().includes("verifica tu correo") ? <Button variant="outline" className="mt-4 w-full" onClick={verificarAhora} disabled={reenviando}>{reenviando ? "Enviando enlace…" : "Verificar ahora: enviar enlace"}</Button> : null}
             <Button className="mt-6 w-full" onClick={() => setMsg("")}>Continuar en MySECOP</Button>
           </div>
         </div>

@@ -123,6 +123,20 @@ def verify_email(data: VerifyEmailIn, db: Session = Depends(get_db)):
     db.commit()
     return {"verificado": True, "email": user.email}
 
+@router.post("/resend-verification")
+def resend_verification(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Reenvía el enlace de verificación al correo de la sesión actual."""
+    if user.email_verified:
+        return {"enviado": False, "ya_verificado": True}
+    settings = get_settings()
+    if not settings.smtp_host:
+        return {"enviado": False, "smtp_configurado": False}
+    user.verification_token = secrets.token_hex(16)
+    db.commit()
+    link = f"{settings.frontend_url.rstrip('/')}/verificar-correo?token={user.verification_token}"
+    subject, plain, html = _verification_email(user.full_name, link)
+    return {"enviado": send_email(user.email, subject, plain, html_body=html), "smtp_configurado": True}
+
 
 @router.post("/forgot-password")
 def forgot_password(data: PasswordResetRequestIn, db: Session = Depends(get_db)):
