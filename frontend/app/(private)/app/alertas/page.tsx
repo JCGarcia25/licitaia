@@ -130,10 +130,12 @@ export default function Alertas() {
                 <input type="checkbox" checked={prefs.email_enabled} onChange={(e) => setPrefs({ ...prefs, email_enabled: e.target.checked })} className="accent-teal" />
                 Enviar resumen por correo
               </label>
-              <Field label="Correos destinatarios" hint="Separa varios correos con coma. El correo registrado se usará si lo dejas vacío.">
-                <Input type="text" value={prefs.email_to} disabled={!prefs.email_enabled} onChange={(e) => setPrefs({ ...prefs, email_to: e.target.value })} placeholder="correo@empresa.com, equipo@empresa.com" />
-              </Field>
-              <p className="text-muted -mt-2 text-xs">{prefs.email_enabled ? "El resumen se enviará a los destinatarios configurados." : "Activa esta casilla para configurar destinatarios y enviar resúmenes."}</p>
+              {prefs.email_enabled ? <>
+                <Field label="Correos destinatarios" hint="Separa varios correos con coma. El correo registrado se usará si lo dejas vacío.">
+                  <Input type="text" value={prefs.email_to} onChange={(e) => setPrefs({ ...prefs, email_to: e.target.value })} placeholder="correo@empresa.com, equipo@empresa.com" />
+                </Field>
+                <p className="text-muted -mt-2 text-xs">El resumen se enviará a los destinatarios configurados.</p>
+              </> : null}
               <Field label="Umbral de alta compatibilidad (%)" hint="Alerta cuando el puntaje del agente supera este valor.">
                 <Input type="number" min={0} max={100} value={prefs.high_score_threshold}
                   onChange={(e) => setPrefs({ ...prefs, high_score_threshold: Number(e.target.value) })} />
