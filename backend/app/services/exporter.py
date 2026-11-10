@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import re
 from datetime import datetime
 
 
@@ -158,12 +159,14 @@ def export_pdf_matriz(titulo: str, secciones: list[tuple[str, list[list[str]]]])
     """Genera un PDF de la oferta con el estilo visual de MySECOP."""
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter, landscape
-    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=landscape(letter), title=titulo)
     styles = getSampleStyleSheet()
+    header_style = ParagraphStyle("MySECOPHeader", parent=styles["Normal"], textColor=colors.white, fontName="Helvetica-Bold", fontSize=7, leading=9)
+    body_style = ParagraphStyle("MySECOPBody", parent=styles["Normal"], textColor=colors.HexColor("#1F3145"), fontSize=7, leading=9)
     logo = Image(io.BytesIO(_logo_png()), width=42, height=42)
     story = [logo, Paragraph("MySECOP", styles["Heading2"]), Paragraph(titulo, styles["Title"]),
              Paragraph(f"Generado por MySECOP · {datetime.utcnow():%d/%m/%Y} · Borrador sujeto a revisión humana.", styles["Normal"]),
@@ -175,7 +178,17 @@ def export_pdf_matriz(titulo: str, secciones: list[tuple[str, list[list[str]]]])
         if len(filas[0]) == 1:
             story.extend([Paragraph(str(fila[0]), styles["Normal"]) for fila in filas])
         else:
-            data = [[Paragraph(str(c), styles["Normal"]) for c in fila] for fila in filas]
+            progress_row = filas[0] if "avance" in str(filas[0][0]).lower() else None
+            table_rows = filas[1:] if progress_row else filas
+            if progress_row:
+                match = re.search(r"(\d{1,3})", " ".join(str(c) for c in progress_row))
+                percent = max(0, min(100, int(match.group(1)))) if match else 0
+                filled = int(round(percent / 10))
+                bar = ["█" if i < filled else "░" for i in range(10)]
+                progress = Table([[Paragraph("Avance total", body_style), Paragraph(f"{percent}%", body_style)], [Paragraph("".join(bar), ParagraphStyle("Progress", parent=body_style, textColor=colors.HexColor("#0B8F86"), fontSize=15, leading=15)), Paragraph("Tareas completadas / tareas totales", body_style)]], colWidths=[260, 210])
+                progress.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EAF4F5")), ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#35D0C0")), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
+                story.append(progress)
+            data = [[Paragraph(str(c), header_style if row_index == 0 else body_style) for c in fila] for row_index, fila in enumerate(table_rows)]
             table = Table(data, repeatRows=1)
             table.setStyle(TableStyle([
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0B3B67")),
