@@ -113,8 +113,6 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
     reason = "desactivado"
     if prefs and prefs.email_enabled and not user.email_verified:
         reason = "correo_no_verificado"
-    elif prefs and prefs.email_enabled and not get_settings().smtp_host:
-        reason = "smtp_no_configurado"
     elif prefs and prefs.email_enabled and user.email_verified:
         reason = "envio_no_confirmado"
         uos = db.query(UserOpportunity).filter(UserOpportunity.user_id == user.id).all()
@@ -135,5 +133,5 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
             except TypeError:
                 enviado = send_email(destinatario, "MySECOP — Resumen de oportunidades", texto)
             sent = sent or enviado
-        reason = "enviado" if sent else "error_smtp"
+        reason = "enviado" if sent else ("smtp_no_configurado" if not get_settings().smtp_host else "error_smtp")
     return {"alertas_creadas": created, "recordatorios_cierre": reminders, "correo_enviado": sent, "correo_motivo": reason}
