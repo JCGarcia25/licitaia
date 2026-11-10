@@ -18,7 +18,6 @@ type SearchState = {
   valorMin?: string; scoreMin?: string; triage?: string; soloScore?: boolean;
 };
 const DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bogotá D.C.", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "Santander", "Sucre", "Tolima", "Valle del Cauca"];
-const SEARCH_STORAGE_KEY = "mysecop:oportunidades:ultima-busqueda";
 
 export default function Oportunidades() {
   const [items, setItems] = useState<Opp[] | null>(null);
@@ -89,8 +88,9 @@ export default function Oportunidades() {
         params.set("pagina", String(paginaSolicitada));
         url.search = params.toString();
         window.history.replaceState(null, "", url.toString());
-        if (esBusquedaManual) window.sessionStorage.setItem(SEARCH_STORAGE_KEY, params.toString());
-        else window.sessionStorage.removeItem(SEARCH_STORAGE_KEY);
+        if (esBusquedaManual) {
+          void api("/api/opportunities/last-search", { method: "PUT", body: JSON.stringify(estado) }).catch(() => undefined);
+        }
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : "No fue posible consultar las oportunidades.";
@@ -103,36 +103,26 @@ export default function Oportunidades() {
   }, [q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore, busquedaConPerfil, pagina]);
 
   useEffect(() => {
-    const saved = window.sessionStorage.getItem(SEARCH_STORAGE_KEY) || "";
-    const params = new URLSearchParams(window.location.search || saved);
-    const inicial = params.get("q") || "";
-    const paginaInicial = Number(params.get("pagina") || "1");
-    const estadoInicial: SearchState = {
-      q: inicial,
-      departamento: params.get("departamento") || "",
-      municipio: params.get("municipio") || "",
-      modalidad: params.get("modalidad") || "",
-      valorMin: params.get("valor_min") || "",
-      // El módulo siempre inicia sin umbral para no ocultar oportunidades.
-      // El usuario puede seleccionar luego cualquier probabilidad disponible.
-      scoreMin: "",
-      triage: params.get("triage") || "",
-      soloScore: params.has("solo_con_score") ? params.get("solo_con_score") === "true" : false,
-    };
-    setQ(estadoInicial.q || "");
-    setDepartamento(estadoInicial.departamento || "");
-    setMunicipio(estadoInicial.municipio || "");
-    setModalidad(estadoInicial.modalidad || "");
-    setValorMin(estadoInicial.valorMin || "");
-    setScoreMin(estadoInicial.scoreMin || "");
-    setTriage(estadoInicial.triage || "");
-    setSoloScore(Boolean(estadoInicial.soloScore));
-    setPagina(paginaInicial);
-    if (inicial || params.get("modo") === "busqueda") {
-      cargar(inicial, false, paginaInicial, estadoInicial);
-    } else {
-      cargar(undefined, true);
-    }
+    (async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      let saved: SearchState | null = null;
+      if (!urlParams.toString()) {
+        try { saved = (await api<{ search: SearchState | null }>("/api/opportunities/last-search")).search; } catch { saved = null; }
+      }
+      const params = urlParams.toString() ? urlParams : new URLSearchParams();
+      const estadoInicial: SearchState = saved && !urlParams.toString() ? saved : {
+        q: params.get("q") || "", departamento: params.get("departamento") || "", municipio: params.get("municipio") || "",
+        modalidad: params.get("modalidad") || "", valorMin: params.get("valor_min") || "", scoreMin: params.get("score_min") || "",
+        triage: params.get("triage") || "", soloScore: params.has("solo_con_score") ? params.get("solo_con_score") === "true" : false,
+      };
+      const paginaInicial = Number(params.get("pagina") || "1");
+      setQ(estadoInicial.q || ""); setDepartamento(estadoInicial.departamento || ""); setMunicipio(estadoInicial.municipio || "");
+      setModalidad(estadoInicial.modalidad || ""); setValorMin(estadoInicial.valorMin || ""); setScoreMin(estadoInicial.scoreMin || "");
+      setTriage(estadoInicial.triage || ""); setSoloScore(Boolean(estadoInicial.soloScore)); setPagina(paginaInicial);
+      if (estadoInicial.q || estadoInicial.departamento || estadoInicial.municipio || estadoInicial.modalidad || estadoInicial.valorMin || estadoInicial.scoreMin || estadoInicial.triage) {
+        cargar(estadoInicial.q || "", false, paginaInicial, estadoInicial);
+      } else cargar(undefined, true);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
