@@ -427,7 +427,7 @@ def metrics(
     db: Session = Depends(get_db),
 ):
     scores = _user_scores(db, user.id)
-    base = db.query(Opportunity).filter(or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)))
+    base = db.query(Opportunity).filter(_vigente_condition())
     prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user.id).first()
     umbral_compatibilidad = compatibility_threshold if compatibility_threshold is not None else (prefs.high_score_threshold if prefs else 70)
     ahora = datetime.utcnow()

@@ -111,7 +111,7 @@ export default function Dashboard() {
             onKeyDown={(e) => e.key === "Enter" && buscar()}
             placeholder='Consulta en lenguaje natural: "procesos abiertos de software en Bogotá superiores a 200 millones"'
           />
-          <Button onClick={buscar} className="w-full sm:w-auto">Buscar</Button>
+          <Button onClick={buscar} className="w-full whitespace-nowrap sm:w-auto sm:min-w-24">Buscar</Button>
         </div>
       </Card>
 
@@ -129,7 +129,7 @@ export default function Dashboard() {
         {kpis.map((k) => (
           <Card key={k.t} className="p-4">
             <p className="text-muted text-xs">{k.t}</p>
-            <p className="mt-1 text-2xl font-bold tracking-tight">{k.v}</p>
+            <p className="mt-1 text-2xl font-bold tracking-tight tabular-nums">{k.v.toLocaleString("es-CO")}</p>
             <p className="text-muted my-2 text-[11px]">{k.help}</p><Badge tone={k.tone}>{k.v ? "Revisar" : "Al día"}</Badge>
           </Card>
         ))}
@@ -154,7 +154,7 @@ export default function Dashboard() {
                       <p className="truncate text-sm font-medium">{o.objeto || "Proceso"}</p>
                       <p className="text-muted truncate text-xs">{o.entidad} · {o.departamento || "N/D"}</p>
                     </div>
-                    <Badge tone={scoreTone(o.score)}>{o.score !== null ? `${Math.round(o.score)}%` : "—"}</Badge>
+                    <span className="shrink-0 whitespace-nowrap"><Badge tone={scoreTone(o.score)}>{o.score !== null ? `${Math.round(o.score)}%` : "—"}</Badge></span>
                   </div>
                   <p className="text-muted mt-1 text-[11px]">{fmtCOP(o.valor)} · {o.estado}</p>
                 </Link>
@@ -171,6 +171,21 @@ export default function Dashboard() {
           </div>
         </Card>
       </div>
+      {guardandoCriterios ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-label="Actualizando criterios">
+          <div className="w-full max-w-sm rounded-2xl border border-teal/40 bg-surface p-7 text-center text-[var(--text)] shadow-2xl">
+            <div className="mx-auto h-20 w-20 rounded-xl border border-teal/30 bg-slate-100 p-2 dark:bg-slate-950/70" aria-hidden="true">
+              <div className="relative h-full overflow-hidden rounded-lg">
+                <span className="absolute bottom-1 left-3 h-3 w-3 rounded-sm bg-teal animate-[tetris-fall-1_2.4s_linear_infinite]" />
+                <span className="absolute bottom-1 left-6 h-3 w-3 rounded-sm bg-cyan-300 animate-[tetris-fall-2_2.8s_linear_infinite_.35s]" />
+                <span className="absolute bottom-1 left-9 h-3 w-3 rounded-sm bg-amber-300 animate-[tetris-fall-3_3s_linear_infinite_.8s]" />
+              </div>
+            </div>
+            <h2 className="mt-5 text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Estamos actualizando tu panel</h2>
+            <p className="mt-3 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">Estamos recalculando las coincidencias y los indicadores con tus nuevos criterios.</p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
