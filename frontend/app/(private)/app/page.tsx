@@ -2,7 +2,6 @@
 /* Dashboard ejecutivo: métricas, tendencia y top oportunidades. */
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { Badge, Button, Card, CardHeader, EmptyState, fmtCOP, Input, Spinner, scoreTone } from "@/components/ui";
 
@@ -46,7 +45,6 @@ const PERSONAJES = [
 export default function Dashboard() {
   const [m, setM] = useState<Metrics | null>(null);
   const [top, setTop] = useState<Opp[]>([]);
-  const [consulta, setConsulta] = useState("");
   const [umbral, setUmbral] = useState(50);
   const [diasNuevos, setDiasNuevos] = useState(7);
   const [prefs, setPrefs] = useState<AlertPrefs | null>(null);
@@ -54,7 +52,6 @@ export default function Dashboard() {
   const [cargandoTop, setCargandoTop] = useState(true);
   const [fraseCalma] = useState(() => FRASES_CALMA[Math.floor(Math.random() * FRASES_CALMA.length)]);
   const [personaje] = useState(() => PERSONAJES[Math.floor(Math.random() * PERSONAJES.length)]);
-  const router = useRouter();
 
   async function cargar(umbralActual = umbral, diasActuales = diasNuevos) {
     setCargandoTop(true);
@@ -109,11 +106,6 @@ export default function Dashboard() {
     }
   }
 
-  function buscar() {
-    if (!consulta.trim()) return;
-    router.push(`/app/oportunidades?q=${encodeURIComponent(consulta)}`);
-  }
-
   if (!m) return <Spinner />;
 
   const kpis = [
@@ -125,19 +117,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Búsqueda en lenguaje natural */}
-      <Card className="p-4">
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input
-            value={consulta}
-            onChange={(e) => setConsulta(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && buscar()}
-            placeholder='Consulta en lenguaje natural: "procesos abiertos de software en Bogotá superiores a 200 millones"'
-          />
-          <Button onClick={buscar} className="w-full whitespace-nowrap sm:w-auto sm:min-w-24">Buscar</Button>
-        </div>
-      </Card>
-
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block min-w-0"><span className="text-muted mb-1 block text-xs font-medium">Compatibilidad mínima (%)</span><Input type="number" min={0} max={100} value={umbral} onChange={(e) => setUmbral(Math.min(100, Math.max(0, Number(e.target.value))))} /></label>

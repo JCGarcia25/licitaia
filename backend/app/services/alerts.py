@@ -41,6 +41,35 @@ def profile_dict(profile: CompanyProfile) -> dict:
     }
 
 
+def profile_is_configured(profile: CompanyProfile | None) -> bool:
+    """Indica si el usuario tiene datos suficientes para identificar su actividad."""
+    return bool(profile and any([
+        (profile.sector or "").strip(),
+        (profile.actividades or "").strip(),
+        (profile.productos_servicios or "").strip(),
+        profile.keywords,
+        profile.unspsc_codes,
+        profile.departamentos,
+        profile.municipios,
+        profile.modalidades,
+    ]))
+
+
+def has_profile_match(user_opportunity: UserOpportunity) -> bool:
+    """Requiere al menos una coincidencia verificable con el perfil empresarial.
+
+    El puntaje por sí solo no basta: un proceso puede superar el umbral por
+    factores generales. Las razones persistidas por el agente son la evidencia
+    de que hubo coincidencia semántica, léxica, UNSPSC, geográfica, económica
+    o de modalidad con el perfil.
+    """
+    for reason in user_opportunity.reasons or []:
+        factor = str((reason or {}).get("factor", "")).strip().lower()
+        if factor and factor not in {"sin coincidencias fuertes", "riesgo"}:
+            return True
+    return False
+
+
 def rescore_user(db: Session, user_id: int, limit: int = 1500) -> int:
     """Re-evalúa todas las oportunidades abiertas para un usuario (Agente 1)."""
     profile = db.query(CompanyProfile).filter(CompanyProfile.user_id == user_id).first()
@@ -71,21 +100,34 @@ def rescore_user(db: Session, user_id: int, limit: int = 1500) -> int:
 
 
 def create_alerts_for_user(db: Session, user_id: int, high_score: int = 70) -> int:
-    """Alerta in-app por oportunidades de alta compatibilidad."""
+    """Crea alertas solo si cumplen umbral y coincidencia con el perfil."""
+    profile = db.query(CompanyProfile).filter(CompanyProfile.user_id == user_id).first()
+    if not profile_is_configured(profile):
+        # No se deben mostrar alertas de compatibilidad sin un perfil que
+        # permita justificar la coincidencia.
+        db.query(Alert).filter(
+            Alert.user_id == user_id,
+            Alert.tipo == "alta_compatibilidad",
+        ).delete(synchronize_session=False)
+        db.commit()
+        return 0
+
     # Mantiene la bandeja alineada con el umbral vigente: una alerta antigua
     # no debe seguir mostrando "alta compatibilidad" si su score quedó por
     # debajo del valor configurado por el usuario.
-    stale = (
-        db.query(Alert)
-        .join(UserOpportunity, UserOpportunity.opportunity_id == Alert.opportunity_id)
-        .filter(
-            Alert.user_id == user_id,
-            Alert.tipo == "alta_compatibilidad",
-            UserOpportunity.user_id == user_id,
-            UserOpportunity.score < high_score,
-        )
-        .all()
-    )
+    stale = []
+    existing_alerts = db.query(Alert).filter(
+        Alert.user_id == user_id,
+        Alert.tipo == "alta_compatibilidad",
+    ).all()
+    user_opportunities = {
+        uo.opportunity_id: uo
+        for uo in db.query(UserOpportunity).filter(UserOpportunity.user_id == user_id).all()
+    }
+    for alert in existing_alerts:
+        uo = user_opportunities.get(alert.opportunity_id)
+        if not uo or uo.score is None or uo.score < high_score or not has_profile_match(uo):
+            stale.append(alert)
     for alert in stale:
         db.delete(alert)
     if stale:
@@ -96,6 +138,7 @@ def create_alerts_for_user(db: Session, user_id: int, high_score: int = 70) -> i
         .filter(UserOpportunity.user_id == user_id, UserOpportunity.score >= high_score)
         .all()
     )
+    rows = [(uo, opp) for uo, opp in rows if has_profile_match(uo)]
     created = 0
     for uo, opp in rows:
         exists = db.query(Alert).filter(
