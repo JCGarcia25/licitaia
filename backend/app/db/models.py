@@ -21,6 +21,15 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class LandingVisit(Base):
+    __tablename__ = "landing_visits"
+    id = Column(String(36), primary_key=True)
+    started_at = Column(DateTime, nullable=False, index=True)
+    last_seen_at = Column(DateTime, nullable=False, index=True)
+    duration_seconds = Column(Integer, nullable=False, default=0)
+    visible = Column(Boolean, nullable=False, default=True)
+
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)

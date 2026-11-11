@@ -2,12 +2,13 @@
 from datetime import datetime, timedelta, timezone
 from html import escape
 import secrets
+from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.security import get_current_user
-from app.db.models import AuditLog, CompanyProfile, OfferProject, User, UserOpportunity
+from app.db.models import AuditLog, CompanyProfile, LandingVisit, OfferProject, User, UserOpportunity
 from app.db.session import get_db
 from app.services.notifier import send_email
 
@@ -17,6 +18,24 @@ SUPERADMIN_EMAIL = "jorge@zorbagames.com"
 def require_super_admin(user: User) -> None:
     if user.email.strip().lower() != SUPERADMIN_EMAIL:
         raise HTTPException(403, "Acceso restringido al super administrador")
+
+@router.post("/landing-visit", status_code=204)
+def landing_visit(payload: dict, db: Session = Depends(get_db)):
+    try:
+        visit_id = str(UUID(str(payload.get("id", ""))))
+    except ValueError:
+        raise HTTPException(422, "Identificador inválido")
+    now = datetime.utcnow()
+    visit = db.get(LandingVisit, visit_id)
+    if visit is None:
+        db.add(LandingVisit(id=visit_id, started_at=now, last_seen_at=now, duration_seconds=0, visible=payload.get("visible") is True))
+    else:
+        elapsed = max(0, min(45, int((now - visit.last_seen_at).total_seconds())))
+        if visit.visible:
+            visit.duration_seconds += elapsed
+        visit.last_seen_at = now
+        visit.visible = payload.get("visible") is True
+    db.commit()
 
 @router.post("/presence")
 def presence(payload: dict, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -34,8 +53,13 @@ def overview(user: User = Depends(get_current_user), db: Session = Depends(get_d
     threshold = now - timedelta(minutes=2)
     users = db.query(User).order_by(User.last_seen_at.desc().nullslast(), User.created_at.desc()).limit(500).all()
     active = [u for u in users if u.last_seen_at and u.last_seen_at.replace(tzinfo=timezone.utc) >= threshold]
+    from zoneinfo import ZoneInfo
+    local_now = now.astimezone(ZoneInfo("America/Bogota"))
+    start_today = local_now.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc).replace(tzinfo=None)
+    visits_today = db.query(LandingVisit).filter(LandingVisit.started_at >= start_today)
     return {
         "generated_at": now,
+        "landing": {"visitas_hoy": visits_today.count(), "activos": db.query(LandingVisit).filter(LandingVisit.visible.is_(True), LandingVisit.last_seen_at >= (now - timedelta(seconds=45)).replace(tzinfo=None)).count(), "duracion_media_segundos": round(visits_today.with_entities(func.avg(LandingVisit.duration_seconds)).scalar() or 0)},
         "metrics": {
             "usuarios": db.query(User).count(),
             "activos": len(active),
