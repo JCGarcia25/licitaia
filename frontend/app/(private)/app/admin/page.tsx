@@ -21,7 +21,7 @@ export default function AdminPage() {
 
   function enviarBienvenida(id: number, nombre: string) {
     setPendingWelcome({ id, nombre });
-    setModal({ title: "Enviar bienvenida", message: `Se enviará a ${nombre || "este usuario"} un correo de bienvenida con sus datos de acceso y el enlace para verificar su correo.`, tone: "info", actionLabel: "Enviar bienvenida", onAction: () => confirmarBienvenida(id) });
+    setModal({ title: "Enviar bienvenida", message: `Se enviará a ${nombre || "este usuario"} un correo de bienvenida con su usuario y el enlace para verificar su correo. La contraseña actual no se modificará.`, tone: "info", actionLabel: "Enviar bienvenida", onAction: () => confirmarBienvenida(id) });
   }
 
   async function confirmarBienvenida(id: number) {
@@ -29,7 +29,7 @@ export default function AdminPage() {
     try {
       await api(`/api/admin/users/${id}/welcome`, { method: "POST" });
       setPendingWelcome(null);
-      setModal({ title: "Bienvenida enviada", message: "El correo fue enviado correctamente. Incluye los datos de acceso y el enlace para verificar el correo.", tone: "success" });
+      setModal({ title: "Bienvenida enviada", message: "El correo fue enviado correctamente con el usuario y el enlace para verificar el correo. La contraseña actual se conserva.", tone: "success" });
     } catch (e) {
       setPendingWelcome(null);
       setModal({ title: "No pudimos enviar la bienvenida", message: e instanceof Error ? e.message : "Verifica la configuración del correo e inténtalo nuevamente.", tone: "error" });
