@@ -17,7 +17,7 @@ export default function AdminPage() {
   }
 
   async function enviarBienvenida(id: number, nombre: string) {
-    if (!window.confirm(`¿Enviar una bienvenida a ${nombre || "este usuario"}? Se generará una contraseña temporal nueva.`)) return;
+    if (!window.confirm(`¿Enviar una bienvenida a ${nombre || "este usuario"} con sus datos de acceso?`)) return;
     try {
       await api(`/api/admin/users/${id}/welcome`, { method: "POST" });
       window.alert("Bienvenida enviada con enlaces al ambiente STG.");
