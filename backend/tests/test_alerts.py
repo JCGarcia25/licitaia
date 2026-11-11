@@ -82,3 +82,20 @@ def test_usuario_no_verificado_no_recibe_resumen(client, db, monkeypatch):
     response = client.post("/api/alerts/digest", headers=headers)
     assert response.status_code == 200
     assert response.json()["correo_enviado"] is False
+def test_alertas_exigen_actividad_relacionada_y_proceso_vigente():
+    from datetime import datetime, timedelta
+    from types import SimpleNamespace
+    from app.services.alerts import has_profile_match, opportunity_is_current
+
+    perfil = SimpleNamespace(sector='software', actividades='desarrollo de software', productos_servicios='aplicaciones web', keywords=['software'], unspsc_codes=[])
+    proceso = SimpleNamespace(objeto='Servicios de fisioterapia', descripcion='Atención en salud', unspsc_code=None, cancelled=False, fecha_publicacion=datetime.utcnow() - timedelta(days=1), fecha_cierre=datetime.utcnow() + timedelta(days=1), estado='Publicado')
+    assert not has_profile_match(None, perfil, proceso)
+    proceso.objeto = 'Desarrollo de software'
+    assert has_profile_match(None, perfil, proceso)
+    assert opportunity_is_current(proceso)
+    proceso.fecha_cierre = datetime.utcnow() - timedelta(days=1)
+    assert not opportunity_is_current(proceso)
+    proceso.fecha_cierre = None
+    proceso.estado = 'En ejecución'
+    assert not opportunity_is_current(proceso)
+

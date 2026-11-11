@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     # Dominio del frontend usado en enlaces de correo. Sobrescribir por
     # ambiente (STAGING/PRODUCCIÓN) con FRONTEND_URL.
     frontend_url: str = "https://dev.mysecop.co"
+    # Enlace usado por las bienvenidas enviadas desde el Centro de control.
+    # Se mantiene en STG para que las invitaciones de prueba no apunten a producción.
+    admin_welcome_frontend_url: str = "https://stg.mysecop.co"
     # Protección contra picos: evita que el pool de workers/CPU se agote y que
     # el proxy termine mostrando 502 por upstream saturado.
     max_concurrent_requests: int = 32

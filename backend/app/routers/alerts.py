@@ -22,6 +22,12 @@ def _recipients(value: str | None, fallback: str) -> list[str]:
 
 @router.get("")
 def list_alerts(solo_no_leidas: bool = False, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Reconcile persisted compatibility alerts with the current profile and
+    # threshold before rendering the inbox. This removes legacy alerts that
+    # were generated from location/budget alone and keeps the list trustworthy.
+    prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user.id).first()
+    threshold = prefs.high_score_threshold if prefs else 70
+    alerts_service.create_alerts_for_user(db, user.id, high_score=threshold)
     query = db.query(Alert).filter(Alert.user_id == user.id)
     if solo_no_leidas:
         query = query.filter(Alert.read_at.is_(None))
