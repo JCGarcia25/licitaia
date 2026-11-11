@@ -15,6 +15,7 @@ const NAV = [
   { href: "/app/alertas", label: "Alertas", icon: "◔" },
   { href: "/app/perfil", label: "Perfil de empresa", icon: "☑" },
   { href: "/app/sincronizacion", label: "Sincronización SECOP", icon: "⇅" },
+  { href: "/app/manuales", label: "Centro de ayuda", icon: "?" },
   { href: "/app/ayuda", label: "Sugerencias y reportes", icon: "♡" },
 ];
 
