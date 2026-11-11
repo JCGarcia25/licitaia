@@ -55,6 +55,13 @@ def profile_is_configured(profile: CompanyProfile | None) -> bool:
     ]))
 
 
+_PROFILE_MATCH_FACTORS = {
+    "coincidencia semántica",
+    "palabras clave",
+    "código unspsc",
+}
+
+
 def has_profile_match(user_opportunity: UserOpportunity) -> bool:
     """Requiere al menos una coincidencia verificable con el perfil empresarial.
 
@@ -64,8 +71,8 @@ def has_profile_match(user_opportunity: UserOpportunity) -> bool:
     o de modalidad con el perfil.
     """
     for reason in user_opportunity.reasons or []:
-        factor = str((reason or {}).get("factor", "")).strip().lower()
-        if factor and factor not in {"sin coincidencias fuertes", "riesgo"}:
+        factor = str((reason or {}).get("factor", "")).strip().casefold()
+        if factor in _PROFILE_MATCH_FACTORS:
             return True
     return False
 
