@@ -7,7 +7,6 @@ import { AuthProvider, RequireAuth, useAuth } from "@/components/auth";
 import { ThemeToggle } from "@/components/theme";
 import { api } from "@/lib/api";
 import { WorkOverlay } from "@/components/ui";
-import { Merlin } from "@/components/merlin";
 
 const NAV = [
   { href: "/app", label: "Dashboard", icon: "▤" },
@@ -83,7 +82,6 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
 
   return (
       <RequireAuth>
-      <Merlin />
       {showWork && requests > 0 ? <WorkOverlay /> : null}
       <div className="flex min-h-screen bg-[var(--bg)]">
         {/* Sidebar */}
