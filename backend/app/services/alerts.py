@@ -1,7 +1,9 @@
 """Cazador en lote + generación de alertas (usado por tareas, API y semilla)."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
+import re
+import unicodedata
 
 from sqlalchemy.orm import Session
 
@@ -55,26 +57,38 @@ def profile_is_configured(profile: CompanyProfile | None) -> bool:
     ]))
 
 
-_PROFILE_MATCH_FACTORS = {
-    "coincidencia semántica",
-    "palabras clave",
-    "código unspsc",
-}
+_GENERIC_TERMS = set("servicio servicios prestacion profesional profesionales actividades actividad apoyo realizar entidad entidades publico publica publicas privados procesos proceso desarrollo suministro gestion integral tecnica tecnico informacion mantenimiento implementacion diseno empresa empresas sistemas sistema".split())
 
 
-def has_profile_match(user_opportunity: UserOpportunity) -> bool:
-    """Requiere al menos una coincidencia verificable con el perfil empresarial.
+def _domain_terms(text: str) -> set[str]:
+    text = ''.join(c for c in unicodedata.normalize('NFD', text.casefold()) if unicodedata.category(c) != 'Mn')
+    return {word for word in re.findall(r'[a-z0-9]+', text) if len(word) >= 5 and word not in _GENERIC_TERMS}
 
-    El puntaje por sí solo no basta: un proceso puede superar el umbral por
-    factores generales. Las razones persistidas por el agente son la evidencia
-    de que hubo coincidencia semántica, léxica, UNSPSC, geográfica, económica
-    o de modalidad con el perfil.
-    """
-    for reason in user_opportunity.reasons or []:
-        factor = str((reason or {}).get("factor", "")).strip().casefold()
-        if factor in _PROFILE_MATCH_FACTORS:
-            return True
-    return False
+
+def has_profile_match(user_opportunity: UserOpportunity, profile: CompanyProfile, opportunity: Opportunity) -> bool:
+    """Exige coincidencias actuales con la actividad o la categoría de la empresa."""
+    codes = {str(code).strip() for code in (profile.unspsc_codes or [])}
+    if opportunity.unspsc_code and str(opportunity.unspsc_code).strip() in codes:
+        return True
+    profile_text = ' '.join(str(value or '') for value in (
+        profile.sector, profile.actividades, profile.productos_servicios,
+        ' '.join(profile.keywords or []),
+    ))
+    opportunity_text = ' '.join(str(value or '') for value in (opportunity.objeto, opportunity.descripcion))
+    return bool(_domain_terms(profile_text) & _domain_terms(opportunity_text))
+
+
+def opportunity_is_current(opportunity: Opportunity) -> bool:
+    now = datetime.utcnow()
+    if opportunity.cancelled:
+        return False
+    for value, future_required in ((opportunity.fecha_publicacion, False), (opportunity.fecha_cierre, True)):
+        if value:
+            value = value.astimezone(timezone.utc).replace(tzinfo=None) if value.tzinfo else value
+            if (future_required and value <= now) or (not future_required and value > now):
+                return False
+    state = (opportunity.estado or '').casefold()
+    return not any(term in state for term in ('cancelad', 'cerrad', 'adjudic', 'terminad', 'desiert', 'retirad', 'suspendid', 'ejecuci', 'liquidad', 'finalizad'))
 
 
 def rescore_user(db: Session, user_id: int, limit: int = 1500) -> int:
@@ -131,9 +145,11 @@ def create_alerts_for_user(db: Session, user_id: int, high_score: int = 70) -> i
         uo.opportunity_id: uo
         for uo in db.query(UserOpportunity).filter(UserOpportunity.user_id == user_id).all()
     }
+    opportunities = {opp.id: opp for opp in db.query(Opportunity).filter(Opportunity.id.in_([a.opportunity_id for a in existing_alerts])).all()}
     for alert in existing_alerts:
         uo = user_opportunities.get(alert.opportunity_id)
-        if not uo or uo.score is None or uo.score < high_score or not has_profile_match(uo):
+        opp = opportunities.get(alert.opportunity_id)
+        if not uo or not opp or uo.score is None or uo.score < high_score or not opportunity_is_current(opp) or not has_profile_match(uo, profile, opp):
             stale.append(alert)
     for alert in stale:
         db.delete(alert)
@@ -145,7 +161,7 @@ def create_alerts_for_user(db: Session, user_id: int, high_score: int = 70) -> i
         .filter(UserOpportunity.user_id == user_id, UserOpportunity.score >= high_score)
         .all()
     )
-    rows = [(uo, opp) for uo, opp in rows if has_profile_match(uo)]
+    rows = [(uo, opp) for uo, opp in rows if opportunity_is_current(opp) and has_profile_match(uo, profile, opp)]
     created = 0
     for uo, opp in rows:
         exists = db.query(Alert).filter(
