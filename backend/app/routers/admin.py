@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta, timezone
 from html import escape
 import secrets
+from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -76,7 +77,9 @@ def send_welcome_email(user_id: int, user: User = Depends(get_current_user), db:
 
     from app.core.config import get_settings
     settings = get_settings()
-    base_url = settings.admin_welcome_frontend_url.rstrip("/")
+    base_url = (settings.frontend_url if settings.environment.lower() == "production" else settings.admin_welcome_frontend_url).rstrip("/")
+    if settings.environment.lower() == "production" and (urlparse(base_url).scheme != "https" or urlparse(base_url).hostname not in {"mysecop.co", "www.mysecop.co"}):
+        raise HTTPException(503, "Configura la dirección de MySECOP para enviar la bienvenida.")
     verify_url = f"{base_url}/verificar-correo?token={target.verification_token}"
     display_name = target.full_name or "equipo"
     safe_name = escape(display_name)
@@ -92,4 +95,4 @@ def send_welcome_email(user_id: int, user: User = Depends(get_current_user), db:
         db.rollback()
         raise HTTPException(503, "No fue posible enviar la bienvenida. Verifica la configuración de correo del servidor.")
     db.commit()
-    return {"enviado": True, "email": target.email, "ambiente": "stg"}
+    return {"enviado": True, "email": target.email, "ambiente": settings.environment}
