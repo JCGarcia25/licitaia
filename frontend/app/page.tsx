@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme";
 import { ContactForm } from "@/components/contact-form";
+import { LandingVisit } from "@/components/landing-visit";
 
 // Keep the public landing out of the static client-provider fallback. The
 // private dashboard remains under /app and keeps its authentication guard.
@@ -83,6 +84,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+      <LandingVisit />
       {/* ---------- Header ---------- */}
       <header className="sticky top-0 z-40 border-b border-base bg-[var(--bg)]/85 backdrop-blur">
         <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
