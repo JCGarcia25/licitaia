@@ -64,7 +64,7 @@ def change_user_status(user_id: int, payload: dict, user: User = Depends(get_cur
 
 @router.post("/users/{user_id}/welcome")
 def send_welcome_email(user_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Envía una bienvenida de prueba con enlaces a STG y credenciales temporales."""
+    """Envía una bienvenida de prueba con verificación de correo y credenciales de acceso."""
     require_super_admin(user)
     target = db.query(User).filter(User.id == user_id).first()
     if not target:
@@ -84,17 +84,16 @@ def send_welcome_email(user_id: int, user: User = Depends(get_current_user), db:
     settings = get_settings()
     base_url = settings.admin_welcome_frontend_url.rstrip("/")
     verify_url = f"{base_url}/verificar-correo?token={target.verification_token}"
-    login_url = f"{base_url}/iniciar-sesion"
     display_name = target.full_name or "equipo"
     safe_name = escape(display_name)
     subject = "Bienvenido a MySECOP"
     plain = (
         f"Hola {display_name},\n\nBienvenido a MySECOP, tu aliado para encontrar y preparar mejores oportunidades de contratación pública.\n\n"
         f"Usuario: {target.email}\nContraseña temporal: {temporary_password}\n\n"
-        f"Verifica tu correo: {verify_url}\nIngresa a MySECOP: {login_url}\n\n"
-        "¡Cada oportunidad es un nuevo paso para hacer crecer tu negocio!"
+        f"Verifica tu correo: {verify_url}\n\n"
+        "Estamos para acompañarte,\nEquipo MySECOP"
     )
-    html = f"""<!doctype html><html lang=\"es\"><body style=\"margin:0;background:#f4f7fb;font-family:Arial,sans-serif;color:#18324b\"><div style=\"max-width:620px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(16,42,67,.12)\"><div style=\"background:#0d3565;padding:28px 32px;color:#fff\"><div style=\"font-size:24px;font-weight:700\"><span style=\"display:inline-block;background:#18c1b0;color:#06314f;border-radius:8px;padding:7px 9px;margin-right:8px\">MS</span>MySECOP</div></div><div style=\"padding:32px\"><h1 style=\"margin:0 0 14px;font-size:26px;color:#0d3565\">¡Bienvenido, {safe_name}!</h1><p style=\"font-size:16px;line-height:1.6\">Nos alegra acompañarte a encontrar oportunidades y preparar propuestas con más claridad. Tu trabajo puede convertirse en la próxima gran contratación.</p><div style=\"background:#eef7f7;border:1px solid #bde9e3;border-radius:12px;padding:18px;margin:22px 0\"><p style=\"margin:0 0 8px\"><strong>Usuario:</strong> {escape(target.email)}</p><p style=\"margin:0\"><strong>Contraseña:</strong> {escape(temporary_password)}</p></div><p style=\"margin:22px 0\"><a href=\"{verify_url}\" style=\"display:inline-block;background:#18bfae;color:#062f4e;text-decoration:none;font-weight:700;padding:13px 20px;border-radius:8px\">Verificar mi correo</a></p><p style=\"margin:0 0 18px\"><a href=\"{login_url}\" style=\"color:#0b6b9e;font-weight:700\">Ingresar a MySECOP en STG →</a></p><p style=\"font-size:13px;color:#60758a;line-height:1.5\">Este correo corresponde al ambiente de pruebas (STG).</p></div></div></body></html>"""
+    html = f"""<!doctype html><html lang=\"es\"><body style=\"margin:0;background:#f4f7fb;font-family:Arial,sans-serif;color:#18324b\"><div style=\"max-width:620px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(16,42,67,.12)\"><div style=\"background:#0d3565;padding:28px 32px;color:#fff\"><div style=\"font-size:24px;font-weight:700\"><span style=\"display:inline-block;background:#18c1b0;color:#06314f;border-radius:8px;padding:7px 9px;margin-right:8px\">MS</span>MySECOP</div></div><div style=\"padding:32px\"><h1 style=\"margin:0 0 14px;font-size:26px;color:#0d3565\">¡Bienvenido, {safe_name}!</h1><p style=\"font-size:16px;line-height:1.6\">Nos alegra acompañarte a encontrar oportunidades y preparar propuestas con más claridad. Tu trabajo puede convertirse en la próxima gran contratación.</p><div style=\"background:#eef7f7;border:1px solid #bde9e3;border-radius:12px;padding:18px;margin:22px 0\"><p style=\"margin:0 0 8px\"><strong>Usuario:</strong> {escape(target.email)}</p><p style=\"margin:0\"><strong>Contraseña:</strong> {escape(temporary_password)}</p></div><p style=\"margin:22px 0\"><a href=\"{verify_url}\" style=\"display:inline-block;background:#18bfae;color:#062f4e;text-decoration:none;font-weight:700;padding:13px 20px;border-radius:8px\">Verificar mi correo</a></p><p style=\"font-size:14px;line-height:1.6;margin-top:24px\">Estamos para acompañarte,<br><strong>Equipo MySECOP</strong></p></div></div></body></html>"""
     if not send_email(target.email, subject, plain, html_body=html):
         db.rollback()
         raise HTTPException(503, "No fue posible enviar la bienvenida. Verifica la configuración de correo del servidor.")
