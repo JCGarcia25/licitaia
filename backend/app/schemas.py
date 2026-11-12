@@ -145,3 +145,17 @@ class ContactIn(BaseModel):
     telefono: str = Field(default="", max_length=40)
     motivo: str = Field(default="", max_length=200)
     mensaje: str = Field(min_length=10, max_length=4000)
+
+
+class AdminUserCreateIn(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+    full_name: str = Field(default="", max_length=255)
+    role: str = Field(default="lector", pattern="^(owner|admin|analista|lector)$")
+    plan: str = Field(default="explorador", pattern="^(explorador|profesional|corporativo)$")
+    license_status: str = Field(default="activa", pattern="^(activa|pendiente_pago|cancelada)$")
+
+
+class AdminLicenseUpdateIn(BaseModel):
+    plan: str = Field(pattern="^(explorador|profesional|corporativo)$")
+    status: str = Field(pattern="^(activa|pendiente_pago|cancelada)$")

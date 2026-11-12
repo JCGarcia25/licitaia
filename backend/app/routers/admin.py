@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.security import get_current_user
-from app.db.models import AuditLog, CompanyProfile, LandingVisit, OfferProject, User, UserOpportunity
+from app.db.models import AuditLog, CompanyProfile, LandingVisit, OfferProject, Subscription, User, UserOpportunity
+from app.schemas import AdminLicenseUpdateIn, AdminUserCreateIn
+from app.core.security import hash_password
 from app.db.session import get_db
 from app.services.notifier import send_email
 
@@ -68,9 +70,49 @@ def overview(user: User = Depends(get_current_user), db: Session = Depends(get_d
             "busquedas_puntuadas": db.query(UserOpportunity).count(),
         },
         "usuarios_activos": [{"id": u.id, "email": u.email, "nombre": u.full_name or "", "ruta": u.current_path or "/", "ultimo_acceso": u.last_seen_at, "dispositivo": (u.last_user_agent or "Desconocido")[:100], "pro": bool(u.role == "admin")} for u in active],
-        "usuarios": [{"id": u.id, "email": u.email, "nombre": u.full_name or "", "ruta": u.current_path or "—", "ultimo_acceso": u.last_seen_at, "creado": u.created_at, "activo": bool(u.is_active)} for u in users],
+        "usuarios": [{"id": u.id, "email": u.email, "nombre": u.full_name or "", "ruta": u.current_path or "—", "ultimo_acceso": u.last_seen_at, "creado": u.created_at, "activo": bool(u.is_active), "rol": u.role or "owner", "licencia": _license_for(db, u)} for u in users],
         "eventos": [{"accion": a.action, "entidad": a.entity, "fecha": a.created_at, "usuario_id": a.user_id} for a in db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(12).all()],
     }
+
+
+def _license_for(db: Session, user: User) -> dict:
+    sub = db.query(Subscription).filter(Subscription.user_id == user.id).order_by(Subscription.created_at.desc()).first()
+    if not sub:
+        return {"plan": "explorador", "status": "activa", "provider": "manual", "periodo_hasta": None}
+    return {"id": sub.id, "plan": sub.plan, "status": sub.status, "provider": sub.provider, "periodo_hasta": sub.current_period_end}
+
+
+@router.post("/users", status_code=201)
+def create_user(data: AdminUserCreateIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    require_super_admin(user)
+    email = str(data.email).strip().lower()
+    if db.query(User).filter(User.email == email).first():
+        raise HTTPException(409, "El correo ya está registrado")
+    target = User(email=email, hashed_password=hash_password(data.password), full_name=data.full_name.strip(),
+                  role=data.role, is_active=True, email_verified=False)
+    db.add(target)
+    db.flush()
+    db.add(Subscription(user_id=target.id, plan=data.plan, status=data.license_status, provider="manual"))
+    db.commit()
+    log_action(db, user, "crear_usuario", "user", target.id, {"role": target.role, "plan": data.plan})
+    return {"id": target.id, "email": target.email, "nombre": target.full_name, "rol": target.role,
+            "licencia": _license_for(db, target), "email_verificado": False}
+
+
+@router.patch("/users/{user_id}/license")
+def update_license(user_id: int, data: AdminLicenseUpdateIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    require_super_admin(user)
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(404, "Usuario no encontrado")
+    sub = db.query(Subscription).filter(Subscription.user_id == target.id).order_by(Subscription.created_at.desc()).first()
+    if not sub:
+        sub = Subscription(user_id=target.id, provider="manual")
+        db.add(sub)
+    sub.plan, sub.status, sub.provider = data.plan, data.status, "manual"
+    db.commit()
+    log_action(db, user, "gestionar_licencia", "subscription", sub.id, {"plan": data.plan, "status": data.status, "user_id": target.id})
+    return {"id": target.id, "licencia": _license_for(db, target)}
 
 @router.patch("/users/{user_id}/status")
 def change_user_status(user_id: int, payload: dict, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
