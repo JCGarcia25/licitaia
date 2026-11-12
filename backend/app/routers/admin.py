@@ -13,6 +13,7 @@ from app.schemas import AdminLicenseUpdateIn, AdminUserCreateIn
 from app.core.security import hash_password
 from app.db.session import get_db
 from app.services.notifier import send_email
+from app.services.audit import log_action
 
 router = APIRouter(prefix="/api/admin", tags=["administración"])
 SUPERADMIN_EMAIL = "jorge@zorbagames.com"
