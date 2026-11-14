@@ -59,6 +59,12 @@ def test_baja_compatibilidad_para_sector_distinto():
     assert result.score < 40
 
 
+def test_palabras_genericas_no_acreditan_afinidad():
+    unrelated = {**OPP_FARMA, 'objeto': 'Prestación de servicios profesionales de fisioterapia', 'descripcion': 'Servicios de apoyo para la entidad'}
+    result = score_opportunity(PERFIL_TECH, unrelated, profile_vector=[0.0])
+    assert not any(reason['factor'] == 'Palabras clave' for reason in result.reasons)
+
+
 def test_proceso_cancelado_penalizado():
     result = score_opportunity(PERFIL_TECH, {**OPP_TECH, "cancelled": True, "estado": "Cancelado"})
     assert result.score < 30

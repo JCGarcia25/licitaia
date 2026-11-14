@@ -2,14 +2,12 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import re
-import unicodedata
 
 from sqlalchemy.orm import Session
 
 from app.db.models import Alert, CompanyProfile, Opportunity, UserOpportunity
 from app.services.embeddings import embed
-from app.services.matcher import score_opportunity
+from app.services.matcher import domain_terms, score_opportunity
 
 def email_html(title: str, lines: list[str], cta_url: str | None = None) -> str:
     rows = "".join(f"<p style='margin:8px 0;color:#cbd5e1'>{line}</p>" for line in lines)
@@ -57,14 +55,6 @@ def profile_is_configured(profile: CompanyProfile | None) -> bool:
     ]))
 
 
-_GENERIC_TERMS = set("servicio servicios prestacion profesional profesionales actividades actividad apoyo realizar entidad entidades publico publica publicas privados procesos proceso desarrollo suministro gestion integral tecnica tecnico informacion mantenimiento implementacion diseno empresa empresas sistemas sistema".split())
-
-
-def _domain_terms(text: str) -> set[str]:
-    text = ''.join(c for c in unicodedata.normalize('NFD', text.casefold()) if unicodedata.category(c) != 'Mn')
-    return {word for word in re.findall(r'[a-z0-9]+', text) if len(word) >= 5 and word not in _GENERIC_TERMS}
-
-
 def has_profile_match(user_opportunity: UserOpportunity, profile: CompanyProfile, opportunity: Opportunity) -> bool:
     """Exige coincidencias actuales con la actividad o la categoría de la empresa."""
     codes = {str(code).strip() for code in (profile.unspsc_codes or [])}
@@ -75,7 +65,7 @@ def has_profile_match(user_opportunity: UserOpportunity, profile: CompanyProfile
         ' '.join(profile.keywords or []),
     ))
     opportunity_text = ' '.join(str(value or '') for value in (opportunity.objeto, opportunity.descripcion))
-    return bool(_domain_terms(profile_text) & _domain_terms(opportunity_text))
+    return bool(domain_terms(profile_text) & domain_terms(opportunity_text))
 
 
 def opportunity_is_current(opportunity: Opportunity) -> bool:

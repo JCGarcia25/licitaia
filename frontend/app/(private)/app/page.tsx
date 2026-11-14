@@ -56,23 +56,20 @@ export default function Dashboard() {
   async function cargar(umbralActual = umbral, diasActuales = diasNuevos) {
     setCargandoTop(true);
     try {
-    const metrics = await api<Metrics>(`/api/dashboard/metrics?compatibility_threshold=${umbralActual}&new_days=${diasActuales}`);
-    setM(metrics);
+    let metrics = await api<Metrics>(`/api/dashboard/metrics?compatibility_threshold=${umbralActual}&new_days=${diasActuales}`);
     // Mantener el mismo criterio que la vista Oportunidades: solo procesos
     // compatibles con el perfil y con una puntuación mínima significativa.
-    let res = await api<{ items: Opp[] }>(`/api/opportunities?limit=50&score_min=${umbralActual}&solo_con_score=true&profile_match=true`);
+    let res = await api<{ total: number; items: Opp[] }>(`/api/opportunities?limit=5&score_min=${umbralActual}&solo_con_score=true&profile_match=true`);
     if (!res.items.length) {
       try {
         await api("/api/rescore", { method: "POST" });
-        res = await api<{ items: Opp[] }>(`/api/opportunities?limit=50&score_min=${umbralActual}&solo_con_score=true&profile_match=true`);
+        res = await api<{ total: number; items: Opp[] }>(`/api/opportunities?limit=5&score_min=${umbralActual}&solo_con_score=true&profile_match=true`);
+        metrics = await api<Metrics>(`/api/dashboard/metrics?compatibility_threshold=${umbralActual}&new_days=${diasActuales}`);
       } catch {
         // Perfil incompleto: se conserva el estado vacío guiado.
       }
     }
-    if (!res.items.length) {
-      // Evita dejar el dashboard vacío cuando solo hay coincidencias medias.
-      res = await api<{ items: Opp[] }>(`/api/opportunities?limit=50&score_min=${Math.max(1, umbralActual)}&solo_con_score=true&profile_match=false`);
-    }
+    setM({ ...metrics, alta_compatibilidad: res.total });
     setTop(res.items
       .filter((o) => o.score !== null)
       .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
@@ -143,7 +140,7 @@ export default function Dashboard() {
           <CardHeader
             title="Mejores oportunidades"
             subtitle="Ranking por compatibilidad"
-            action={<Link href="/app/oportunidades"><Button variant="outline" size="sm">Ver todas</Button></Link>}
+            action={<Link href={`/app/oportunidades?perfil=1&score_min=${m.umbral_compatibilidad}&solo_con_score=true`}><Button variant="outline" size="sm">Ver todas</Button></Link>}
           />
           {cargandoTop ? (
             <div className="flex min-h-56 flex-col items-center justify-center p-6 text-center">
@@ -156,7 +153,7 @@ export default function Dashboard() {
               <p className="text-muted mt-1 text-xs">Estamos cruzando tu perfil con los procesos vigentes.</p>
             </div>
           ) : top.length === 0 ? (
-            <EmptyState title="Aún no encontramos coincidencias" body="Completa tu perfil y revisa Oportunidades para calcular las mejores coincidencias disponibles." />
+            <EmptyState title="Sin coincidencias para este criterio" body="No encontramos procesos relacionados con tu perfil que alcancen la compatibilidad seleccionada. Prueba con un umbral menor o revisa tu perfil." />
           ) : (
             <div className="divide-y divide-[var(--border)]">
               {top.map((o) => (

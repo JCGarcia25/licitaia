@@ -273,7 +273,7 @@ def list_opportunities(
     if triage != "descartada":
         query = query.filter(~user_opp.filter(UserOpportunity.triage == "descartada").exists())
     if solo_con_score or profile_match:
-        min_score = PROFILE_MATCH_MIN_SCORE if profile_match else 1
+        min_score = (score_min if score_min is not None else PROFILE_MATCH_MIN_SCORE) if profile_match else 0
         query = query.filter(user_opp.filter(UserOpportunity.score >= min_score).exists())
     if triage == "guardada":
         query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "guardada").exists(), user_project.exists()))
@@ -286,6 +286,16 @@ def list_opportunities(
     if score_min is not None:
         query = query.filter(user_opp.filter(UserOpportunity.score >= score_min).exists())
 
+    if profile_match and profile:
+        # La relevancia debe verificarse antes de paginar y ordenar: de lo
+        # contrario se muestran coincidencias genéricas o no las de mayor score.
+        candidates = query.all()
+        scores = _user_scores(db, user.id, [opp.id for opp in candidates])
+        candidates = [opp for opp in candidates if scores.get(opp.id) and
+                      alerts_service.opportunity_is_current(opp) and
+                      alerts_service.has_profile_match(scores[opp.id], profile, opp)]
+        candidates.sort(key=lambda opp: (scores[opp.id].score or 0, opp.id), reverse=True)
+        return {"total": len(candidates), "items": [_serialize(opp, scores[opp.id]) for opp in candidates[offset:offset + limit]], "profile_configured": True, "profile_required": False}
     total = query.count()
     rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
     scores = _user_scores(db, user.id, [opp.id for opp in rows])
@@ -456,7 +466,10 @@ def metrics(
     ids = list(scores.keys())
     opps = {o.id: o for o in db.query(Opportunity).filter(Opportunity.id.in_(ids)).all()} if ids else {}
 
-    alta = [s for s in uos if s.score >= umbral_compatibilidad and s.triage != "descartada"]
+    profile = db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
+    alta = [s for s in uos if s.score is not None and s.score >= umbral_compatibilidad and s.triage != "descartada"
+            and s.opportunity_id in opps and profile and alerts_service.opportunity_is_current(opps[s.opportunity_id])
+            and alerts_service.has_profile_match(s, profile, opps[s.opportunity_id])]
     guardadas = [s for s in uos if s.triage == "guardada"]
     descartadas = [s for s in uos if s.triage == "descartadas" or s.triage == "descartada"]
     proyectos = [s for s in uos if s.triage == "proyecto"]

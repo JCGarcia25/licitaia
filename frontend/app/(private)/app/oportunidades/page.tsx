@@ -58,6 +58,7 @@ export default function Oportunidades() {
     if (estado.scoreMin) params.set("score_min", estado.scoreMin);
     if (estado.triage) params.set("triage", estado.triage);
     params.set("solo_con_score", String(estado.soloScore ?? soloScore));
+    if (aplicarPerfil) params.set("perfil", "1");
     if (esBusquedaManual) params.set("modo", "busqueda");
     params.set("limit", String(TAMANO_PAGINA));
     params.set("offset", String((paginaSolicitada - 1) * TAMANO_PAGINA));
@@ -119,7 +120,9 @@ export default function Oportunidades() {
       setQ(estadoInicial.q || ""); setDepartamento(estadoInicial.departamento || ""); setMunicipio(estadoInicial.municipio || "");
       setModalidad(estadoInicial.modalidad || ""); setValorMin(estadoInicial.valorMin || ""); setScoreMin(estadoInicial.scoreMin || "");
       setTriage(estadoInicial.triage || ""); setSoloScore(Boolean(estadoInicial.soloScore)); setPagina(paginaInicial);
-      if (estadoInicial.q || estadoInicial.departamento || estadoInicial.municipio || estadoInicial.modalidad || estadoInicial.valorMin || estadoInicial.scoreMin || estadoInicial.triage) {
+      if (params.get("perfil") === "1") {
+        cargar(undefined, true, paginaInicial, estadoInicial);
+      } else if (estadoInicial.q || estadoInicial.departamento || estadoInicial.municipio || estadoInicial.modalidad || estadoInicial.valorMin || estadoInicial.scoreMin || estadoInicial.triage) {
         cargar(estadoInicial.q || "", false, paginaInicial, estadoInicial);
       } else cargar(undefined, true);
     })();
