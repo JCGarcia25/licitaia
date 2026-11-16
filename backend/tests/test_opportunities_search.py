@@ -81,3 +81,20 @@ def test_manual_search_honours_score_and_triage_filters(client, db):
     payload = response.json()
     assert payload["total"] == len(payload["items"])
     assert all((item["score"] or 0) >= 70 and item["triage"] == "guardada" for item in payload["items"])
+def test_guardar_sin_puntuar_no_inventa_score_ni_comparte_triage(client, db, auth_headers):
+    from uuid import uuid4
+    from app.db.models import Opportunity
+
+    opportunity = Opportunity(source="qa", source_id=f"unscored-{uuid4().hex}",
+                              objeto="Servicios de software", estado="Publicado", cancelled=False)
+    db.add(opportunity)
+    db.commit()
+    identifier = opportunity.id
+    response = client.post(f"/api/opportunities/{identifier}/triaje", json={"triage": "guardada"}, headers=auth_headers)
+    assert response.status_code == 200
+    detail = client.get(f"/api/opportunities/{identifier}", headers=auth_headers).json()
+    assert detail["score"] is None and detail["triage"] == "guardada"
+    register = client.post("/api/auth/register", json={"email": f"{uuid4().hex}@example.com", "password": "ClaveSegura123", "full_name": "Prueba"})
+    other = {"Authorization": f"Bearer {register.json()['access_token']}"}
+    other_detail = client.get(f"/api/opportunities/{identifier}", headers=other).json()
+    assert other_detail["score"] is None and other_detail["triage"] == "detectada"

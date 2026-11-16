@@ -77,20 +77,70 @@ def sync_secop() -> dict:
     return results
 
 
-def rescore_all() -> dict:
-    from app.db.models import CompanyProfile, User
+def sync_secop_source(source: str, max_pages: int = 5) -> dict:
+    """Ejecuta una fuente en Celery; el servicio rechaza ejecuciones simultáneas."""
     from app.db.session import SessionLocal
-    from app.services.alerts import rescore_user, create_alerts_for_user
+    from app.services.ingest import sync_source
 
     db = SessionLocal()
     try:
-        total, alerts = 0, 0
-        for (user_id,) in db.query(CompanyProfile.user_id).all():
-            total += rescore_user(db, user_id)
-            alerts += create_alerts_for_user(db, user_id, high_score=70)
-        return {"puntuadas": total, "alertas": alerts}
+        run = sync_source(db, source, max_pages=max_pages)
+        return {"id": run.id, "source": source, "pages": run.pages,
+                "upserted": run.upserted, "duplicates": run.duplicates, "errors": run.errors}
     finally:
         db.close()
+
+
+def rescore_all(after_user_id: int = 0) -> dict:
+    """Coordinador recuperable: páginas de perfiles, no scoring en el scheduler."""
+    from app.db.models import CompanyProfile, MatchJob
+    from app.db.session import SessionLocal
+    from app.services.match_jobs import coverage, request_job, enqueue
+    from app.services.match_versions import algorithm_version, embedding_version
+    queued = 0
+    with SessionLocal() as db:
+        profiles = db.query(CompanyProfile).filter(CompanyProfile.user_id > after_user_id).order_by(CompanyProfile.user_id).limit(200).all()
+        for profile in profiles:
+            active = db.query(MatchJob).filter_by(active_key=profile.user_id).first()
+            if active:
+                if active.state != 'FAILED':
+                    queued += int(enqueue(active.id))
+                continue
+            latest = db.query(MatchJob).filter_by(user_id=profile.user_id).order_by(MatchJob.created_at.desc()).first()
+            if (latest and latest.state == 'CANCELLED' and latest.profile_version == profile.match_version
+                    and latest.algorithm_version == algorithm_version() and latest.embedding_version == embedding_version()):
+                continue
+            counts = coverage(db, profile.user_id)
+            if counts['pending_scores'] + counts['stale_scores']:
+                job = request_job(db, profile.user_id)
+                db.commit()
+                queued += int(enqueue(job.id))
+        if len(profiles) == 200:
+            from app.workers.celery_app import celery_app
+            if celery_app:
+                celery_app.send_task('app.workers.tasks.rescore_all_task', args=[profiles[-1].user_id], queue='matches', retry=False)
+    return {'queued': queued, 'profiles': len(profiles)}
+
+
+def process_match_batch(job_id: str) -> dict:
+    from app.db.session import SessionLocal
+    from app.services.match_jobs import process_batch, enqueue
+    with SessionLocal() as db:
+        result = process_batch(db, job_id)
+    if result['status'] in ('PENDING', 'RETRY'):
+        from app.db.models import MatchJob
+        with SessionLocal() as db:
+            job = db.get(MatchJob, job_id)
+            if job and job.state in ('PENDING', 'RETRY'):
+                enqueue(job_id, countdown=min(60, 2 ** job.retries) if job.state == 'RETRY' else 0)
+    elif result['status'] == 'COMPLETED':
+        from app.db.models import MatchJob, AlertPrefs
+        from app.services.alerts import create_alerts_for_user
+        with SessionLocal() as db:
+            job = db.get(MatchJob, job_id)
+            prefs = db.query(AlertPrefs).filter_by(user_id=job.user_id).first()
+            create_alerts_for_user(db, job.user_id, prefs.high_score_threshold if prefs else 70)
+    return result
 
 
 def close_reminders_all() -> int:
@@ -137,7 +187,10 @@ def daily_digest() -> dict:
         for prefs, user in rows:
             from app.db.models import Alert
             cuerpo = ["Estas son las oportunidades compatibles visibles en tu bandeja de MySECOP:"]
-            rows_alert = db.query(Alert).filter(Alert.user_id == user.id).order_by(Alert.created_at.desc()).limit(20).all()
+            from itertools import islice
+            from app.services.alerts import create_alerts_for_user, iter_visible_alerts
+            create_alerts_for_user(db, user.id, prefs.high_score_threshold)
+            rows_alert = list(islice(iter_visible_alerts(db, user.id, prefs.high_score_threshold), 20))
             cuerpo.extend([f"• {a.title} — {a.body}" for a in rows_alert] or ["No hay oportunidades nuevas en este momento."])
             cuerpo.append("La fuente oficial de referencia es siempre el expediente en SECOP.")
             import re
@@ -167,9 +220,57 @@ try:
     from app.workers.celery_app import celery_app  # noqa: E402
 
     celery_app.task(name="app.workers.tasks.sync_secop_task")(sync_secop)
+    celery_app.task(name="app.workers.tasks.sync_secop_source_task")(sync_secop_source)
     celery_app.task(name="app.workers.tasks.rescore_all_task")(rescore_all)
+    celery_app.task(name="app.workers.tasks.process_match_batch", acks_late=True,
+                    reject_on_worker_lost=True)(process_match_batch)
     celery_app.task(name="app.workers.tasks.close_reminders_task")(close_reminders_all)
     celery_app.task(name="app.workers.tasks.daily_digest_task")(daily_digest)
     celery_app.task(name="app.workers.tasks.sync_mercadopago_subscription_task")(sync_mercadopago_subscription)
 except Exception:
     pass
+
+
+def _process_compatibility_shadow(run_id):
+    from app.db.session import SessionLocal
+    from app.services.compatibility_shadow import process_batch, enqueue, enabled
+    from app.services.evaluation_guard import configured_target,broker_identity,EnvironmentDenied
+    from app.core.config import get_settings
+    if not enabled():return 'DISABLED'
+    try:
+        configured_target(require_evaluation_enabled=False)
+        if broker_identity(celery_app.conf.broker_url)!=broker_identity(get_settings().redis_url):raise EnvironmentDenied('Shadow worker broker differs')
+        with SessionLocal() as db:
+            state = process_batch(db, run_id)
+    except EnvironmentDenied:
+        return 'ENVIRONMENT_DENIED'
+    if state == 'RUNNING':
+        enqueue(run_id)
+    return state
+
+
+if celery_app is not None:
+    process_compatibility_shadow = celery_app.task(
+        name='app.workers.tasks.process_compatibility_shadow', acks_late=True,
+        reject_on_worker_lost=True)(_process_compatibility_shadow)
+
+
+
+def _process_evaluation_campaign(identifier):
+    from app.db.session import SessionLocal
+    from app.services.evaluation_platform import process_batch,enqueue
+    from app.services.evaluation_guard import EnvironmentDenied,configured_target
+    try:
+        configured_target()  # Reject absent destination before session/database use.
+        from app.services.evaluation_guard import broker_identity
+        from app.core.config import get_settings
+        if broker_identity(celery_app.conf.broker_url)!=broker_identity(get_settings().redis_url):raise EnvironmentDenied('Worker broker differs')
+        with SessionLocal() as db:state=process_batch(db,identifier)
+        if state in {'PREPARING','SEMANTICS'}:enqueue(identifier)
+        return state
+    except EnvironmentDenied:
+        return 'ENVIRONMENT_DENIED'
+
+
+if celery_app is not None:
+    process_evaluation_campaign=celery_app.task(name='app.workers.tasks.process_evaluation_campaign',acks_late=True,reject_on_worker_lost=True)(_process_evaluation_campaign)

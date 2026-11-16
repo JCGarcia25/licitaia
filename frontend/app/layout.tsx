@@ -3,9 +3,29 @@ import "./globals.css";
 import { ThemeInitScript } from "@/components/theme";
 
 export const metadata: Metadata = {
-  title: "MySECOP — Inteligencia para contratación pública",
-  description:
-    "MySECOP encuentra oportunidades de contratación pública que encajan con tu empresa y analiza sus requisitos. No es una plataforma oficial del Gobierno colombiano.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://mysecop.co"),
+  title: {
+    default: "MySECOP | Encuentra oportunidades de contratación pública",
+    template: "%s | MySECOP",
+  },
+  description: "Encuentra, filtra y analiza oportunidades de contratación pública en SECOP II con inteligencia artificial. Mejora tus decisiones y compite con más información.",
+  applicationName: "MySECOP",
+  keywords: ["SECOP II", "licitaciones Colombia", "contratación pública", "oportunidades de negocio", "pliegos de condiciones", "Colombia Compra Eficiente"],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "es_CO",
+    url: "/",
+    siteName: "MySECOP",
+    title: "MySECOP | Inteligencia para contratación pública",
+    description: "Descubre oportunidades de SECOP II que encajan con tu empresa y analiza sus requisitos con evidencia.",
+  },
+  twitter: {
+    card: "summary",
+    title: "MySECOP | Inteligencia para contratación pública",
+    description: "Encuentra oportunidades de SECOP II que encajan con tu empresa.",
+  },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
 };
 
 export const viewport: Viewport = {

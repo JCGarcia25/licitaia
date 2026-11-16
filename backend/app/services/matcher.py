@@ -11,9 +11,11 @@ reales del registro SECOP (nunca razones inventadas).
 from __future__ import annotations
 
 import logging
+import re
+import unicodedata
 from dataclasses import dataclass, field
 
-from app.services.embeddings import cosine_similarity, embed, lexical_overlap
+from app.services.embeddings import cosine_similarity, embed
 
 logger = logging.getLogger("licitaia.matcher")
 
@@ -26,6 +28,12 @@ PESOS = {
 }
 
 ESTADOS_ABIERTOS = {"en proceso", "convocatoria", "publicada", "abierto", "activo", "en adquisición"}
+
+_GENERIC_TERMS = set("servicio servicios prestacion profesional profesionales actividades actividad apoyo realizar entidad entidades publico publica publicas privados procesos proceso desarrollo suministro gestion integral tecnica tecnico informacion mantenimiento implementacion diseno empresa empresas sistemas sistema".split())
+
+def domain_terms(text: str) -> set[str]:
+    text = ''.join(c for c in unicodedata.normalize('NFD', text.casefold()) if unicodedata.category(c) != 'Mn')
+    return {word for word in re.findall(r'[a-z0-9]+', text) if len(word) >= 5 and word not in _GENERIC_TERMS}
 
 
 @dataclass
@@ -77,7 +85,7 @@ def score_opportunity(profile: dict, opp: dict, profile_vector: list[float] | No
         })
 
     # --- Palabras clave y UNSPSC (verificables en el registro) ---
-    hits = lexical_overlap(" ".join(keywords), texto_objeto)
+    hits = sorted(domain_terms(" ".join(keywords)) & domain_terms(texto_objeto))[:12]
     kw_parcial = 0.0
     if keywords and hits:
         kw_parcial = PESOS["keywords_unspsc"] * min(1.0, len(hits) / max(1, min(3, len(keywords))))

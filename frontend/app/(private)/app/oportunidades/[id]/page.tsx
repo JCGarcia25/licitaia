@@ -1,4 +1,5 @@
 "use client";
+import { scoreLabel } from "@/components/match-progress";
 /* Detalle de oportunidad: Agentes 2 (pliegos) y 3 (viabilidad). */
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -14,7 +15,7 @@ type Requisito = {
 type Opp = {
   id: number; source: string; source_id: string; entidad: string; objeto: string; descripcion: string | null;
   modalidad: string | null; valor: number | null; estado: string; departamento: string | null;
-  fecha_publicacion: string | null; updated_at?: string | null; fecha_cierre?: string | null; url_oficial: string | null; score: number | null; triage: string;
+  fecha_publicacion: string | null; updated_at?: string | null; fecha_cierre?: string | null; url_oficial: string | null; score: number | null; score_state?: string; triage: string;
   reasons: Reason[]; analysis: { id: number; resumen: Record<string, any>; requisitos: Requisito[] } | null;
   documentos_publicos_disponibles?: number; url_consulta_secop?: string;
 };
@@ -189,7 +190,7 @@ export default function DetalleOportunidad() {
         <Link href={fromAlertas ? "/app/alertas" : "/app/oportunidades"} className="text-muted text-xs hover:text-teal">← {fromAlertas ? "Volver a alertas" : "Volver a oportunidades"}</Link>
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
           <h1 className="max-w-3xl text-xl font-bold tracking-tight">{opp.objeto || "Proceso"}</h1>
-          <Badge tone={scoreTone(opp.score)}>{opp.score !== null ? `${Math.round(opp.score)}% de compatibilidad` : "sin puntuar"}</Badge>
+          <Badge tone={scoreTone(opp.score)}>{opp.score !== null ? `${Math.round(opp.score)}% de compatibilidad` : scoreLabel(opp.score_state)}</Badge>
         </div>
         <p className="text-muted mt-1 text-sm">{opp.entidad}</p>
       </div>
@@ -242,7 +243,7 @@ export default function DetalleOportunidad() {
         <CardHeader
           title="Agente 2 · Analista de Pliegos"
           subtitle="Sube el pliego o anexos (PDF, DOCX, XLSX) y genera la matriz de requisitos con citas"
-          action={<Button size="sm" onClick={analizar} disabled={cargando === "analizar"}>{cargando === "analizar" ? "Analizando…" : "Analizar documentos"}</Button>}
+          action={<Button size="sm" onClick={analizar} disabled={Boolean(cargando) || !docs.length || archivos.length > 0}>{cargando === "analizar" ? "Analizando…" : "Analizar documentos"}</Button>}
         />
         <div className="space-y-4 p-5">
           <div className="flex flex-wrap items-center gap-2">

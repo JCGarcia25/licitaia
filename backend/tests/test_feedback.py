@@ -1,4 +1,5 @@
 """Fase 6 — Retroalimentación del usuario mejora el scoring."""
+from match_test_support import finish_job
 from app.services.demo import seed_demo_if_empty
 
 PERFIL = {
@@ -16,7 +17,8 @@ def test_feedback_ajusta_pesos(client, db, auth_headers):
     r = client.put("/api/profile", json=PERFIL, headers=auth_headers)
     assert r.status_code == 200
     r = client.post("/api/rescore", headers=auth_headers)
-    assert r.status_code == 200 and r.json()["puntuadas"] >= 4
+    assert r.status_code == 202
+    assert finish_job(db, r.json()["id"]).scored >= 4
 
     items = client.get("/api/opportunities?limit=5", headers=auth_headers).json()["items"]
     con_score = [o for o in items if o["score"] is not None]
@@ -33,7 +35,9 @@ def test_feedback_ajusta_pesos(client, db, auth_headers):
 
     # re-scoring aplica los pesos (endpoint responde sin error)
     r = client.post("/api/rescore", headers=auth_headers)
-    assert r.status_code == 200
+    assert r.status_code == 202
+
+    finish_job(db, r.json()["id"])
 
     # feedback sobre oportunidad sin score
     r = client.post("/api/opportunities/999999/feedback", json={"util": True}, headers=auth_headers)

@@ -47,7 +47,7 @@ export default function Perfil() {
       const normalizadas = Object.fromEntries(Object.entries(listas).map(([key, value]) => [key, lista(value)]));
       await api("/api/profile", { method: "PUT", body: JSON.stringify({ ...p, ...normalizadas }) });
       setMsg("");
-      setModal({ title: "Perfil guardado", message: "Tus datos se actualizaron correctamente. Ve a Oportunidades para recalcular las coincidencias con tu perfil.", tone: "success" });
+      setModal({ title: "Perfil guardado", message: "Tus datos se actualizaron. Los cambios relevantes dejan recomendaciones pendientes de actualización. Consulta el progreso en Oportunidades.", tone: "success" });
     } catch (err) {
       setMsg("");
       setModal({ title: "No pudimos guardar tu perfil", message: err instanceof Error ? err.message : "Ocurrió un error al guardar los datos.", tone: "error" });

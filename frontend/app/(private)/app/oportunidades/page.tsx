@@ -6,12 +6,15 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { Badge, Button, Card, EmptyState, fmtCOP, fmtFecha, Input, MessageModal, Spinner, scoreTone, Select } from "@/components/ui";
 
+import { MatchProgress, scoreLabel } from "@/components/match-progress";
+
 type Reason = { factor: string; detalle: string; evidencia: string };
 type Opp = {
   id: number; entidad: string; objeto: string; descripcion: string | null; valor: number | null;
   estado: string; departamento: string | null; modalidad: string | null; fecha_publicacion: string | null;
-  score: number | null; triage: string; reasons: Reason[]; url_oficial: string | null; cancelled: boolean;
+  score: number | null; score_state?: string; triage: string; reasons: Reason[]; url_oficial: string | null; cancelled: boolean;
   documentos_publicos_disponibles?: number; url_consulta_secop?: string;
+  vigencia?: { status: string };
 };
 type SearchState = {
   q?: string; departamento?: string; municipio?: string; modalidad?: string;
@@ -58,21 +61,15 @@ export default function Oportunidades() {
     if (estado.scoreMin) params.set("score_min", estado.scoreMin);
     if (estado.triage) params.set("triage", estado.triage);
     params.set("solo_con_score", String(estado.soloScore ?? soloScore));
+    if (aplicarPerfil) params.set("perfil", "1");
     if (esBusquedaManual) params.set("modo", "busqueda");
     params.set("limit", String(TAMANO_PAGINA));
     params.set("offset", String((paginaSolicitada - 1) * TAMANO_PAGINA));
     try {
       const searchBody = { q: consulta, departamento: estado.departamento || undefined, municipio: estado.municipio || undefined, modalidad: estado.modalidad || undefined, valor_min: estado.valorMin ? Number(estado.valorMin.replace(/[^\d]/g, "")) : undefined, score_min: estado.scoreMin ? Number(estado.scoreMin) : undefined, triage: estado.triage || undefined, solo_con_score: estado.soloScore ?? soloScore, limit: TAMANO_PAGINA, offset: (paginaSolicitada - 1) * TAMANO_PAGINA };
-      let res = consulta
+      const res = consulta
         ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify(searchBody) })
         : await api<{ total: number; items: Opp[]; profile_required?: boolean }>(`/api/opportunities?${params.toString()}&profile_match=${aplicarPerfil}`);
-      // En un ambiente recién sincronizado puede no haber puntuaciones aún.
-      // La búsqueda textual sigue siendo útil: si el filtro de puntuadas no
-      // encuentra nada, repetimos sin ese requisito y mostramos los procesos.
-      if (consulta && res.total === 0 && searchBody.solo_con_score) {
-        setSoloScore(false);
-        res = await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify({ ...searchBody, solo_con_score: false }) });
-      }
       setPerfilRequerido(Boolean(res.profile_required));
       if (res.profile_required && !perfilAvisado) {
         setPerfilAvisado(true);
@@ -81,7 +78,7 @@ export default function Oportunidades() {
       setItems(res.items);
       setTotal(res.total);
       if (estado.scoreMin && res.total === 0) {
-        setModal({ title: "No encontramos coincidencias", message: `No se encontraron oportunidades con una compatibilidad mínima de ${estado.scoreMin}%. Intenta con otro rango de probabilidad o ajusta los demás filtros.`, tone: "info" });
+        setModal({ title: "No encontramos coincidencias", message: `No se encontraron oportunidades con una compatibilidad mínima de ${estado.scoreMin}%. Intenta con otro umbral de compatibilidad o ajusta los demás filtros.`, tone: "info" });
       }
       if (typeof window !== "undefined") {
         const url = new URL(window.location.href);
@@ -119,7 +116,9 @@ export default function Oportunidades() {
       setQ(estadoInicial.q || ""); setDepartamento(estadoInicial.departamento || ""); setMunicipio(estadoInicial.municipio || "");
       setModalidad(estadoInicial.modalidad || ""); setValorMin(estadoInicial.valorMin || ""); setScoreMin(estadoInicial.scoreMin || "");
       setTriage(estadoInicial.triage || ""); setSoloScore(Boolean(estadoInicial.soloScore)); setPagina(paginaInicial);
-      if (estadoInicial.q || estadoInicial.departamento || estadoInicial.municipio || estadoInicial.modalidad || estadoInicial.valorMin || estadoInicial.scoreMin || estadoInicial.triage) {
+      if (params.get("perfil") === "1") {
+        cargar(undefined, true, paginaInicial, estadoInicial);
+      } else if (estadoInicial.q || estadoInicial.departamento || estadoInicial.municipio || estadoInicial.modalidad || estadoInicial.valorMin || estadoInicial.scoreMin || estadoInicial.triage) {
         cargar(estadoInicial.q || "", false, paginaInicial, estadoInicial);
       } else cargar(undefined, true);
     })();
@@ -153,6 +152,8 @@ export default function Oportunidades() {
         <p className="text-muted text-sm">Procesos de contratación pública puntuados para tu empresa por el Cazador de Oportunidades.</p>
       </div>
 
+      <MatchProgress onProgress={() => { void cargar(undefined, busquedaConPerfil); }} />
+
       {/* Filtros */}
       <Card className="space-y-3 p-4">
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -174,7 +175,7 @@ export default function Oportunidades() {
           </Select>
           <Input value={valorMin} onChange={(e) => setValorMin(e.target.value)} placeholder="Valor mínimo (COP)" />
           <Select value={scoreMin} onChange={(e) => setScoreMin(e.target.value)}>
-            <option value="">Cualquier probabilidad</option>
+            <option value="">Cualquier compatibilidad</option>
             {[1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((value) => <option key={value} value={value}>≥ {value}%</option>)}
           </Select>
           <Select value={triage} onChange={(e) => setTriage(e.target.value)}>
@@ -212,8 +213,9 @@ export default function Oportunidades() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone={scoreTone(o.score)}>{o.score !== null ? `${Math.round(o.score)}% de compatibilidad estimada` : "sin puntuar"}</Badge>
+                      <Badge tone={scoreTone(o.score)}>{o.score !== null ? `${Math.round(o.score)}% de compatibilidad estimada` : scoreLabel(o.score_state)}</Badge>
                       {o.cancelled ? <Badge tone="red">Cancelado en la fuente</Badge> : <Badge tone="blue">{o.estado || "N/D"}</Badge>}
+                      {o.vigencia?.status === "UNKNOWN" && <Badge tone="amber">Vigencia por confirmar en SECOP</Badge>}
                       <Badge tone={o.documentos_publicos_disponibles ? "teal" : "amber"}>{o.documentos_publicos_disponibles ? `Pliegos disponibles (${o.documentos_publicos_disponibles})` : "Pliegos: consultar en SECOP"}</Badge>
                       {o.triage !== "detectada" ? <Badge tone={o.triage === "descartada" ? "gray" : "purple"}>{o.triage}</Badge> : null}
                     </div>
@@ -238,6 +240,7 @@ export default function Oportunidades() {
                       {o.url_oficial ? <a className="w-full sm:w-auto" href={o.url_oficial} target="_blank" rel="noopener,noreferrer"><Button size="sm" variant="outline" className="w-full sm:w-auto">Ver en SECOP ↗</Button></a> : <Button size="sm" variant="outline" className="w-full sm:w-auto" disabled>Expediente SECOP no disponible</Button>}
                     </div>
                     <div className="flex gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => aplicarTriage(o.id, o.triage === "guardada" ? "detectada" : "guardada")}>{o.triage === "guardada" ? "Dejar de guardar" : "Guardar"}</Button>
                       <Button size="sm" variant="ghost" onClick={() => aplicarTriage(o.id, "descartada")}>Descartar</Button>
                     </div>
                     <Button size="sm" variant="outline" className="w-full" onClick={() => crearProyecto(o.id)}>Crear proyecto de propuesta</Button>

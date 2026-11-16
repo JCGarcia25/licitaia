@@ -1,0 +1,7 @@
+# Solo venv de QA aislado; no requeridas por la aplicación.
+-r requirements.txt
+pgserver==0.1.4
+redislite==6.2.912183
+psycopg2-binary==2.9.13
+playwright==1.65.2
+psutil==7.2.2

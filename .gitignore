@@ -26,3 +26,9 @@ npm-debug.log*
 .DS_Store
 *.log
 tmp/
+
+# Local persistence and private uploads must never enter a source release.
+*.db
+*.sqlite
+*.sqlite3
+storage/

@@ -4,7 +4,7 @@ import tempfile
 
 os.environ["DATABASE_URL"] = f"sqlite:///{tempfile.mkdtemp()}/test_licitaia.db"
 os.environ["ENVIRONMENT"] = "testing"
-os.environ["SECRET_KEY"] = "test-secret-key"
+os.environ["SECRET_KEY"] = "isolated-test-secret-key-32-characters-only"
 os.environ["EMBEDDING_PROVIDER"] = "fake"
 os.environ["LLM_PROVIDER"] = "heuristic"
 os.environ["STORAGE_DIR"] = tempfile.mkdtemp()
@@ -19,6 +19,11 @@ from app.main import app  # noqa: E402
 @pytest.fixture(scope="session")
 def client():
     init_db()
+    # Explicit provisioning in this disposable SQLite fixture only. Operational
+    # DEV must use Alembic; API startup deliberately excludes evaluation tables.
+    from app.db.models import Base
+    from app.db.session import engine
+    Base.metadata.create_all(bind=engine,tables=[t for t in Base.metadata.tables.values() if t.name.startswith('evaluation_')])
     with TestClient(app) as c:
         yield c
 
