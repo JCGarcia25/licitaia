@@ -1,0 +1,2813 @@
+{
+  "name": "PILOTO FICTICIO 100 — procedimiento, no calidad real",
+  "scope": "synthetic",
+  "synthetic_pairs": [
+    {
+      "company_key": "FICTICIA-00",
+      "process_key": "FICTICIO-PROCESO-000",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-01",
+      "process_key": "FICTICIO-PROCESO-001",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-02",
+      "process_key": "FICTICIO-PROCESO-002",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-03",
+      "process_key": "FICTICIO-PROCESO-003",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-04",
+      "process_key": "FICTICIO-PROCESO-004",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-05",
+      "process_key": "FICTICIO-PROCESO-005",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-06",
+      "process_key": "FICTICIO-PROCESO-006",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-07",
+      "process_key": "FICTICIO-PROCESO-007",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-08",
+      "process_key": "FICTICIO-PROCESO-008",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-09",
+      "process_key": "FICTICIO-PROCESO-009",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-10",
+      "process_key": "FICTICIO-PROCESO-010",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-11",
+      "process_key": "FICTICIO-PROCESO-011",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-12",
+      "process_key": "FICTICIO-PROCESO-012",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-13",
+      "process_key": "FICTICIO-PROCESO-013",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-14",
+      "process_key": "FICTICIO-PROCESO-014",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-15",
+      "process_key": "FICTICIO-PROCESO-015",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-16",
+      "process_key": "FICTICIO-PROCESO-016",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-17",
+      "process_key": "FICTICIO-PROCESO-017",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-18",
+      "process_key": "FICTICIO-PROCESO-018",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-19",
+      "process_key": "FICTICIO-PROCESO-019",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-00",
+      "process_key": "FICTICIO-PROCESO-020",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-01",
+      "process_key": "FICTICIO-PROCESO-021",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-02",
+      "process_key": "FICTICIO-PROCESO-022",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-03",
+      "process_key": "FICTICIO-PROCESO-023",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-04",
+      "process_key": "FICTICIO-PROCESO-024",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-05",
+      "process_key": "FICTICIO-PROCESO-025",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-06",
+      "process_key": "FICTICIO-PROCESO-026",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-07",
+      "process_key": "FICTICIO-PROCESO-027",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-08",
+      "process_key": "FICTICIO-PROCESO-028",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-09",
+      "process_key": "FICTICIO-PROCESO-029",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-10",
+      "process_key": "FICTICIO-PROCESO-030",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-11",
+      "process_key": "FICTICIO-PROCESO-031",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-12",
+      "process_key": "FICTICIO-PROCESO-032",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-13",
+      "process_key": "FICTICIO-PROCESO-033",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-14",
+      "process_key": "FICTICIO-PROCESO-034",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-15",
+      "process_key": "FICTICIO-PROCESO-035",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-16",
+      "process_key": "FICTICIO-PROCESO-036",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-17",
+      "process_key": "FICTICIO-PROCESO-037",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-18",
+      "process_key": "FICTICIO-PROCESO-038",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-19",
+      "process_key": "FICTICIO-PROCESO-039",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-00",
+      "process_key": "FICTICIO-PROCESO-040",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-01",
+      "process_key": "FICTICIO-PROCESO-041",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-02",
+      "process_key": "FICTICIO-PROCESO-042",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-03",
+      "process_key": "FICTICIO-PROCESO-043",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-04",
+      "process_key": "FICTICIO-PROCESO-044",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-05",
+      "process_key": "FICTICIO-PROCESO-045",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-06",
+      "process_key": "FICTICIO-PROCESO-046",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-07",
+      "process_key": "FICTICIO-PROCESO-047",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-08",
+      "process_key": "FICTICIO-PROCESO-048",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-09",
+      "process_key": "FICTICIO-PROCESO-049",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-10",
+      "process_key": "FICTICIO-PROCESO-050",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-11",
+      "process_key": "FICTICIO-PROCESO-051",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-12",
+      "process_key": "FICTICIO-PROCESO-052",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-13",
+      "process_key": "FICTICIO-PROCESO-053",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-14",
+      "process_key": "FICTICIO-PROCESO-054",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-15",
+      "process_key": "FICTICIO-PROCESO-055",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-16",
+      "process_key": "FICTICIO-PROCESO-056",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-17",
+      "process_key": "FICTICIO-PROCESO-057",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-18",
+      "process_key": "FICTICIO-PROCESO-058",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-19",
+      "process_key": "FICTICIO-PROCESO-059",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-00",
+      "process_key": "FICTICIO-PROCESO-060",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-01",
+      "process_key": "FICTICIO-PROCESO-061",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-02",
+      "process_key": "FICTICIO-PROCESO-062",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-03",
+      "process_key": "FICTICIO-PROCESO-063",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-04",
+      "process_key": "FICTICIO-PROCESO-064",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-05",
+      "process_key": "FICTICIO-PROCESO-065",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-06",
+      "process_key": "FICTICIO-PROCESO-066",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-07",
+      "process_key": "FICTICIO-PROCESO-067",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-08",
+      "process_key": "FICTICIO-PROCESO-068",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-09",
+      "process_key": "FICTICIO-PROCESO-069",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-10",
+      "process_key": "FICTICIO-PROCESO-070",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-11",
+      "process_key": "FICTICIO-PROCESO-071",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-12",
+      "process_key": "FICTICIO-PROCESO-072",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-13",
+      "process_key": "FICTICIO-PROCESO-073",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-14",
+      "process_key": "FICTICIO-PROCESO-074",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-15",
+      "process_key": "FICTICIO-PROCESO-075",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-16",
+      "process_key": "FICTICIO-PROCESO-076",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-17",
+      "process_key": "FICTICIO-PROCESO-077",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-18",
+      "process_key": "FICTICIO-PROCESO-078",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-19",
+      "process_key": "FICTICIO-PROCESO-079",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-00",
+      "process_key": "FICTICIO-PROCESO-080",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-01",
+      "process_key": "FICTICIO-PROCESO-081",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-02",
+      "process_key": "FICTICIO-PROCESO-082",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-03",
+      "process_key": "FICTICIO-PROCESO-083",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-04",
+      "process_key": "FICTICIO-PROCESO-084",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-05",
+      "process_key": "FICTICIO-PROCESO-085",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-06",
+      "process_key": "FICTICIO-PROCESO-086",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-07",
+      "process_key": "FICTICIO-PROCESO-087",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-08",
+      "process_key": "FICTICIO-PROCESO-088",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-09",
+      "process_key": "FICTICIO-PROCESO-089",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-10",
+      "process_key": "FICTICIO-PROCESO-090",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-11",
+      "process_key": "FICTICIO-PROCESO-091",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-12",
+      "process_key": "FICTICIO-PROCESO-092",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-13",
+      "process_key": "FICTICIO-PROCESO-093",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-14",
+      "process_key": "FICTICIO-PROCESO-094",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-15",
+      "process_key": "FICTICIO-PROCESO-095",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "obras civiles",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    },
+    {
+      "company_key": "FICTICIA-16",
+      "process_key": "FICTICIO-PROCESO-096",
+      "profile": {
+        "sector": "software",
+        "actividades": "aplicaciones contables",
+        "productos_servicios": "aplicaciones contables",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Meta",
+        "estado": "En proceso",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "random_frame"
+    },
+    {
+      "company_key": "FICTICIA-17",
+      "process_key": "FICTICIO-PROCESO-097",
+      "profile": {
+        "sector": "agricultura",
+        "actividades": "herramientas agrícolas",
+        "productos_servicios": "herramientas agrícolas",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "herramientas agrícolas",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Selección Abreviada",
+        "valor": 200000000,
+        "departamento": "Cauca",
+        "estado": "Cerrado",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "legacy_only"
+    },
+    {
+      "company_key": "FICTICIA-18",
+      "process_key": "FICTICIO-PROCESO-098",
+      "profile": {
+        "sector": "salud",
+        "actividades": "insumos hospitalarios",
+        "productos_servicios": "insumos hospitalarios",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "insumos hospitalarios",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Contratación Directa",
+        "valor": 2000000000,
+        "departamento": "Antioquia",
+        "estado": "Adjudicado",
+        "fecha_cierre": null
+      },
+      "retrieval_origin": "v2_only"
+    },
+    {
+      "company_key": "FICTICIA-19",
+      "process_key": "FICTICIO-PROCESO-099",
+      "profile": {
+        "sector": "construcción",
+        "actividades": "obras civiles",
+        "productos_servicios": "obras civiles",
+        "departamentos": [
+          "Meta",
+          "Cauca"
+        ],
+        "presupuesto_min": 1000000,
+        "presupuesto_max": 2000000000,
+        "modalidades": [
+          "Licitación"
+        ]
+      },
+      "opportunity": {
+        "objeto": "aplicaciones contables",
+        "descripcion": "Caso ficticio sin documentos ni datos de clientes",
+        "modalidad": "Licitación",
+        "valor": 10000000,
+        "departamento": "Cundinamarca",
+        "estado": "Sin información",
+        "fecha_cierre": "2026-12-15T17:00:00+00:00"
+      },
+      "retrieval_origin": "independent_search"
+    }
+  ],
+  "authorization_reference": "Dataset enteramente ficticio, sin datos de clientes",
+  "blinded_sharing_authorized": true,
+  "external_text_authorized": false,
+  "sample_size": 100,
+  "seed": 20261115,
+  "holdout_fraction": 0.2,
+  "max_external_calls": 0
+}

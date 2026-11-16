@@ -1,5 +1,6 @@
 """Flujo integral: registro → perfil → Agente 1 → NLQ → triage → Agente 2 → 3 → 4 → export → alertas → métricas."""
 import io
+from match_test_support import finish_job
 
 
 def _docx_en_memoria(parrafos: list[str]) -> bytes:
@@ -50,8 +51,8 @@ def test_flujo_integral(client, db):
 
     # --- AGENTE 1: rescore con razones verificables ---
     r = client.post("/api/rescore", headers=headers)
-    assert r.status_code == 200, r.text
-    assert r.json()["puntuadas"] >= 4
+    assert r.status_code == 202, r.text
+    assert finish_job(db, r.json()["id"]).scored >= 4
 
     r = client.get("/api/opportunities?limit=20", headers=headers)
     assert r.status_code == 200
@@ -66,7 +67,7 @@ def test_flujo_integral(client, db):
         if o["estado"] == "Cancelado":
             cancelada = o
             break
-    assert cancelada is not None and cancelada["score"] < 30
+    assert cancelada is not None and cancelada["score"] is None
 
     # --- Búsqueda en lenguaje natural (ejemplo de la sección 10) ---
     r = client.post("/api/search", json={

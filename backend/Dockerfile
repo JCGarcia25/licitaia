@@ -6,8 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt psycopg2-binary
+COPY requirements.txt constraints-release-candidate.txt ./
+RUN pip install --no-cache-dir -c constraints-release-candidate.txt -r requirements.txt psycopg2-binary
 
 COPY . .
 

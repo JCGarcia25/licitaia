@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import quote
 
@@ -74,16 +74,21 @@ FIELD_MAP = {
     },
     "secop1": {
         # Dataset SECOP I - 202002: campos de proceso y adjudicación.
-        "source_id": "id_del_portafolio",
-        "entidad": "nom_entidad",
-        "nit_entidad": "nit_entidad",
+        # UID identifica una relación proceso–adjudicación, no una convocatoria.
+        "source_id": "uid",
+        "entidad": "nombre_entidad",
+        "nit_entidad": "nit_de_la_entidad",
         "departamento": "departamento_entidad",
+        "ciudad": "municipio_entidad",
         "objeto": "objeto_a_contratar",
-        "modalidad": "tipo_de_proceso",
+        "descripcion": "detalle_del_objeto_a_contratar",
+        "modalidad": "modalidad_de_contratacion",
+        "tipo_contrato": "tipo_de_contrato",
         "valor": "cuantia_proceso",
         "estado": "estado_del_proceso",
-        "fecha_publicacion": "fecha_de_publicacion",
-        "watermark_field": "fecha_de_ultima_publi",  # TODO(verificar en tiempo de ejecución; fallback sin filtro)
+        "fecha_publicacion": "fecha_de_cargue_en_el_secop",
+        "url": "ruta_proceso_en_secop_i",
+        "watermark_field": "ultima_actualizacion",
     },
 }
 
@@ -110,9 +115,19 @@ class SocrataClient:
         url = f"https://{self.domain}/resource/{dataset}.json"
         backoff = 2.0
         for attempt in range(4):
-            resp = httpx.get(url, params=params, headers=self._headers(), timeout=60)
-            if resp.status_code == 429:  # throttling: backoff exponencial, nunca evasión
-                logger.warning("Socrata 429 en %s; reintento en %.0fs", dataset, backoff)
+            try:
+                resp = httpx.get(url, params=params, headers=self._headers(), timeout=60)
+            except (httpx.TimeoutException, httpx.NetworkError):
+                if attempt == 3:
+                    raise
+                logger.warning("Error temporal de Socrata en %s; reintento en %.0fs", dataset, backoff)
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+            if resp.status_code in (429, 502, 503, 504):
+                if attempt == 3:
+                    raise RuntimeError(f"Socrata respondió {resp.status_code} de forma persistente para {dataset}")
+                logger.warning("Socrata %s en %s; reintento en %.0fs", resp.status_code, dataset, backoff)
                 time.sleep(backoff)
                 backoff *= 2
                 continue
@@ -158,10 +173,46 @@ class SocrataClient:
                 break
         return rows
 
+    def fetch_cursor_page(self, source: str, mode: str, cursor_time: datetime | None,
+                          cursor_id: str | None, extra_where: str | None = None) -> list[dict]:
+        """Una página por clave compuesta; :id identifica la fila Socrata."""
+        field = FIELD_MAP[source].get("watermark_field")
+        where = []
+        escaped_id = (cursor_id or "").replace("'", "''")
+        if mode == "incremental":
+            if not field:
+                raise ValueError("La fuente no tiene marca incremental configurada")
+            where.append(f"{field} IS NOT NULL")
+            if cursor_time is not None:
+                timestamp = cursor_time.isoformat(timespec="microseconds")
+                where.append(f"({field} > '{timestamp}' OR ({field} = '{timestamp}' AND :id > '{escaped_id}'))")
+            order = f"{field} ASC, :id ASC"
+        elif mode == "reconcile":
+            if cursor_id:
+                where.append(f":id > '{escaped_id}'")
+            order = ":id ASC"
+        else:
+            raise ValueError("Modo de sincronización inválido")
+        if extra_where:
+            where.append(f"({extra_where})")
+        params = {"$select": "*, :id AS sync_row_id", "$limit": self.page_size, "$order": order}
+        if where:
+            params["$where"] = " AND ".join(where)
+        return self.query(DATASETS[source], params)
+
 
 def _parse_date(value: str | None) -> datetime | None:
     if not value:
         return None
+    # Fechas con offset explícito se conservan como el instante equivalente
+    # en UTC; las fechas flotantes de Socrata conservan su valor original.
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        if parsed.tzinfo is not None:
+            return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+        return parsed
+    except (ValueError, TypeError, AttributeError):
+        pass
     for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%d"):
         try:
             return datetime.strptime(value[: len(fmt) + 3], fmt)

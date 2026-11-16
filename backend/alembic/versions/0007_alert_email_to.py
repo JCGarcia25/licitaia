@@ -8,7 +8,8 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    op.add_column("alert_prefs", sa.Column("email_to", sa.String(length=255), nullable=True))
+    if "email_to" not in {c["name"] for c in sa.inspect(op.get_bind()).get_columns("alert_prefs")}:
+        op.add_column("alert_prefs", sa.Column("email_to", sa.String(length=255), nullable=True))
 
 def downgrade():
     op.drop_column("alert_prefs", "email_to")

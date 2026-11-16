@@ -4,16 +4,20 @@ import re
 import unicodedata
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
 from sqlalchemy import and_, cast, func, or_, Text
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
 from app.db.models import Alert, AlertPrefs, Analysis, CompanyProfile, OfferProject, Opportunity, User, UserOpportunity
 from app.db.session import get_db
-from app.schemas import FeedbackIn, TriajeIn
+from app.schemas import FeedbackIn, TriajeIn, MatchJobOut
 from app.services import alerts as alerts_service
 from app.services import nlq
+from app.services.match_jobs import coverage
+from app.services.opportunity_status import classify_opportunity, potentially_current_condition
+from app.services.match_versions import current_score_condition, calculation_state, score_versions_condition, failed_score_condition
+from app.services.opportunity_filters import _location_condition, _text_variants, _modality_condition, profile_constraints
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api", tags=["dashboard"])
@@ -47,56 +51,7 @@ def _vigente_condition():
     determina con la fecha de publicación (no futura) y los estados oficiales
     de cierre/cancelación/adjudicación. Nunca se infiere una fecha de cierre.
     """
-    estado = func.lower(func.coalesce(Opportunity.estado, ""))
-    terminales = ("cancelad", "cerrad", "adjudic", "terminad", "desiert", "retirad", "suspendid")
-    return and_(
-        or_(Opportunity.cancelled.is_(False), Opportunity.cancelled.is_(None)),
-        or_(Opportunity.fecha_publicacion.is_(None), Opportunity.fecha_publicacion <= datetime.utcnow()),
-        *[~estado.like(f"%{term}%") for term in terminales],
-    )
-
-
-def _location_variants(value: str) -> list[str]:
-    """Acepta nombres de SECOP con/sin tildes y abreviaturas habituales."""
-    raw = value.strip()
-    folded = "".join(c for c in unicodedata.normalize("NFD", raw) if unicodedata.category(c) != "Mn")
-    variants = {raw, folded}
-    key = folded.lower().replace(".", "").strip()
-    if key in {"bogota", "bogota dc", "bogota d c"}:
-        variants.update({"Bogotá", "Bogotá D.C.", "Bogota", "Bogota D.C."})
-    return [v for v in variants if v]
-
-
-def _location_condition(column, value: str):
-    return or_(*[column.ilike(f"%{variant}%") for variant in _location_variants(value)])
-
-
-def _text_variants(value: str) -> list[str]:
-    folded = "".join(c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn")
-    return list({value, folded})
-
-
-def _modality_variants(value: str) -> list[str]:
-    """Reconoce el nombre corto del selector y la denominación SECOP."""
-    variants = set(_text_variants(value))
-    folded = "".join(c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn").lower()
-    if "minima cuantia" in folded:
-        variants.update({"Mínima Cuantía", "Mínima cuantía", "Contratación Mínima Cuantía"})
-    if "seleccion abreviada" in folded:
-        variants.update({"Selección Abreviada", "Selección Abreviada de Menor Cuantía", "Selección Abreviada de Mayor Cuantía"})
-    if "contratacion directa" in folded:
-        variants.update({"Contratación Directa", "Contratación Directa (con ofertas)"})
-    if "concurso de meritos" in folded:
-        variants.update({"Concurso de Méritos", "Concurso de méritos abierto"})
-    if "regimen especial" in folded:
-        variants.update({"Régimen Especial", "Contratación régimen especial"})
-    if "subasta" in folded:
-        variants.update({"Subasta", "Subasta Inversa Electrónica"})
-    return [v for v in variants if v]
-
-
-def _modality_condition(value: str):
-    return or_(*[Opportunity.modalidad.ilike(f"%{variant}%") for variant in _modality_variants(value)])
+    return potentially_current_condition()
 
 
 def _public_document_count(value) -> int:
@@ -118,8 +73,13 @@ def _user_scores(db: Session, user_id: int, opportunity_ids: list[int] | None = 
         if not opportunity_ids:
             return {}
         query = query.filter(UserOpportunity.opportunity_id.in_(opportunity_ids))
-    rows = query.all()
-    return {r.opportunity_id: r for r in rows}
+    rows = query.with_entities(UserOpportunity, current_score_condition(), failed_score_condition()).all()
+    result = {}
+    for row, current, versions_current in rows:
+        row._match_current = bool(current)
+        row._match_failed_current = bool(versions_current)
+        result[row.opportunity_id] = row
+    return result
 
 
 def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
@@ -134,6 +94,7 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
         host = (urlparse(url).hostname or "").lower()
         if host not in {"community.secop.gov.co", "www.colombiacompra.gov.co", "colombiacompra.gov.co"}:
             url = None
+    match_state = calculation_state(uo)
     return {
         "id": opp.id, "source": opp.source, "source_id": opp.source_id,
         "entidad": opp.entidad, "nit_entidad": opp.nit_entidad,
@@ -142,15 +103,17 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
         "modalidad": opp.modalidad, "tipo_contrato": opp.tipo_contrato,
         "unspsc_code": opp.unspsc_code, "valor": opp.valor,
         "estado": opp.estado, "fecha_publicacion": opp.fecha_publicacion,
+        "vigencia": classify_opportunity(opp),
         "fecha_cierre": opp.fecha_cierre,
         "url_oficial": url,
         # No se usa el dataset general como sustituto de un expediente.
         "url_consulta_secop": None,
         "documentos_publicos_disponibles": _public_document_count(opp.raw_json or {}),
         "cancelled": opp.cancelled, "captured_at": opp.captured_at, "updated_at": opp.updated_at,
-        "score": uo.score if uo else None,
+        "score": uo.score if uo and match_state == "CURRENT" else None,
+        "score_state": match_state,
         "triage": uo.triage if uo else "detectada",
-        "reasons": uo.reasons if uo else [],
+        "reasons": uo.reasons if uo and match_state == "CURRENT" else [],
     }
 
 
@@ -178,34 +141,11 @@ def list_opportunities(
     profile = db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
     # Al abrir Oportunidades, el perfil es el filtro de entrada. Los filtros
     # escritos por el usuario tienen prioridad para permitir explorar después.
-    profile_configured = bool(profile and any([
-        (profile.sector or "").strip(), (profile.actividades or "").strip(),
-        (profile.productos_servicios or "").strip(), profile.keywords,
-        profile.departamentos, profile.municipios, profile.modalidades,
-    ]))
+    profile_configured = alerts_service.profile_is_configured(profile)
     if profile_match and not profile_configured:
         return {"total": 0, "items": [], "profile_configured": False, "profile_required": True}
     if profile_match and profile:
-        departamentos = [x for x in (profile.departamentos or []) if x and "toda" not in x.lower()]
-        municipios = [x for x in (profile.municipios or []) if x and "todo" not in x.lower()]
-        modalidades = [x for x in (profile.modalidades or []) if x and "toda" not in x.lower()]
-        profile_conditions = []
-        if not departamento and departamentos:
-            profile_conditions.append(or_(*[_location_condition(Opportunity.departamento, x) for x in departamentos]))
-        if not municipio and municipios:
-            profile_conditions.append(or_(*[_location_condition(Opportunity.ciudad, x) for x in municipios]))
-        if not modalidad and modalidades:
-            profile_conditions.append(or_(*[_modality_condition(x) for x in modalidades]))
-        if valor_min is None and profile.presupuesto_min is not None:
-            profile_conditions.append(Opportunity.valor >= profile.presupuesto_min)
-        if valor_max is None and profile.presupuesto_max is not None:
-            profile_conditions.append(Opportunity.valor <= profile.presupuesto_max)
-        if profile_conditions:
-            preserved_ids = [row.opportunity_id for row in db.query(UserOpportunity.opportunity_id).filter(
-                UserOpportunity.user_id == user.id, UserOpportunity.triage.in_(["guardada", "proyecto"])
-            ).all()]
-            match_condition = and_(*profile_conditions)
-            query = query.filter(or_(match_condition, Opportunity.id.in_(preserved_ids))) if preserved_ids else query.filter(match_condition)
+        query = query.filter(*profile_constraints(profile, departamento, municipio, modalidad, valor_min, valor_max))
     if not include_cancelled:
         query = query.filter(_vigente_condition())
     if q:
@@ -262,7 +202,7 @@ def list_opportunities(
     user_opp = db.query(UserOpportunity).filter(
         UserOpportunity.user_id == user.id,
         UserOpportunity.opportunity_id == Opportunity.id,
-    )
+    ).correlate(Opportunity)
     user_project = db.query(OfferProject).filter(
         OfferProject.user_id == user.id,
         OfferProject.opportunity_id == Opportunity.id,
@@ -273,8 +213,8 @@ def list_opportunities(
     if triage != "descartada":
         query = query.filter(~user_opp.filter(UserOpportunity.triage == "descartada").exists())
     if solo_con_score or profile_match:
-        min_score = PROFILE_MATCH_MIN_SCORE if profile_match else 1
-        query = query.filter(user_opp.filter(UserOpportunity.score >= min_score).exists())
+        min_score = (score_min if score_min is not None else PROFILE_MATCH_MIN_SCORE) if profile_match else 0
+        query = query.filter(user_opp.filter(current_score_condition(), UserOpportunity.score >= min_score).exists())
     if triage == "guardada":
         query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "guardada").exists(), user_project.exists()))
     elif triage == "proyecto":
@@ -284,8 +224,27 @@ def list_opportunities(
     elif triage:
         query = query.filter(user_opp.filter(UserOpportunity.triage == triage).exists())
     if score_min is not None:
-        query = query.filter(user_opp.filter(UserOpportunity.score >= score_min).exists())
+        query = query.filter(user_opp.filter(current_score_condition(), UserOpportunity.score >= score_min).exists())
 
+    if profile_match and profile:
+        # La relevancia debe verificarse antes de paginar y ordenar: de lo
+        # contrario se muestran coincidencias genéricas o no las de mayor score.
+        # La afinidad léxica utiliza domain_terms en Python; el recorrido por
+        # lotes limita memoria sin paginar antes de aplicar ese criterio.
+        ranked = (query.order_by(None).join(UserOpportunity, and_(
+            UserOpportunity.opportunity_id == Opportunity.id,
+            UserOpportunity.user_id == user.id,
+        )).with_entities(Opportunity, UserOpportunity)
+            .order_by(UserOpportunity.score.desc(), Opportunity.id.desc()))
+        total, items = 0, []
+        for opp, score in ranked.yield_per(200):
+            if not alerts_service.opportunity_is_current(opp) or not alerts_service.has_profile_match(score, profile, opp):
+                continue
+            if offset <= total < offset + limit:
+                score._match_current = True
+                items.append(_serialize(opp, score))
+            total += 1
+        return {"total": total, "items": items, "profile_configured": True, "profile_required": False}
     total = query.count()
     rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
     scores = _user_scores(db, user.id, [opp.id for opp in rows])
@@ -301,8 +260,9 @@ def get_opportunity(opportunity_id: int, user: User = Depends(get_current_user),
     uo = db.query(UserOpportunity).filter(
         UserOpportunity.user_id == user.id, UserOpportunity.opportunity_id == opp.id
     ).first()
+    uo = _user_scores(db, user.id, [opp.id]).get(opp.id)
     data = _serialize(opp, uo)
-    analysis = db.query(Analysis).filter(Analysis.opportunity_id == opp.id).order_by(Analysis.created_at.desc()).first()
+    analysis = db.query(Analysis).filter(Analysis.opportunity_id == opp.id, Analysis.user_id == user.id).order_by(Analysis.created_at.desc()).first()
     data["analysis"] = {
         "id": analysis.id, "resumen": analysis.resumen_ejecutivo, "requisitos": analysis.requisitos,
         "estado": analysis.estado, "created_at": analysis.created_at,
@@ -319,7 +279,7 @@ def set_triaje(opportunity_id: int, data: TriajeIn, user: User = Depends(get_cur
         UserOpportunity.user_id == user.id, UserOpportunity.opportunity_id == opp.id
     ).first()
     if not uo:
-        uo = UserOpportunity(user_id=user.id, opportunity_id=opp.id, score=0, reasons=[])
+        uo = UserOpportunity(user_id=user.id, opportunity_id=opp.id, score=None, reasons=[])
         db.add(uo)
     uo.triage = data.triage
     db.commit()
@@ -401,7 +361,6 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         query = query.filter(Opportunity.fecha_publicacion >= datetime.utcnow() - timedelta(days=filtros["publicado_dias"]))
     limit = min(max(int(payload.get("limit", 25)), 1), 100)
     offset = max(int(payload.get("offset", 0)), 0)
-    rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
     solo_con_score = bool(payload.get("solo_con_score", False))
     score_min = payload.get("score_min")
     triage = payload.get("triage")
@@ -419,10 +378,10 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
     if solo_con_score:
         # En búsquedas manuales el perfil no impone el umbral inicial; la
         # casilla solo exige que exista una puntuación calculada (> 0).
-        query = query.filter(user_opp.filter(UserOpportunity.score > 0).exists())
+        query = query.filter(user_opp.filter(current_score_condition()).exists())
     if score_min is not None:
         try:
-            query = query.filter(user_opp.filter(UserOpportunity.score >= float(score_min)).exists())
+            query = query.filter(user_opp.filter(current_score_condition(), UserOpportunity.score >= float(score_min)).exists())
         except (TypeError, ValueError):
             raise HTTPException(422, "El puntaje mínimo no es válido")
     if triage == "guardada":
@@ -447,20 +406,21 @@ def metrics(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    scores = _user_scores(db, user.id)
     base = db.query(Opportunity).filter(_vigente_condition())
     prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user.id).first()
     umbral_compatibilidad = compatibility_threshold if compatibility_threshold is not None else (prefs.high_score_threshold if prefs else 70)
     ahora = datetime.utcnow()
-    uos = db.query(UserOpportunity).filter(UserOpportunity.user_id == user.id).all()
-    ids = list(scores.keys())
-    opps = {o.id: o for o in db.query(Opportunity).filter(Opportunity.id.in_(ids)).all()} if ids else {}
-
-    alta = [s for s in uos if s.score >= umbral_compatibilidad and s.triage != "descartada"]
-    guardadas = [s for s in uos if s.triage == "guardada"]
-    descartadas = [s for s in uos if s.triage == "descartadas" or s.triage == "descartada"]
-    proyectos = [s for s in uos if s.triage == "proyecto"]
-    valor_total = sum((opps[s.opportunity_id].valor or 0) for s in alta if s.opportunity_id in opps)
+    profile = db.query(CompanyProfile).filter_by(user_id=user.id).first()
+    uos = db.query(UserOpportunity).filter(UserOpportunity.user_id == user.id)
+    alta_count, valor_total = 0, 0
+    high = (db.query(UserOpportunity, Opportunity).join(Opportunity, Opportunity.id == UserOpportunity.opportunity_id)
+            .filter(UserOpportunity.user_id == user.id, current_score_condition(),
+                    UserOpportunity.score >= umbral_compatibilidad, func.coalesce(UserOpportunity.triage, 'detectada') != 'descartada'))
+    high = high.filter(*profile_constraints(profile))
+    for score, opp in high.yield_per(200):
+        if profile and alerts_service.has_profile_match(score, profile, opp):
+            alta_count += 1
+            valor_total += opp.valor or 0
 
     # tendencia por mes (últimos 6 meses) según fecha_publicacion
     tendencia: dict[str, int] = {}
@@ -468,63 +428,62 @@ def metrics(
         mes = (ahora.month - i - 1) % 12 + 1
         anio = ahora.year - (1 if ahora.month - i <= 0 else 0)
         tendencia[f"{anio}-{mes:02d}"] = 0
-    for o in opps.values():
-        if o.fecha_publicacion:
-            key = f"{o.fecha_publicacion.year}-{o.fecha_publicacion.month:02d}"
-            if key in tendencia:
-                tendencia[key] += 1
+    dated = (db.query(func.extract('year', Opportunity.fecha_publicacion),
+                      func.extract('month', Opportunity.fecha_publicacion), func.count(Opportunity.id))
+        .join(UserOpportunity, UserOpportunity.opportunity_id == Opportunity.id)
+        .filter(UserOpportunity.user_id == user.id, Opportunity.fecha_publicacion.isnot(None))
+        .group_by(func.extract('year', Opportunity.fecha_publicacion), func.extract('month', Opportunity.fecha_publicacion)))
+    for year, month, count in dated:
+        key = f'{int(year):04d}-{int(month):02d}'
+        if key in tendencia:
+            tendencia[key] = count
 
     # El indicador del dashboard debe reflejar el trabajo real del preparador:
     # documentos pendientes dentro de ofertas existentes, no análisis sueltos.
     proyectos_oferta = db.query(OfferProject).filter(
         OfferProject.user_id == user.id,
         OfferProject.status == "activo",
-    ).all()
+    )
     docs_pendientes = sum(
-        1 for proyecto in proyectos_oferta
+        1 for proyecto in proyectos_oferta.yield_per(200)
         for item in (proyecto.checklist or [])
         if item.get("estado") != "listo"
     )
-    alertas_no_leidas = db.query(Alert).filter(Alert.user_id == user.id, Alert.read_at.is_(None)).count()
+    alertas_no_leidas = sum(1 for _ in alerts_service.iter_visible_alerts(db, user.id, umbral_compatibilidad, unread=True))
 
     # Próximos a cerrar: únicamente ofertas activas del Preparador, no procesos
     # meramente detectados o descartados.
     # la fuente SECOP II (p6dx-8zbt) NO expone fecha de cierre (ver docs/fuentes-secop.md)
-    proximos = 0
-    for proyecto in proyectos_oferta:
-        o = opps.get(proyecto.opportunity_id)
-        if not o or not o.fecha_cierre:
-            continue
-        dias = (o.fecha_cierre - ahora).days
-        if 0 <= dias <= 7:
-            proximos += 1
+    proximos = (proyectos_oferta.join(Opportunity, Opportunity.id == OfferProject.opportunity_id)
+        .filter(Opportunity.fecha_cierre >= ahora, Opportunity.fecha_cierre < ahora + timedelta(days=8)).count())
     return {
-        "oportunidades_detectadas": len(uos),
+        "oportunidades_detectadas": uos.count(),
         "procesos_nuevos_base": base.filter(
             Opportunity.source == "secop2_procesos",
             Opportunity.fecha_publicacion >= ahora - timedelta(days=new_days),
         ).count(),
         "proximos_a_cerrar": proximos,
-        "alta_compatibilidad": len(alta),
+        "alta_compatibilidad": alta_count,
         "umbral_compatibilidad": umbral_compatibilidad,
         "valor_agregado_cop": valor_total,
-        "guardadas": len(guardadas),
-        "descartadas": len(descartadas),
-        "proyectos_propuesta": len(proyectos),
-        "ofertas_activas": len(proyectos_oferta),
+        "guardadas": uos.filter(UserOpportunity.triage == 'guardada').count(),
+        "descartadas": uos.filter(UserOpportunity.triage == 'descartada').count(),
+        "proyectos_propuesta": uos.filter(UserOpportunity.triage == 'proyecto').count(),
+        "ofertas_activas": proyectos_oferta.count(),
         "documentos_pendientes": docs_pendientes,
         "alertas_no_leidas": alertas_no_leidas,
+        "coverage": coverage(db, user.id),
         "tendencia_mensual": [{"mes": k, "total": v} for k, v in tendencia.items()],
     }
 
 
-@router.post("/rescore")
-def rescore(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
-    if not profile:
-        raise HTTPException(400, "Complete su perfil empresarial para activar al Agente 1")
-    scored = alerts_service.rescore_user(db, user.id)
-    prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user.id).first()
-    threshold = prefs.high_score_threshold if prefs else 70
-    created = alerts_service.create_alerts_for_user(db, user.id, high_score=threshold)
-    return {"puntuadas": scored, "alertas_creadas": created}
+@router.post("/rescore", status_code=202, response_model=MatchJobOut)
+def rescore(background: BackgroundTasks, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.services.match_jobs import request_job, enqueue, job_progress
+    try:
+        job = request_job(db, user.id)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    db.commit()
+    background.add_task(enqueue, job.id)
+    return job_progress(db, job)

@@ -15,7 +15,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Instalar dependencias
-        run: pip install -r backend/requirements.txt
+        run: pip install -c backend/constraints-release-candidate.txt -r backend/requirements.txt
       - name: Pruebas automatizadas
         working-directory: backend
         env:
@@ -31,9 +31,12 @@ jobs:
           node-version: "22"
       - name: Instalar dependencias
         working-directory: frontend
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Build de producción
         working-directory: frontend
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
         run: npm run build
+      - name: TypeScript
+        working-directory: frontend
+        run: npx --no-install tsc --noEmit
