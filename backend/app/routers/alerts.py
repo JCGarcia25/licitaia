@@ -28,10 +28,8 @@ def list_alerts(solo_no_leidas: bool = False, user: User = Depends(get_current_u
     prefs = db.query(AlertPrefs).filter(AlertPrefs.user_id == user.id).first()
     threshold = prefs.high_score_threshold if prefs else 70
     alerts_service.create_alerts_for_user(db, user.id, high_score=threshold)
-    query = db.query(Alert).filter(Alert.user_id == user.id)
-    if solo_no_leidas:
-        query = query.filter(Alert.read_at.is_(None))
-    rows = query.order_by(Alert.created_at.desc()).limit(50).all()
+    from itertools import islice
+    rows = list(islice(alerts_service.iter_visible_alerts(db, user.id, threshold, solo_no_leidas), 50))
     return [{
         "id": a.id, "tipo": a.tipo, "title": a.title, "body": a.body,
         "opportunity_id": a.opportunity_id, "read_at": a.read_at, "created_at": a.created_at,
@@ -80,16 +78,11 @@ def put_prefs(data: AlertPrefsIn, user: User = Depends(get_current_user), db: Se
     prefs.close_days = data.close_days
     prefs.digest_hour = data.digest_hour
     db.commit()
-    # En cuentas nuevas puede no existir todavía ningún score. Calculamos el
-    # perfil una sola vez al guardar preferencias para que la bandeja pueda
-    # generar alertas inmediatamente, sin esperar al ciclo del worker.
-    tiene_scores = db.query(UserOpportunity.id).filter(
-        UserOpportunity.user_id == user.id,
-        UserOpportunity.score.isnot(None),
-        UserOpportunity.score > 0,
-    ).first()
-    if not tiene_scores and db.query(CompanyProfile.id).filter(CompanyProfile.user_id == user.id).first():
-        alerts_service.rescore_user(db, user.id)
+    if db.query(CompanyProfile.id).filter(CompanyProfile.user_id == user.id).first():
+        from app.services.match_jobs import request_job, enqueue
+        job = request_job(db, user.id)
+        db.commit()
+        enqueue(job.id)
     # Recalcula las alertas de compatibilidad con el nuevo umbral para que la
     # bandeja se actualice inmediatamente, sin esperar al worker programado.
     created = alerts_service.create_alerts_for_user(db, user.id, high_score=data.high_score_threshold)
@@ -121,10 +114,9 @@ def run_digest_now(user: User = Depends(get_current_user), db: Session = Depends
         reason = "correo_no_verificado"
     elif prefs and prefs.email_enabled and user.email_verified:
         reason = "envio_no_confirmado"
-        uos = db.query(UserOpportunity).filter(UserOpportunity.user_id == user.id).all()
-        alta = [u for u in uos if u.score >= threshold]
         cuerpo = ["Estas son las oportunidades compatibles visibles en tu bandeja de MySECOP:"]
-        alert_rows = db.query(Alert).filter(Alert.user_id == user.id).order_by(Alert.created_at.desc()).limit(20).all()
+        from itertools import islice
+        alert_rows = list(islice(alerts_service.iter_visible_alerts(db, user.id, threshold), 20))
         if alert_rows:
             cuerpo.extend([f"• {a.title} — {a.body}" for a in alert_rows])
         else:

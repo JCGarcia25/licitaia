@@ -1,4 +1,5 @@
 "use client";
+import { MatchProgress } from "@/components/match-progress";
 /* Dashboard ejecutivo: métricas, tendencia y top oportunidades. */
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -60,15 +61,6 @@ export default function Dashboard() {
     // Mantener el mismo criterio que la vista Oportunidades: solo procesos
     // compatibles con el perfil y con una puntuación mínima significativa.
     let res = await api<{ total: number; items: Opp[] }>(`/api/opportunities?limit=5&score_min=${umbralActual}&solo_con_score=true&profile_match=true`);
-    if (!res.items.length) {
-      try {
-        await api("/api/rescore", { method: "POST" });
-        res = await api<{ total: number; items: Opp[] }>(`/api/opportunities?limit=5&score_min=${umbralActual}&solo_con_score=true&profile_match=true`);
-        metrics = await api<Metrics>(`/api/dashboard/metrics?compatibility_threshold=${umbralActual}&new_days=${diasActuales}`);
-      } catch {
-        // Perfil incompleto: se conserva el estado vacío guiado.
-      }
-    }
     setM({ ...metrics, alta_compatibilidad: res.total });
     setTop(res.items
       .filter((o) => o.score !== null)
@@ -114,6 +106,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <MatchProgress onProgress={() => { void cargar(); }} />
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block min-w-0"><span className="text-muted mb-1 block text-xs font-medium">Compatibilidad mínima (%)</span><Input type="number" min={0} max={100} value={umbral} onChange={(e) => setUmbral(Math.min(100, Math.max(0, Number(e.target.value))))} /></label>

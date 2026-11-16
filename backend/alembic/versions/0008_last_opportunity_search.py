@@ -8,7 +8,8 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    op.add_column("users", sa.Column("last_opportunity_search", sa.JSON(), nullable=True))
+    if "last_opportunity_search" not in {c["name"] for c in sa.inspect(op.get_bind()).get_columns("users")}:
+        op.add_column("users", sa.Column("last_opportunity_search", sa.JSON(), nullable=True))
 
 def downgrade():
     op.drop_column("users", "last_opportunity_search")

@@ -193,7 +193,7 @@ def viability(opportunity_id: int, data: ViabilityIn | None = None, user: User =
     opp = db.query(Opportunity).filter(Opportunity.id == opportunity_id).first()
     if not opp:
         raise HTTPException(404, "Oportunidad no encontrada")
-    analysis = db.query(Analysis).filter(Analysis.opportunity_id == opp.id).order_by(Analysis.created_at.desc()).first()
+    analysis = db.query(Analysis).filter(Analysis.opportunity_id == opp.id, Analysis.user_id == user.id).order_by(Analysis.created_at.desc()).first()
     from app.services.alerts import profile_dict
 
     perfil = profile_dict(db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first())
@@ -229,7 +229,7 @@ def eligibility(opportunity_id: int, user: User = Depends(get_current_user), db:
     opp = db.query(Opportunity).filter(Opportunity.id == opportunity_id).first()
     if not opp:
         raise HTTPException(404, "Oportunidad no encontrada")
-    analysis = db.query(Analysis).filter(Analysis.opportunity_id == opp.id).order_by(Analysis.created_at.desc()).first()
+    analysis = db.query(Analysis).filter(Analysis.opportunity_id == opp.id, Analysis.user_id == user.id).order_by(Analysis.created_at.desc()).first()
     from app.services.alerts import profile_dict
 
     perfil = profile_dict(db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first())
@@ -247,7 +247,7 @@ def create_project(payload: dict, user: User = Depends(get_current_user), db: Se
     opp = db.query(Opportunity).filter(Opportunity.id == opp_id).first()
     if not opp:
         raise HTTPException(404, "Oportunidad no encontrada")
-    analysis = db.query(Analysis).filter(Analysis.opportunity_id == opp.id).order_by(Analysis.created_at.desc()).first()
+    analysis = db.query(Analysis).filter(Analysis.opportunity_id == opp.id, Analysis.user_id == user.id).order_by(Analysis.created_at.desc()).first()
     checklist = list(DEFAULT_CHECKLIST)
     if analysis:
         for r in analysis.requisitos:
@@ -265,7 +265,7 @@ def create_project(payload: dict, user: User = Depends(get_current_user), db: Se
     # marca la oportunidad como proyecto en el triage
     uo = db.query(UserOpportunity).filter(UserOpportunity.user_id == user.id, UserOpportunity.opportunity_id == opp.id).first()
     if not uo:
-        uo = UserOpportunity(user_id=user.id, opportunity_id=opp.id, score=0, reasons=[])
+        uo = UserOpportunity(user_id=user.id, opportunity_id=opp.id, score=None, reasons=[])
         db.add(uo)
     uo.triage = "proyecto"
     db.commit()
@@ -363,7 +363,7 @@ def add_borrador(project_id: int, data: BorradorIn, user: User = Depends(get_cur
             f"persona autorizada antes de su presentación. MySECOP no firma ni presenta propuestas."
         )
     elif data.tipo == "matriz_cumplimiento":
-        analysis = db.query(Analysis).filter(Analysis.opportunity_id == p.opportunity_id).order_by(Analysis.created_at.desc()).first()
+        analysis = db.query(Analysis).filter(Analysis.opportunity_id == p.opportunity_id, Analysis.user_id == user.id).order_by(Analysis.created_at.desc()).first()
         filas = [["#", "Requisito", "Cumplimiento", "Evidencia", "Referencia"]]
         for i, r in enumerate((analysis.requisitos if analysis else [])[:50], 1):
             filas.append([str(i), (r.get("descripcion") or "")[:200], "Por verificar", "", r.get("referencia") or ""])

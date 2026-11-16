@@ -8,10 +8,13 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    op.add_column("users", sa.Column("last_seen_at", sa.DateTime(), nullable=True))
-    op.add_column("users", sa.Column("current_path", sa.String(length=255), nullable=True))
-    op.add_column("users", sa.Column("last_user_agent", sa.String(length=255), nullable=True))
-    op.create_index("ix_users_last_seen_at", "users", ["last_seen_at"])
+    inspector = sa.inspect(op.get_bind())
+    columns = {c["name"] for c in inspector.get_columns("users")}
+    for column in (sa.Column("last_seen_at", sa.DateTime(), nullable=True), sa.Column("current_path", sa.String(255), nullable=True), sa.Column("last_user_agent", sa.String(255), nullable=True)):
+        if column.name not in columns:
+            op.add_column("users", column)
+    if "ix_users_last_seen_at" not in {i["name"] for i in inspector.get_indexes("users")}:
+        op.create_index("ix_users_last_seen_at", "users", ["last_seen_at"])
 
 def downgrade():
     op.drop_index("ix_users_last_seen_at", table_name="users")

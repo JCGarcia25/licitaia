@@ -1,6 +1,8 @@
 """Conector SECOP: normalización de campos reales verificados e ingesta incremental."""
 from datetime import datetime
 
+import pytest
+
 from app.services.secop_client import SocrataClient, normalize_row
 
 # Fila con los nombres de campo REALES verificados en p6dx-8zbt (2026-10-27)
@@ -154,3 +156,97 @@ def test_unspsc_no_estandar_se_descarta():
     fila["codigo_principal_de_categoria"] = "V1.80111701"  # valor real observado, no es UNSPSC
     data = normalize_row("secop2_procesos", fila)
     assert data["unspsc_code"] is None
+
+
+def test_fecha_con_zona_horaria_y_fecha_invalida():
+    fila = {**FILA_P6DX, "fecha_de_publicacion_del": "2026-10-20T10:30:00-05:00"}
+    assert normalize_row("secop2_procesos", fila)["fecha_publicacion"] == datetime(2026, 10, 20, 15, 30)
+    fila["fecha_de_publicacion_del"] = "fecha desconocida"
+    assert normalize_row("secop2_procesos", fila)["fecha_publicacion"] is None
+
+
+def test_secop1_relacion_proceso_adjudicacion_no_es_convocatoria():
+    from types import SimpleNamespace
+    from app.services.opportunity_status import classify_opportunity
+    fila = {"uid": "CONST-123-ADJ-2", "numero_de_constancia": "CONST-123",
+            "numero_de_proceso": "PROC-9", "id_adjudicacion": "ADJ-2",
+            "numero_de_contrato": "CON-4", "nombre_entidad": "Entidad de prueba",
+            "nit_de_la_entidad": "900000000", "departamento_entidad": "Meta",
+            "municipio_entidad": "Villavicencio", "objeto_a_contratar": "Suministros",
+            "detalle_del_objeto_a_contratar": "Suministros de prueba",
+            "modalidad_de_contratacion": "Licitación Pública", "cuantia_proceso": "1000000",
+            "estado_del_proceso": "Publicado", "fecha_de_cargue_en_el_secop": "2026-01-10T00:00:00",
+            "ultima_actualizacion": "2026-01-11T00:00:00",
+            "ruta_proceso_en_secop_i": {"url": "https://www.colombiacompra.gov.co/proceso"}}
+    data = normalize_row("secop1", fila)
+    assert data["source_id"] == "CONST-123-ADJ-2" and data["entidad"] == "Entidad de prueba"
+    assert data["raw_json"]["numero_de_constancia"] == "CONST-123"
+    assert data["raw_json"]["id_adjudicacion"] == "ADJ-2"
+    assert data["ciudad"] == "Villavicencio" and data["modalidad"] == "Licitación Pública"
+    assert data["fecha_publicacion"] == datetime(2026, 1, 10) and data["valor"] == 1_000_000
+    assert classify_opportunity(SimpleNamespace(**data, updated_at=None))["status"] == "HISTORICAL"
+
+
+def test_secop1_adjudicaciones_distintas_mismo_proceso_no_se_fusionan(client, db, monkeypatch):
+    from uuid import uuid4
+    from app.db.models import Opportunity, SyncCursor
+    from app.services.ingest import sync_source
+    marker = uuid4().hex
+    filas = [{"sync_row_id": f"{marker}-{i}", "uid": f"{marker}-const-adj-{i}",
+              "numero_de_constancia": f"{marker}-const", "id_adjudicacion": str(i),
+              "nombre_entidad": "Entidad ficticia", "objeto_a_contratar": "Suministros",
+              "estado_del_proceso": "Publicado"} for i in (1, 2)]
+    db.query(SyncCursor).filter_by(source="secop1").delete()
+    db.commit()
+    monkeypatch.setattr(SocrataClient, "fetch_cursor_page", lambda *args, **kwargs: filas)
+    run = sync_source(db, "secop1", max_pages=1)
+    assert run.errors == 0 and run.upserted == 2
+    assert db.query(Opportunity).filter(Opportunity.source == "secop1", Opportunity.source_id.like(f"{marker}%")).count() == 2
+
+
+@pytest.mark.parametrize("identity", [None, ""])
+def test_secop1_sin_uid_no_usa_proceso_como_identidad(client, db, monkeypatch, identity):
+    from uuid import uuid4
+    from app.db.models import Opportunity, SyncCursor
+    from app.services.ingest import sync_source
+
+    marker = uuid4().hex
+    filas = [{"sync_row_id": f"{marker}-1", "uid": f"{marker}-adj-1",
+              "numero_de_constancia": marker, "objeto_a_contratar": "Prueba ficticia"},
+             {"sync_row_id": f"{marker}-2", "uid": identity,
+              "numero_de_constancia": marker, "id_adjudicacion": "2"}]
+    db.query(SyncCursor).filter_by(source="secop1").delete()
+    db.commit()
+    monkeypatch.setattr(SocrataClient, "fetch_cursor_page", lambda *args: filas)
+    run = sync_source(db, "secop1", max_pages=1)
+    assert run.errors == 1
+    db.expire_all()
+    assert db.get(SyncCursor, "secop1").cursor_id is None
+    assert db.query(Opportunity).filter_by(source="secop1", source_id=f"{marker}-adj-1").count() == 0
+
+
+def test_reingesta_actualiza_datos_y_vector_sin_perder_cierre(client, db, monkeypatch):
+    from datetime import timedelta
+    from uuid import uuid4
+    from app.db.models import Opportunity
+    from app.services.ingest import sync_source
+
+    source_id = f"qa-{uuid4().hex}"
+    row = {**FILA_P6DX, "id_del_proceso": source_id}
+    monkeypatch.setattr(SocrataClient, "fetch_cursor_page", lambda *args, **kwargs: [{**row, "sync_row_id": source_id}])
+    first = sync_source(db, "secop2_procesos", max_pages=1)
+    assert first.upserted == 1
+    opp = db.query(Opportunity).filter_by(source_id=source_id).one()
+    original_id, vector = opp.id, opp.embedding.vector
+    opp.fecha_cierre = datetime.utcnow() + timedelta(days=3)
+    db.commit()
+    row["nombre_del_procedimiento"] = "Suministro de equipos agrícolas"
+    row["descripci_n_del_procedimiento"] = "Cultivos y fertilizantes"
+    second = sync_source(db, "secop2_procesos", max_pages=1)
+    db.refresh(opp)
+    assert second.duplicates == 1 and opp.id == original_id
+    assert opp.objeto == row["nombre_del_procedimiento"] and opp.fecha_cierre is not None
+    assert opp.embedding.vector != vector
+    third = sync_source(db, "secop2_procesos", max_pages=1)
+    assert third.upserted == 0
+    assert db.query(Opportunity).filter_by(source_id=source_id).count() == 1

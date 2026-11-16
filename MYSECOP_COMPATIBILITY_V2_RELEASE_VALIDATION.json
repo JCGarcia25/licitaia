@@ -1,0 +1,293 @@
+{
+  "date": "2026-11-16",
+  "status": "LOCAL_VALIDATED_WITH_RESTRICTIONS",
+  "git_head": "cac56d02c9f07690bc0ed04a96350cb5e8fa3377",
+  "backend": {
+    "passed": 151,
+    "skipped": 23,
+    "warnings": 1539
+  },
+  "postgresql": {
+    "passed": 14,
+    "group_counts": [
+      4,
+      6,
+      2,
+      2
+    ],
+    "warnings": [
+      5,
+      364,
+      12,
+      6
+    ]
+  },
+  "redis_celery": {
+    "passed": 8,
+    "group_counts": [
+      6,
+      1,
+      1
+    ],
+    "warnings": [
+      32,
+      8,
+      6
+    ]
+  },
+  "e2e": "PASS_SYNTHETIC_REAL_SERVICES",
+  "frontend_build": "PASS_NEXT_15.5.29_POSTCSS_8.5.33",
+  "typescript": "PASS",
+  "docker_compose": "NOT_AVAILABLE_STATIC_YAML_ONLY",
+  "operational_dev": "NOT_CONNECTED_NOT_VERIFIED_NOT_DEPLOYED",
+  "secrets_pattern_scan": "zero high-confidence matches; not a full Git-history scan",
+  "python_dependency_security_audit": "NOT_EXECUTED; version snapshot only, not full SCA",
+  "real_human_labels": 0,
+  "real_external_semantic_calls": 0,
+  "commits": 0,
+  "pushes": 0,
+  "deployments": 0,
+  "logs": {
+    "backend-final.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/backend-final.log",
+      "sha256": "e0e3d58331bc1ed97ad505ff060a034dac53d8d69641453b7033ffce5b494b8a"
+    },
+    "pg-final.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/pg-final.log",
+      "sha256": "bec61330cad76667e465dc62fe27ec3bbd5f2629ba3a46589d33bbf3abe89cba"
+    },
+    "redis-final.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/redis-final.log",
+      "sha256": "9136d9050cf29e4b5a731aa3506d1d1d65292b0d8c84d49fd07061efadf905f4"
+    },
+    "e2e-final.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/e2e-final.log",
+      "sha256": "12da98d6218cea43aa5b9e654bf9cf3b22f034d079811b4b464c86fe5ab0f963"
+    },
+    "build-final.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/build-final.log",
+      "sha256": "758a343e0b0e7cc9a5dd5218207a3acdea51d4ffbb77792c8522352e624ef287"
+    },
+    "tsc-final.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/tsc-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "preflight.json": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/preflight.json",
+      "sha256": "899288989f98e405a1f5596485b40544ca7391b28218538fc47d28e85c6e7e6f"
+    },
+    "npm-audit-before.json": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/npm-audit-before.json",
+      "sha256": "456ee203e40b68c5a3941589e6a29458f18c03eef40d5a5127f4914d0a239833"
+    },
+    "npm-audit-final.json": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/npm-audit-final.json",
+      "sha256": "07fec8581f410d974b5c09249f2ee3fff811b157715cd823b204cec49da08dc4"
+    },
+    "npm-tree.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/npm-tree.log",
+      "sha256": "ebb88f58f04ecd10d816d939c9386dbf98fee7b07beff62945ddda317c7f6858"
+    },
+    "overlay-check.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/overlay-check.log",
+      "sha256": "e324174836015fa04be44e0acdb1e80a319565471cc0cfb0d519cc3e283afba1"
+    },
+    "security.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/security.log",
+      "sha256": "1a8b7e8cd2c226b0365e928b66258c82ee6ef97f8986cbc8f82be4475eb8ab1a"
+    },
+    "align-qa.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/align-qa.log",
+      "sha256": "f9cbd409993f9cc7d3e81d8639277f940f3d498f6ceebf448990e605712a31c8"
+    },
+    "status-final.txt": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/status-final.txt",
+      "sha256": "65193fc1e8da26a98c170f56367ffad32613b1198598b79a8c5e386c3fe889cf"
+    },
+    "npm-ci.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/npm-ci.log",
+      "sha256": "3821d9e50c30417ab364dc7b34d06f9ba9273fed13facb7b3aa3f3dc83e554dd"
+    },
+    "build-clean.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/build-clean.log",
+      "sha256": "2b9a243172ef31d03f370cb5057cb6d3448120888cc0b75866ec96f62872b987"
+    },
+    "reconstructed-tests.log": {
+      "path": "/private/tmp/mysecop-rc-preparation-20261116/evidence/reconstructed-tests.log",
+      "sha256": "a1b59cc9be16cf155cb6d8ac8731ace790295a9ceca32b0cdf83b264e31c76d9"
+    }
+  },
+  "npm_audit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "core_v2_unchanged_since_phase2": true,
+  "source_sha256": {
+    "backend/app/evaluation_schemas.py": "fbad6bab1a7f476f6fa11ce78900d32dfd6aa81614382a7a4597fdce43f46d46",
+    "backend/app/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/app/schemas.py": "0d080ecdb451669ededb90599d030a46e9f2d488feb3f5d1b028465a3122cba2",
+    "backend/app/main.py": "148b7675998cddcd9f2579ee5bef7891d7ace518e35ec8552a5c032f455bf6f6",
+    "backend/app/compatibility_schemas.py": "1009db3e009d1acd98def9df0c8fcd1bf61e2056bf635ffeda30dacd914e48da",
+    "backend/app/routers/sync.py": "5d308bd59070be5815320c1fcfac7caba0b26abd38efe7a29239576da89127c5",
+    "backend/app/routers/alerts.py": "72cf4f0b2e4e3b79d0d40984a3d55da5512a92f214f89ed8bb250d19951d2714",
+    "backend/app/routers/auth.py": "0f7f151a5630b4140dd488ec4bae48e8791187d53597be9ad333a1d8520fe89f",
+    "backend/app/routers/compatibility.py": "e20fee1c942291056003204b7da928fc3344199b2651ec3757f6fef70cfdbe3f",
+    "backend/app/routers/matches.py": "24b0bed803bf051316b3fb4523b4da1c5e8db8ae530cc83d94b60cd4a0f86206",
+    "backend/app/routers/billing.py": "722c3b399444a165773fe9c407b4093ea6e86c9a0ba343df72abf6066c7e0d49",
+    "backend/app/routers/documents.py": "be4b7108502f136a0ef029c77df2a1c3a58ef672218ea36bf501b2e8fe2e33ee",
+    "backend/app/routers/evaluation.py": "c6a61036ba80bd0b539c798df323373293051d94f1d7c5aa4b7e0c61e59f4f57",
+    "backend/app/routers/profile.py": "6bcc7e5439df674dd82a0bc33474650bba3a49173c2712537942c1cce7b3ddef",
+    "backend/app/routers/agents.py": "5db6afc306ecf755fd8f352bbc50cd4ebb7891032861b5b7ded0a387403eae8a",
+    "backend/app/routers/opportunities.py": "c0a19831131e6d3014b7d4c492cf67a17834ad4f90fd020ae3200a93a712d62c",
+    "backend/app/routers/admin.py": "1365917782e3dd5a8b60969c8635ff8d3f56f660e0e0e68a66556fd4a3c894e2",
+    "backend/app/routers/debug.py": "fb208a03ee1eeb2ef6bedc2a18a06ab0e1d6e8f79490f0c8068ccbe9e5db2cc8",
+    "backend/app/routers/companies.py": "ef365364a9c36f93f0d7537b8fe73204272c532f49795179f559a49ed7f0be04",
+    "backend/app/routers/contact.py": "349c8766c364357a287352c5cc3994d5110c4eb7354025255a928c52e1118761",
+    "backend/app/core/config.py": "b879040a6057d4ccdd2a36149b03f7444be1c07d5daba4e6d01f668971406bcd",
+    "backend/app/core/security.py": "d5778883e50ee030c70f019460a6beff92bb0b8ab88acff087cdea6b131a7129",
+    "backend/app/core/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/app/core/runtime_errors.py": "47c59a55a7fcce379d7a0510300ab069a9c031822dfce4726871fd68ff653057",
+    "backend/app/agents/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/app/agents/pliegos.py": "a5857a45641937d0dfccfe278a7699ede2ce8b0a684cefe9b9ae2891efe923ab",
+    "backend/app/agents/viability.py": "f7026e4f4abeac21a350055b7ccf7ac3d409bc8966b45926ac9a0c81a09cf726",
+    "backend/app/db/models.py": "dec79f44ef8f5efcc6a99abe356bd9a943d3ee0e7057ffb96c0e208a781eab1d",
+    "backend/app/db/session.py": "71360d73e805239cf23a342954ea31a2ea5eb9b6df86495a182c39dc87e89895",
+    "backend/app/db/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/app/db/base.py": "bfc26d456bb169f0c6b72cd61574ab7cb701307485e7d2329ca1ccd273ecaa54",
+    "backend/app/workers/tasks.py": "23a9d742404d9725becb280cc9b668d25daa84301a7e23248e7fd1f319b62511",
+    "backend/app/workers/celery_app.py": "bc8e0260ed0a20ae87ff40aedbc6214230d982c00cf2cbc83715a8f9e0a13176",
+    "backend/app/services/alerts.py": "9911b018e853bb6884d169b308d4366118cf9cc44f3286d352d2a51a8df7c4a4",
+    "backend/app/services/ingest.py": "a509e4697e7209f66351a8fc12599c769dfde01a6465456f06a5660ee8e1c22a",
+    "backend/app/services/evaluation_guard.py": "3250258322227c77e5187aac42227c7265f96754bd6be59ac9e337bc832cea86",
+    "backend/app/services/match_versions.py": "4bf9396276ece34a27c9dbc6d23cf589d95b84388aab6b243d7659dcaac37d4f",
+    "backend/app/services/audit.py": "c0b27bc3406a87a71adaa1b8100263fa8f4b7a7729ccf48ca5b2e8d3c9fcdd1d",
+    "backend/app/services/matcher.py": "6d9b87658b6bd23e049c7047d3f1a8238b88922f6ee4ccfb6274a38b78d715e6",
+    "backend/app/services/exporter.py": "9ec2b37b8fd30eabd5553e88526f216728f5e70391163550f0216cb309906dd3",
+    "backend/app/services/notifier.py": "e44721d2192cfd250d8b3a24d5ee96a9b967881747a31b3e6125e6c7ad622b9b",
+    "backend/app/services/match_jobs.py": "82fb61cc5f00e413938bd727fbc14d37246e0ab2da4eb0f2a63ba8c2f4a7cbc1",
+    "backend/app/services/quota.py": "a702178e5bd2a85448846c2f50e6db249456805cbd8d9f55607d74a7d537d6d1",
+    "backend/app/services/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/app/services/evaluation_semantic.py": "4fcee64afb0222a55e9c8d6fdde85d207bb04448cba1805c881b091f854c5a4c",
+    "backend/app/services/match_execution.py": "31e93ce02650e98a264063ed17822ff26787269046ec5a034cd1fe54dcb28c03",
+    "backend/app/services/opportunity_status.py": "2a5f7fdbb4e66134e5b1b21d0219e410b61be334f0e3ef84f495dfae64371f78",
+    "backend/app/services/evaluation_reporting.py": "32fca4448c6c9b6a4843a17394fae20db60c2f02df489170c293507a226eee65",
+    "backend/app/services/embeddings.py": "a7bc584c539d14b35268c3f83b7313f6d49bb7dbe441df5927d7611bc50788b0",
+    "backend/app/services/compatibility_v2.py": "c15c69be0d824e652001f3bc65c3c40d6bf976a3fc088d50b1bc73923f00ce04",
+    "backend/app/services/secop_client.py": "b416593c1226af286bd2ecc370509f9d1fc8b3e775369cdf142968019848655a",
+    "backend/app/services/match_metrics.py": "d97d5846fc590c9e04cad4f1b50eb4232b256a328a500e3ea13eeac5454de540",
+    "backend/app/services/nlq.py": "d06f8c7886b9bdf4869eea2ab1907c03b97599ede0662833bc90fa2ea1af336a",
+    "backend/app/services/compatibility_shadow.py": "fa85a65f80515d9f5ff489fc366b794d42c8d8e966eb4fed7b746d2f15ab02de",
+    "backend/app/services/compatibility_unspsc.py": "93ceb12ddaffa4f6dc24a6c151059c9c62933beb0ce7cc7b7ddb48f83b25ab90",
+    "backend/app/services/ranking_evaluation.py": "80f4fc2f2857d60c29000e2cab49ef1909f9e423f78d12e47d30c15a23b81583",
+    "backend/app/services/evaluation_platform.py": "0c5bb2f844a374f2cf8cf537bf41b8acb1d07838e7c58eae2400335d73a09a9e",
+    "backend/app/services/demo.py": "0cd4aa9461c3b3fdd8f6bc04cbdc5bcdbdcab4b703504ffa3c00331ba555aa74",
+    "backend/app/services/compatibility_documents.py": "2ec28618b194179208cfb7660b47b5bc5f2268952b162313aea4c9506ae1091f",
+    "backend/app/services/opportunity_filters.py": "4514d63a3614037d2122313ce8156b294fd91ad6e915910f11dd965f47520a8a",
+    "backend/app/services/evaluation_sampling.py": "86e5e236a46a2b6f297b2bd31fa77709c9adf22c24996e06bdecbe23067971f3",
+    "backend/app/services/compatibility_evaluation.py": "b601694734eaca7e66487a42f2e7681b5de96d001bf36febce88d255d6b34d35",
+    "backend/app/services/eligibility.py": "ab12f80c8bc9bc60c30fafecba0f8005386802daeb5cc109766b0105bf391892",
+    "backend/alembic/env.py": "402d03caac3384c20b74ebb0ba9268debe207bc3782cf4c0c6abe7855b73ee82",
+    "backend/alembic/versions/0010_sync_cursor.py": "0cb156de85cdf6410e9d55e5e5e81f39f0c21a89510c876fb77a70899340ab66",
+    "backend/alembic/versions/0005_sync_run_user.py": "32b9140243713ea9049f7dcbc28d9845c385f370a4f10a577df734488bc27623",
+    "backend/alembic/versions/0003_password_reset.py": "bc0462c920904cbbf64135939d222085ace320673f8d7625401b900d73281591",
+    "backend/alembic/versions/0008_last_opportunity_search.py": "fda0b602dea3ba92d2e405f45deca986673cc66f46fadf45843887ce982188a5",
+    "backend/alembic/versions/0013_compatibility_shadow.py": "f53797111e69c810f8a79dc655cb77055d13011d4a9e80ef68906b2710ce5261",
+    "backend/alembic/versions/0012_failed_match_inputs.py": "7a84502e490fed505c45606d763936ecec4bb038b117aaa1efdad16e248abe7f",
+    "backend/alembic/versions/0014_evaluation_platform.py": "de5e064344d29e1fbb0f71a147456708c2a0df2939693de1c84d5f2c18194101",
+    "backend/alembic/versions/0011_match_jobs.py": "14390aa148ea6f61ad833a0e386b14cfc7402145c5312c306c15b8c90fe3a8ef",
+    "backend/alembic/versions/0001_initial.py": "8635404b89c02e310c99e762f429d1010c310ec367dc89a09d99798d70957d2a",
+    "backend/alembic/versions/0009_landing_visits.py": "7fcb836a7d90262542d599189b56f0d86382e2faa4c0c7ce5fb180d5c93274f9",
+    "backend/alembic/versions/0002_mercadopago_subscription.py": "3bb680a57da70bfae7eeadb383fc15f215a2dac438b63fa7b33809ac7cf3420a",
+    "backend/alembic/versions/0007_alert_email_to.py": "119d0e8c5f5f96942ea1a08b10099d1924470ad441106ba59114f027ebec407b",
+    "backend/alembic/versions/0006_admin_presence.py": "b1e5edf86849d33decae105e6e2a32c2ab2bc9a2b558e168fdcb0336489d7d3a",
+    "backend/alembic/versions/0004_sync_usage.py": "6f3b802a1b8c0c81a13ab8af3b59d928817362c717313c5ca5c0b28d888453ae",
+    "backend/tests/test_feedback.py": "788865a474d0936a70f2af52818de92e0c5cbe735c70a44f52778c78e665a3cb",
+    "backend/tests/test_postgresql_evaluation.py": "4a71e04f6e507dd309cd8dc2a3a677a5fc3bd0e24cc3cb3ce03e5ae9504683a1",
+    "backend/tests/test_ranking_evaluation.py": "61f37d5b90ef09bce7e2e2a39f30ebc8e687e42db84406ad46d4660a05edc219",
+    "backend/tests/test_compatibility_evaluation.py": "e9906660d7871648c77993c969d413df4c24553789198ef7ed7bf010f6b3f10e",
+    "backend/tests/conftest.py": "2d5ee36ec55a3d81fda4c2b35e58650a53d4142da404b54632cbf3a0fb600f29",
+    "backend/tests/test_secop.py": "5367a9fa02fcb66d395875fd382bf1966462920eec268e9a1da611bf3a53be0e",
+    "backend/tests/test_auth.py": "496ad7eac48d9389ad8c09c8157c0289477d0b81543bbd6bf1cbe660b0b5c166",
+    "backend/tests/test_redis_operations.py": "b29d9cde756292fb103b3ea1461b5ad802500909f11898fb35872059d16ec2ee",
+    "backend/tests/isolated_match_worker.py": "a4cccc7730f377c106857ea57ad1dc170e6edc56cff5ab19e1fac7efbda56276",
+    "backend/tests/test_dashboard_ranking.py": "6a1d90048fe2d9b0c94707c06f929195842186851cfbd0be792e2c65efd51bc2",
+    "backend/tests/test_opportunity_status.py": "909f6d38cbff4a6a3d5326cbad14fdebd4e20faa6552a445694e3d1c4d5052a0",
+    "backend/tests/test_flow.py": "e747cbf6aa2121e3a71c845aaf82fe4bf1eaaa9765dd94ae17131d47f924a9ca",
+    "backend/tests/test_compatibility_v2.py": "003a0b2f1adf6ddabd39de751a03dd8dd992e85851dfd2fc6bc6b1568c3514a3",
+    "backend/tests/test_companies.py": "fd5a00cd27ae081624593cf1104cb95562641f2ce76f8d16832f492991f985ac",
+    "backend/tests/test_compatibility_shadow.py": "2d0eca50bb53f6ffbcc236b3a33858f669591b8abae06434fe75846e1c5f3405",
+    "backend/tests/test_profile.py": "835c5b3d271d4b09724141981b8628b0945fd6b0e61b958959d61f1b90bc798e",
+    "backend/tests/test_viability.py": "1b4cd118569b5423700f9ba40bea83769256a0ca6fdaf7a9f07f4f1e385047b3",
+    "backend/tests/test_contacto.py": "bbcff0f372646ede8bb9fe9d7368ed34ea9dde9004824a881778fbf364a6f91f",
+    "backend/tests/match_test_support.py": "cf44db96ba355b61c3803adb724f81f2e69b0d0720629f1874c9423d8eaa103b",
+    "backend/tests/test_pliegos.py": "c30f41f8b62e6783c9a80bc2131205ff0cca1146f4c1a73a6a2d287dbde6782d",
+    "backend/tests/test_alerts.py": "718a90e4334a479c579cf346523f5b3526ac88d583f51f84d47c6cdfd91f5f28",
+    "backend/tests/test_match_jobs.py": "a126cda7f8ec92ebc9a26de8a4bc36d6c4fbe54c0f39d1ace180f60a6a38c29d",
+    "backend/tests/test_evaluation_platform.py": "93e60f05c830a2d9e4325681ffdb4be2a795d5bcfc08cd57ea5aaeb6a79a192a",
+    "backend/tests/test_postgresql_compatibility.py": "1f3ca1ac23e7213ebb80dd1ac56bb04600be27ab9eb9deaa93b2dc2b602665c5",
+    "backend/tests/test_landing_visits.py": "1f5522584e905bb849c1eec040b3cd2a9a5d7945be1a0ec243111cfc714bdb89",
+    "backend/tests/test_redis_evaluation.py": "382d716320b2d860caf91d0ad143488ebaa2a29926357e681217265f71291762",
+    "backend/tests/test_incremental_sync.py": "fbee2bedfa855e9c3ea1c6d3b12502ac37afa36d32723c6f2b0665717db8230e",
+    "backend/tests/test_eligibility.py": "c88c6bba8e750c57dec9f744ea97fcd77cd5ca265ffcd725e947a1e7472cf73f",
+    "backend/tests/test_postgresql_sync.py": "bca3c1bc2faffbe2e1ed31697cd9d85f52b234a55fb149cf0ff8ea83ec4ec50e",
+    "backend/tests/test_release_security.py": "a692a6c598c818d089f263b732f51033c99ced3fda159d0575f9c736ff7ef3bd",
+    "backend/tests/test_match_stabilization.py": "dfbdf7bb299dda54f5e81c50259fa0f01e81ae42bc3881e651e2c14c29794ab3",
+    "backend/tests/test_matching.py": "f9fc6eb41620fe7f6d224bed428ee4a7146f3a0927694bee0e3c72f222cc9644",
+    "backend/tests/test_match_api.py": "40e88cf2540618a291c51bca03eb1cece2ada03bdae2277c5837fb50b426664c",
+    "backend/tests/test_quota.py": "792ac97d6c21ef8715674287e6c314f4c98d5e54f039642e673aa7b42ade393c",
+    "backend/tests/test_postgresql_matches.py": "ae3a4e137c0c15de19e50fb841ba56817db4957ea4028a8c89def21805a21dd2",
+    "backend/tests/test_redis_compatibility.py": "715891b4a2c5c1af6d94067bbb62b9923e8ee79cdfcafbc84327ba40b0daa1ca",
+    "backend/tests/evaluation_test_support.py": "aa3e7f425b816be143e9ebef1db3a1e49b0f02a2fc0aa3095e09d87e8185ccfb",
+    "backend/tests/test_opportunities_search.py": "118bf3da1ac5deac0294eb6f1d4790628d8eb9961f36a9bdab0d17cf0aacc8c8",
+    "backend/tests/test_match_celery.py": "af254c02f65d3e0778bc5091b00cd7a4b687b9d0a9cd78020f4e8848143e5dbb",
+    "backend/tests/test_nlq.py": "22c0010c430125e91f5d35fabf2a5f217fa31177dc65d62ae6e896fd024b914a",
+    "backend/scripts/benchmark_phase13.py": "7a81985ca078c99070f759de7e85d3f67b6a9a3cbae5aaa90da267c5ace87be0",
+    "backend/scripts/compare_compatibility.py": "149b0b3ea391ff7ce515bc13bcc0b89c34d73fb91f1e3b19ad32c913b567db73",
+    "backend/scripts/release_preflight.py": "f28a8018f0ff7442c9d8a85eb65b2321f70bf13ba2d035df009eb6721097e875",
+    "backend/scripts/test_isolated_postgresql.py": "9ec0ebd35d67e4dd987d47e79489f96dfedcd7e72c088c5fe4216cd494797c9a",
+    "backend/scripts/test_isolated_phase13.py": "ddbb4375f454fa68f771a64eb242d5d75b8f510758f40630626d0f2258371765",
+    "backend/scripts/prepare_release_candidate.py": "10277ccc35bd64a0b36ec0834ff752f6dfc31a68a57623bfd8bd21d721a47561",
+    "backend/scripts/seed_elite_dev.py": "39874c5f3cacab60598bfcdf4bee76e2bfd1cab59d62345842e99593bd9622f9",
+    "backend/scripts/e2e_evaluation_flow.py": "1ae2ebba2618e89dfaa24e098f432b7c32e9ab5b22ba01555dd47426597cafb8",
+    "backend/scripts/benchmark_compatibility_v2.py": "4428ce5b57098125966c7a571c36db0a308734ccbdd2e8893741a118938fa58e",
+    "backend/scripts/build_unspsc_catalog.py": "9218367bb2626e79fd197170ea613ba0f455c338aabe19530c060805c200641f",
+    "backend/scripts/e2e_phase13.py": "a52ec6acbf72f2d29c1b31a5838357f2685eceffdda6849480347cc8be7647f8",
+    "backend/scripts/evaluation_target.py": "8ace9327f8c1ad55d471d64312faf5c94a9502904f29d809cdcf0237e20c1863",
+    "backend/scripts/evaluate_ranking.py": "a221ec2b855c768b90ab2bdaa119d00d366733ac7f4b7b5a45ef974762152f60",
+    "frontend/package.json": "487ba69ac8fb1063e0179ce5dda1f1f739fae81b79dd62f89ffd1fc8b51877d4",
+    "frontend/package-lock.json": "2e9cad4e1eb556a4f86bb832b88c46e573ef31ee4ed8861dde2e314e09ab3e74",
+    "frontend/Dockerfile": "23f524339e76fec24a379f335850187569caa8159f0d9fb1d2c08a5303097a6c",
+    "backend/Dockerfile": "34dc37c414722e97397647bf157f0932d8ba36f673c0bfc2cec04fc2a4569969",
+    "backend/constraints-release-candidate.txt": "e70c965c5024917d642f608ffab42b9e3b2045336a3b4c9823fc78eed11f5204",
+    "docker-compose.dev-rc.yml": "0488f42aa1307b8cd2287927c34dacf59246c3e5b61986968b69cd19999d606c",
+    ".github/workflows/ci.yml": "3e667f9d34abe9b3071bc8ef81e0a0d9138b8a03b05cbd5ca1f46f9b517c293e",
+    ".gitignore": "df9ce408bc9ab4f4c82bb1b857a23897d6912d02849f3af5141a7197892b5343",
+    "frontend/.dockerignore": "6d5ee80d000ea48ce2f583893f5f69238d46cd9268ca46466dc2eb25da88ac1f",
+    "backend/.dockerignore": "0d9138e8c756e70f9d089e1fcca6ed9f68962c3aeb92b93a1e7d7331b03b4eba"
+  },
+  "npm_clean_install": "npm ci exit 0; 145 packages, Recharts v2 deprecation retained",
+  "commands": {
+    "backend": ".venv/bin/python -m pytest -q",
+    "postgresql": "/tmp/mysecop-audit-venv/bin/python scripts/test_isolated_postgresql.py",
+    "redis": "/tmp/mysecop-audit-venv/bin/python scripts/test_isolated_phase13.py",
+    "frontend": [
+      "npm ci --no-audit --no-fund",
+      "npm run build",
+      "npx --no-install tsc --noEmit",
+      "npm audit --json"
+    ],
+    "e2e": "PLAYWRIGHT_BROWSERS_PATH=/tmp/mysecop-playwright-browsers MYSECOP_E2E_V2=1 MYSECOP_E2E_EVALUATION=1 /tmp/mysecop-audit-venv/bin/python scripts/e2e_phase13.py",
+    "preflight": ".venv/bin/python scripts/release_preflight.py; exit 2 expected with local defaults"
+  },
+  "source_reconstruction": {
+    "result": "151 passed, 23 skipped, 1539 warnings",
+    "uses_existing_validated_venv": true,
+    "clean_python_install_or_linux_image": false,
+    "all_backend_app_files_match_current": true
+  },
+  "ci": "constraints/npm ci/tsc changes validated statically; no GitHub Actions execution"
+}

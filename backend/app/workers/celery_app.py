@@ -11,6 +11,7 @@ settings = get_settings()
 try:
     from celery import Celery
     from celery.schedules import crontab
+    from kombu import Queue
 
     celery_app = Celery(
         "licitaia",
@@ -24,8 +25,19 @@ try:
         accept_content=["json"],
         timezone=settings.timezone,
         enable_utc=True,
+        broker_connection_timeout=0.5,
+        broker_transport_options={'socket_connect_timeout': 0.5, 'socket_timeout': 0.5},
+        task_publish_retry=False,
+        worker_prefetch_multiplier=1,
+        task_queues=(Queue('celery'), Queue('matches'), Queue('compatibility-shadow'), Queue('evaluation')),
+        task_routes={'app.workers.tasks.process_evaluation_campaign': {'queue': 'evaluation'},'app.workers.tasks.process_compatibility_shadow': {'queue': 'compatibility-shadow'},
+                     'app.workers.tasks.process_match_batch': {'queue': 'matches'},
+                     'app.workers.tasks.rescore_all_task': {'queue': 'matches'}},
     )
     celery_app.conf.beat_schedule = {
+        "matching-recovery-every-minute": {
+            "task": "app.workers.tasks.rescore_all_task", "schedule": 60,
+        },
         "sincronizar-secop-cada-30-min": {
             "task": "app.workers.tasks.sync_secop_task",
             "schedule": settings.secop_sync_every_minutes * 60,
@@ -37,7 +49,7 @@ try:
         # 07:00 America/Bogota (config digest_hour) vía crontab con zona horaria
         "resumen-diario-7am-bogota": {
             "task": "app.workers.tasks.daily_digest_task",
-            "schedule": crontab(hour=settings.digest_hour, minute=0, timezone=settings.timezone),
+            "schedule": crontab(hour=settings.digest_hour, minute=0),
             "options": {"expires": 3600},
         },
     }

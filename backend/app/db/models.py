@@ -76,6 +76,7 @@ class CompanyProfile(Base):
     acepta_consorcios = Column(Boolean, default=False)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=True, index=True)
     learning_weights = Column(JSON, default=dict)           # retroalimentación del usuario (Fase 3)
+    match_version = Column(String(64), nullable=True)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
     user = relationship("User", back_populates="profile")
 
@@ -106,6 +107,7 @@ class Opportunity(Base):
     captured_at = Column(DateTime, default=utcnow)          # fecha de ingesta
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
     cancelled = Column(Boolean, default=False)              # proceso cancelado/retirado
+    match_version = Column(String(64), nullable=True)
     embedding = relationship("OpportunityEmbedding", back_populates="opportunity", uselist=False)
 
 
@@ -115,6 +117,7 @@ class OpportunityEmbedding(Base):
     opportunity_id = Column(Integer, ForeignKey("opportunities.id"), unique=True, nullable=False)
     model = Column(String(80), default="fake-hash-768")
     vector = Column(JSON)                                   # lista de floats (pgvector en producción)
+    content_version = Column(String(64), nullable=True)
     opportunity = relationship("Opportunity", back_populates="embedding")
 
 
@@ -125,14 +128,73 @@ class UserOpportunity(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
     opportunity_id = Column(Integer, ForeignKey("opportunities.id"), index=True, nullable=False)
-    score = Column(Float, default=0)                        # 0-100 compatibilidad
+    score = Column(Float, nullable=True)                   # NULL = aún no puntuado
     reasons = Column(JSON, default=list)                    # razones verificables [{factor, detalle, evidencia}]
+    match_state = Column(String(16), nullable=True)
+    profile_version = Column(String(64), nullable=True)
+    opportunity_version = Column(String(64), nullable=True)
+    algorithm_version = Column(String(64), nullable=True)
+    embedding_version = Column(String(64), nullable=True)
+    scored_at = Column(DateTime, nullable=True)
+    match_error = Column(String(80), nullable=True)
+    failed_input_versions = Column(JSON(none_as_null=True), nullable=True)
     triage = Column(String(20), default="detectada")        # detectada|guardada|descartada|proyecto
     feedback = Column(Boolean, nullable=True)               # retroalimentación: útil / no útil (Fase 3)
     feedback_note = Column(String(500), default="")
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
     opportunity = relationship("Opportunity")
+
+
+class MatchJob(Base):
+    __tablename__ = "match_jobs"
+    id = Column(String(36), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    # NULL libera la exclusión, conservando trabajos anteriores.
+    active_key = Column(Integer, unique=True, nullable=True)
+    state = Column(String(24), nullable=False, default="PENDING")
+    profile_version = Column(String(64), nullable=True)
+    algorithm_version = Column(String(64), nullable=False)
+    embedding_version = Column(String(64), nullable=False)
+    cursor_id = Column(Integer, nullable=False, default=0)
+    max_id = Column(Integer, nullable=False, default=0)
+    candidate_total = Column(Integer, nullable=False, default=0)
+    excluded_total = Column(Integer, nullable=False, default=0)
+    examined = Column(Integer, nullable=False, default=0)
+    scored = Column(Integer, nullable=False, default=0)
+    skipped = Column(Integer, nullable=False, default=0)
+    failed = Column(Integer, nullable=False, default=0)
+    batches = Column(Integer, nullable=False, default=0)
+    retries = Column(Integer, nullable=False, default=0)
+    lease_token = Column(String(36), nullable=True)
+    lease_until = Column(DateTime, nullable=True)
+    error = Column(String(80), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=utcnow)
+    updated_at = Column(DateTime, nullable=False, default=utcnow)
+    finished_at = Column(DateTime, nullable=True)
+    last_batch_seconds = Column(Float, nullable=True)
+    profile_vector = Column(JSON, nullable=True)
+    processing_seconds = Column(Float, nullable=False, default=0)
+    last_batch_queries = Column(Integer, nullable=True)
+    peak_rss_bytes = Column(Float, nullable=True)
+
+
+class MatchSlot(Base):
+    __tablename__ = "match_slots"
+    id = Column(Integer, primary_key=True)
+    token = Column(String(36), nullable=True)
+    lease_until = Column(DateTime, nullable=True)
+
+
+class MatchScoreHistory(Base):
+    __tablename__ = "match_score_history"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    opportunity_id = Column(Integer, ForeignKey("opportunities.id"), nullable=False)
+    score = Column(Float, nullable=True)
+    reasons = Column(JSON, nullable=True)
+    versions = Column(JSON, nullable=True)
+    recorded_at = Column(DateTime, nullable=False, default=utcnow)
 
 
 class Document(Base):
@@ -232,6 +294,23 @@ class AlertPrefs(Base):
     user = relationship("User", back_populates="alert_prefs")
 
 
+class SyncCursor(Base):
+    """Progreso compartido por dataset; los resultados de corridas siguen por usuario."""
+    __tablename__ = "sync_cursors"
+    source = Column(String(60), primary_key=True)
+    dataset_id = Column(String(40), nullable=False)
+    cursor_time = Column(DateTime, nullable=True)
+    cursor_id = Column(String(255), nullable=True)
+    high_watermark = Column(DateTime, nullable=True)
+    mode = Column(String(24), nullable=False, default="incremental")
+    status = Column(String(24), nullable=False, default="idle")
+    last_success_at = Column(DateTime, nullable=True)
+    processed = Column(Integer, nullable=False, default=0)
+    errors = Column(Integer, nullable=False, default=0)
+    lease_token = Column(String(36), nullable=True)
+    lease_until = Column(DateTime, nullable=True)
+
+
 class SyncRun(Base):
     """Registro de cada ingesta de datos (auditoría y deduplicación)."""
     __tablename__ = "sync_runs"
@@ -315,3 +394,177 @@ class ContactMessage(Base):
     mensaje = Column(Text)
     atendido = Column(Boolean, default=False)
     created_at = Column(DateTime, default=utcnow)
+
+# Registra la invalidación para todos los flujos ORM (API, ingesta y workers).
+from app.services.match_versions import install_version_events
+install_version_events()
+
+
+class CompatibilityEvidenceProfile(Base):
+    """Private, append-only progressive evidence snapshots. No organizational sharing."""
+    __tablename__ = 'compatibility_evidence_profiles'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    payload = Column(JSON, nullable=False)
+    version = Column(String(64), nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+
+class CompatibilityShadowRun(Base):
+    __tablename__ = 'compatibility_shadow_runs'
+    id = Column(String(36), primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    state = Column(String(24), nullable=False, default='PENDING')
+    snapshot = Column(JSON, nullable=False)
+    model_version = Column(String(64), nullable=False)
+    cursor = Column(Integer, nullable=False, default=0)
+    lease_token = Column(String(36), nullable=True)
+    lease_until = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    finished_at = Column(DateTime, nullable=True)
+    error = Column(String(120), nullable=True)
+
+
+class CompatibilityShadowResult(Base):
+    __tablename__ = 'compatibility_shadow_results'
+    __table_args__ = (UniqueConstraint('run_id','opportunity_id',name='uq_compatibility_shadow_result'),)
+    id = Column(Integer, primary_key=True)
+    run_id = Column(String(36), ForeignKey('compatibility_shadow_runs.id'), nullable=False, index=True)
+    opportunity_id = Column(Integer, ForeignKey('opportunities.id'), nullable=False)
+    legacy_score = Column(Float, nullable=True)
+    legacy_versions = Column(JSON, nullable=False)
+    result = Column(JSON, nullable=False)
+    duration_ms = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+
+class EvaluationEnvironmentIdentity(Base):
+    __tablename__ = 'evaluation_environment_identities'
+    id = Column(String(36), primary_key=True)
+    fingerprint = Column(String(64), nullable=False, unique=True)
+    purpose = Column(String(32), nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+
+class EvaluationCampaign(Base):
+    __tablename__ = 'evaluation_campaigns'
+    id = Column(String(36), primary_key=True)
+    owner_user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    name = Column(String(160), nullable=False)
+    state = Column(String(24), nullable=False, default='PREPARING')
+    data_scope = Column(String(24), nullable=False)
+    config = Column(JSON, nullable=False)
+    universe = Column(JSON, nullable=False)
+    selection = Column(JSON, nullable=True)
+    cursor = Column(Integer, nullable=False, default=0)
+    lease_token = Column(String(36), nullable=True)
+    lease_until = Column(DateTime, nullable=True)
+    semantic_disabled_at = Column(DateTime, nullable=True)
+    external_calls = Column(Integer, nullable=False, default=0)
+    reserved_cost = Column(Float, nullable=False, default=0.)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    closed_at = Column(DateTime, nullable=True)
+
+
+class EvaluationSample(Base):
+    __tablename__ = 'evaluation_samples'
+    __table_args__ = (UniqueConstraint('campaign_id','pair_key',name='uq_evaluation_sample_pair'),)
+    id = Column(String(36), primary_key=True)
+    campaign_id = Column(String(36), ForeignKey('evaluation_campaigns.id'), nullable=False, index=True)
+    pair_key = Column(String(64), nullable=False)
+    process_key = Column(String(255), nullable=False)
+    snapshot = Column(JSON, nullable=False)
+    stratum = Column(JSON, nullable=False)
+    inclusion_probability = Column(Float, nullable=False)
+    split = Column(String(20), nullable=False)
+
+
+class EvaluationAssignment(Base):
+    __tablename__ = 'evaluation_assignments'
+    __table_args__ = (UniqueConstraint('sample_id','evaluator_user_id',name='uq_evaluation_assignment'),)
+    id = Column(String(36), primary_key=True)
+    sample_id = Column(String(36), ForeignKey('evaluation_samples.id'), nullable=False, index=True)
+    evaluator_user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    kind = Column(String(20), nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+
+class EvaluationJudgment(Base):
+    __tablename__ = 'evaluation_judgments'
+    id = Column(String(36), primary_key=True)
+    assignment_id = Column(String(36), ForeignKey('evaluation_assignments.id'), nullable=False, unique=True)
+    payload = Column(JSON, nullable=False)
+    criteria_version = Column(String(64), nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+
+class EvaluationAdjudication(Base):
+    __tablename__ = 'evaluation_adjudications'
+    id = Column(String(36), primary_key=True)
+    sample_id = Column(String(36), ForeignKey('evaluation_samples.id'), nullable=False, unique=True)
+    assignment_id = Column(String(36), ForeignKey('evaluation_assignments.id'), nullable=False, unique=True)
+    payload = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+
+class EvaluationReport(Base):
+    __tablename__ = 'evaluation_reports'
+    id = Column(String(36), primary_key=True)
+    campaign_id = Column(String(36), ForeignKey('evaluation_campaigns.id'), nullable=False, unique=True)
+    payload = Column(JSON, nullable=False)
+    version = Column(String(64), nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+
+class EvaluationEmbedding(Base):
+    __tablename__ = 'evaluation_embeddings'
+    __table_args__ = (UniqueConstraint('owner_user_id','cache_key',name='uq_evaluation_embedding_private'),)
+    id = Column(String(36), primary_key=True)
+    owner_user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    campaign_id = Column(String(36), ForeignKey('evaluation_campaigns.id'), nullable=False, index=True)
+    cache_key = Column(String(64), nullable=False)
+    text_hash = Column(String(64), nullable=False)
+    model = Column(String(80), nullable=False)
+    dimensions = Column(Integer, nullable=False)
+    version = Column(String(64), nullable=False)
+    state = Column(String(24), nullable=False)
+    vector = Column(JSON, nullable=True)
+    usage_tokens = Column(Integer, nullable=True)
+    estimated_cost = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+
+
+class EvaluationExposure(Base):
+    __tablename__ = 'evaluation_exposures'
+    __table_args__ = (UniqueConstraint('user_id','pair_key',name='uq_evaluation_exposure'),)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    pair_key = Column(String(64), nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+
+class EvaluationDataGrant(Base):
+    __tablename__ = 'evaluation_data_grants'
+    id = Column(String(36), primary_key=True)
+    owner_user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
+    administrator_user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    run_id = Column(String(36), ForeignKey('compatibility_shadow_runs.id'), nullable=False)
+    state = Column(String(16), nullable=False)
+    payload = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+
+
+# Evaluation evidence/report history is append-only through the ORM as well as API.
+from sqlalchemy import event, inspect as sa_inspect
+from sqlalchemy.orm import Session as OrmSession
+
+@event.listens_for(OrmSession,'before_flush')
+def _evaluation_history_immutable(session,context,instances):
+    for obj in session.dirty:
+        if isinstance(obj,(EvaluationJudgment,EvaluationAdjudication,EvaluationReport,EvaluationExposure)) and session.is_modified(obj):
+            raise ValueError('Sealed evaluation history cannot be modified')
+        if isinstance(obj,EvaluationDataGrant) and any(sa_inspect(obj).attrs[k].history.has_changes() for k in ('owner_user_id','administrator_user_id','run_id','payload','expires_at')):
+            raise ValueError('Authorization provenance immutable; revoke and create a new grant')

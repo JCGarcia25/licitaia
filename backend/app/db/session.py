@@ -39,7 +39,9 @@ def init_db() -> None:
     """Crea el esquema (equivalente a la primera migración; en producción usar Alembic)."""
     from app.db import models  # noqa: F401  (registro de modelos)
 
-    Base.metadata.create_all(bind=engine)
+    # Evaluation 2.1 schema is migration-only: API startup must not apply it.
+    startup_tables=[t for t in Base.metadata.tables.values() if not t.name.startswith('evaluation_')]
+    Base.metadata.create_all(bind=engine,tables=startup_tables)
     # Older deployments may have been created with migration 0001 before the
     # SaaS/SECOP fields were added. Alembic's create_all does not alter existing
     # tables, so add missing nullable/defaulted columns at startup as a safe
@@ -48,6 +50,8 @@ def init_db() -> None:
     inspector = inspect(engine)
     with engine.begin() as conn:
         for table in Base.metadata.sorted_tables:
+            if table.name.startswith('evaluation_'):
+                continue
             if table.name not in inspector.get_table_names():
                 continue
             existing = {c["name"] for c in inspector.get_columns(table.name)}

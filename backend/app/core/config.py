@@ -2,6 +2,7 @@
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings
+from pydantic import Field
 
 
 class Settings(BaseSettings):
@@ -35,6 +36,33 @@ class Settings(BaseSettings):
     # --- Inteligencia artificial (proveedor configurable) ---
     embedding_provider: str = "fake"  # fake | openai
     embedding_dim: int = 768
+    match_batch_size: int = Field(default=200, ge=1, le=1000)
+    match_global_concurrency: int = Field(default=2, ge=1, le=16)
+    match_lease_seconds: int = Field(default=300, ge=10, le=3600)
+    match_max_retries: int = Field(default=3, ge=1, le=10)
+    match_algorithm_version: str = "heuristic-v1-phase12"
+    compatibility_v2_shadow_enabled: bool = False
+    compatibility_v2_sample_limit: int = Field(default=20, ge=1, le=100)
+    compatibility_v2_batch_size: int = Field(default=5, ge=1, le=20)
+    compatibility_v2_lease_seconds: int = Field(default=120, ge=10, le=600)
+    compatibility_v2_affinity_weights: tuple[float,float,float] = (.5,.3,.2)
+    compatibility_v2_hierarchy_weights: tuple[float,float,float,float] = (1.,.7,.4,.15)
+    compatibility_v2_min_coverage: float = Field(default=.25,ge=0,le=1)
+    compatibility_v2_lexical_gate: float = Field(default=.20,ge=0,le=1)
+    compatibility_v2_semantic_gate: float = Field(default=.45,ge=0,le=1)
+    compatibility_v2_weights: dict[str, float] = Field(default_factory=lambda: {
+        'affinity':25., 'experience':20., 'financial':15., 'technical':15.,
+        'geography':10., 'amount':10., 'preferences':5.})
+    evaluation_enabled: bool = False
+    evaluation_api_origin: str = "http://localhost:8000"
+    evaluation_dev_targets: list[dict[str,str]] = Field(default_factory=list)
+    evaluation_max_universe: int = Field(default=500,ge=1,le=1000)
+    evaluation_max_sample: int = Field(default=100,ge=1,le=200)
+    evaluation_retention_days: int = Field(default=30,ge=1,le=90)
+    evaluation_semantic_enabled: bool = False
+    evaluation_external_max_calls: int = Field(default=0,ge=0,le=200)
+    evaluation_embedding_usd_per_million_tokens: float|None = Field(default=None,ge=0)
+    evaluation_max_cost_usd: float = Field(default=.25,gt=0,le=10)
     llm_provider: str = "heuristic"  # heuristic | openai
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"

@@ -1,0 +1,66 @@
+# Explicit opt-in overlay. Not referenced by existing deployment workflows.
+# Use only after the second operational authorization; see DEV_RUNBOOK.
+x-rc-environment: &rc-environment
+  ENVIRONMENT: development
+  DATABASE_URL: ${DATABASE_URL:?Explicit isolated DEV PostgreSQL URL required}
+  REDIS_URL: ${REDIS_URL:?Explicit isolated DEV Redis URL required}
+  SECRET_KEY: ${SECRET_KEY:?DEV installation secret required}
+  CORS_ORIGINS: ${CORS_ORIGINS:?DEV frontend origin required}
+  FRONTEND_URL: ${FRONTEND_URL:?DEV frontend origin required}
+  EVALUATION_API_ORIGIN: ${EVALUATION_API_ORIGIN:?DEV API origin required}
+  ALLOW_DEMO_SEED: "false"
+  DEBUG_ENDPOINT_ENABLED: "false"
+  COMPATIBILITY_V2_SHADOW_ENABLED: ${COMPATIBILITY_V2_SHADOW_ENABLED:-false}
+  EVALUATION_ENABLED: ${EVALUATION_ENABLED:-false}
+  EVALUATION_SEMANTIC_ENABLED: "false"
+  EVALUATION_EXTERNAL_MAX_CALLS: "0"
+  EMBEDDING_PROVIDER: fake
+  MATCH_GLOBAL_CONCURRENCY: ${MATCH_GLOBAL_CONCURRENCY:-2}
+  MATCH_BATCH_SIZE: ${MATCH_BATCH_SIZE:-200}
+
+services:
+  api:
+    env_file: !override
+      - ${RC_ENV_FILE:?Explicit protected DEV env file required}
+    environment: *rc-environment
+  migrate:
+    env_file: !override
+      - ${RC_ENV_FILE:?Explicit protected DEV env file required}
+    environment: *rc-environment
+  worker:
+    env_file: !override
+      - ${RC_ENV_FILE:?Explicit protected DEV env file required}
+    environment: *rc-environment
+    command: celery -A app.workers.celery_app.celery_app worker -Q celery --concurrency=1 --loglevel=info --hostname=rc-default@%h
+  beat:
+    env_file: !override
+      - ${RC_ENV_FILE:?Explicit protected DEV env file required}
+    environment: *rc-environment
+    profiles: [scheduler]
+  worker-matches:
+    build: ./backend
+    env_file: !override
+      - ${RC_ENV_FILE:?Explicit protected DEV env file required}
+    environment: *rc-environment
+    command: celery -A app.workers.celery_app.celery_app worker -Q matches --concurrency=2 --loglevel=info --hostname=rc-matches@%h
+    volumes:
+      - licitaia_storage:/app/storage
+    restart: unless-stopped
+  worker-shadow:
+    build: ./backend
+    profiles: [experiments]
+    env_file: !override
+      - ${RC_ENV_FILE:?Explicit protected DEV env file required}
+    environment: *rc-environment
+    command: celery -A app.workers.celery_app.celery_app worker -Q compatibility-shadow --concurrency=1 --loglevel=info --hostname=rc-shadow@%h
+    volumes:
+      - licitaia_storage:/app/storage
+    restart: unless-stopped
+  worker-evaluation:
+    build: ./backend
+    profiles: [experiments]
+    env_file: !override
+      - ${RC_ENV_FILE:?Explicit protected DEV env file required}
+    environment: *rc-environment
+    command: celery -A app.workers.celery_app.celery_app worker -Q evaluation --concurrency=1 --loglevel=info --hostname=rc-evaluation@%h
+    restart: unless-stopped

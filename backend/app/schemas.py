@@ -159,3 +159,40 @@ class AdminUserCreateIn(BaseModel):
 class AdminLicenseUpdateIn(BaseModel):
     plan: str = Field(pattern="^(explorador|profesional|corporativo)$")
     status: str = Field(pattern="^(activa|pendiente_pago|cancelada)$")
+
+
+class MatchCoverageOut(BaseModel):
+    candidate_total: int
+    current_scores: int
+    pending_scores: int
+    stale_scores: int
+    failed_scores: int
+    excluded_total: int
+    coverage_percent: Optional[float]
+    status: str
+    measured_at: datetime
+    criterion: str
+
+
+class MatchJobOut(BaseModel):
+    id: str
+    state: str
+    cursor_id: int
+    max_id: int
+    candidate_total: int
+    excluded_total: int
+    examined: int
+    scored: int
+    skipped: int
+    failed: int
+    batches: int
+    retries: int
+    error: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    finished_at: Optional[datetime]
+    last_batch_seconds: Optional[float]
+    processing_seconds: float
+    last_batch_queries: Optional[int]
+    peak_rss_bytes: Optional[float]
+    coverage: MatchCoverageOut
