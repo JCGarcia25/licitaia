@@ -99,7 +99,7 @@ with create_engine(s.database_url).connect() as c:
     if row:
         assert row.purpose=='isolated-development'
         identity=row.id
-print(json.dumps([dict(database=make_url(s.database_url).set(password=None).render_as_string(hide_password=False),broker=make_url(s.redis_url).set(password=None).render_as_string(hide_password=False),api_origin='https://dev.mysecop.co',identity=identity)]))
+print(json.dumps([dict(database=make_url(s.database_url)._replace(password=None).render_as_string(hide_password=False),broker=make_url(s.redis_url)._replace(password=None).render_as_string(hide_password=False),api_origin='https://dev.mysecop.co',identity=identity)]))
 PY
   python3 - "$backup/tvec-target.json" <<'PY'
 import json,sys
