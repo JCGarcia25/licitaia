@@ -46,20 +46,25 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let timer: number | undefined;
+    let pending = 0;
     const start = () => {
-      setRequests((value) => value + 1);
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => setShowWork(true), 180);
+      pending += 1;
+      setRequests(pending);
+      // Wait four seconds from the start of continuous work. Concurrent
+      // requests must not postpone the indicator for an already slow task.
+      if (pending === 1) {
+        timer = window.setTimeout(() => {
+          if (pending > 0) setShowWork(true);
+        }, 4000);
+      }
     };
     const end = () => {
-      setRequests((value) => {
-        const next = Math.max(0, value - 1);
-        if (next === 0) {
-          window.clearTimeout(timer);
-          setShowWork(false);
-        }
-        return next;
-      });
+      pending = Math.max(0, pending - 1);
+      setRequests(pending);
+      if (pending === 0) {
+        window.clearTimeout(timer);
+        setShowWork(false);
+      }
     };
     window.addEventListener("mysecop:request-start", start);
     window.addEventListener("mysecop:request-end", end);
