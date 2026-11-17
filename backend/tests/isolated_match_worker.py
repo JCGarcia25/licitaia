@@ -50,3 +50,16 @@ def evaluation_calculate(*args,**kwargs):
     return original_evaluation(*args,**kwargs)
 evaluation_calculate._isolated_original=original_evaluation
 evaluation_platform.calculate_base=evaluation_calculate
+
+# Opt-in TVEC source stub. This file already enforces a disposable PostgreSQL
+# name and owned local control directory before any worker code can execute.
+if os.environ.get('MYSECOP_TVEC_FAKE_SOURCE')=='1':
+    from app.services import tvec_ingest
+    from test_tvec import FakeClient
+    class IsolatedTvecClient(FakeClient):
+        def page(self,after=None):
+            if flags().get('tvec_hold'):
+                control.with_suffix('.entered').write_text('entered')
+                while flags().get('tvec_hold'):time.sleep(.05)
+            return super().page(after)
+    tvec_ingest.TvecClient=IsolatedTvecClient

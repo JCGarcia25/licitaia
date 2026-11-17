@@ -7,6 +7,7 @@ jobs:
   deploy:
     uses: ./.github/workflows/deploy-reusable.yml
     with:
+      enable_tvec_dev: true
       environment_name: development
       domain: dev.mysecop.co
       app_dir: /home/administrator/licitaia-development

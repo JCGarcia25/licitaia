@@ -274,3 +274,22 @@ def _process_evaluation_campaign(identifier):
 
 if celery_app is not None:
     process_evaluation_campaign=celery_app.task(name='app.workers.tasks.process_evaluation_campaign',acks_late=True,reject_on_worker_lost=True)(_process_evaluation_campaign)
+
+
+if celery_app is not None:
+    @celery_app.task(bind=True,name='app.workers.tasks.sync_tvec_orders',acks_late=True,
+                     reject_on_worker_lost=True,max_retries=3,queue='tvec')
+    def sync_tvec_orders(self,identifier):
+        from app.services.tvec_ingest import process_run
+        from app.services.tvec_guard import configuration
+        from app.services.evaluation_guard import EnvironmentDenied,broker_identity
+        from app.db.session import SessionLocal
+        try:
+            settings,_,_=configuration(ingestion=True)
+            if broker_identity(celery_app.conf.broker_url)!=broker_identity(settings.redis_url):
+                return 'ENVIRONMENT_DENIED'
+            with SessionLocal() as db:result=process_run(db,identifier)
+        except EnvironmentDenied:return 'ENVIRONMENT_DENIED'
+        if result in {'BUSY','FAILED'}:
+            raise self.retry(countdown=settings.tvec_lease_seconds if result=='BUSY' else 10)
+        return result

@@ -29,7 +29,7 @@ try:
         broker_transport_options={'socket_connect_timeout': 0.5, 'socket_timeout': 0.5},
         task_publish_retry=False,
         worker_prefetch_multiplier=1,
-        task_queues=(Queue('celery'), Queue('matches'), Queue('compatibility-shadow'), Queue('evaluation')),
+        task_queues=(Queue('celery'), Queue('matches'), Queue('compatibility-shadow'), Queue('evaluation'), Queue('tvec')),
         task_routes={'app.workers.tasks.process_evaluation_campaign': {'queue': 'evaluation'},'app.workers.tasks.process_compatibility_shadow': {'queue': 'compatibility-shadow'},
                      'app.workers.tasks.process_match_batch': {'queue': 'matches'},
                      'app.workers.tasks.rescore_all_task': {'queue': 'matches'}},

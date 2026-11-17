@@ -1,0 +1,34 @@
+# Opt-in only. Never referenced by the automatic develop/staging/main pipelines.
+# Requires modern Compose with !override support; validate config --quiet first.
+x-tvec-env: &tvec-env
+  ENVIRONMENT: development
+  DATABASE_URL: ${DATABASE_URL:?Reviewed isolated DEV PostgreSQL required}
+  REDIS_URL: ${REDIS_URL:?Reviewed isolated DEV Redis required}
+  SECRET_KEY: ${SECRET_KEY:?Protected DEV installation secret required}
+  TVEC_API_ORIGIN: ${TVEC_API_ORIGIN:?Exact DEV API origin required}
+  TVEC_ENABLED: ${TVEC_ENABLED:-false}
+  TVEC_INGEST_ENABLED: ${TVEC_INGEST_ENABLED:-false}
+  TVEC_PAGE_SIZE: ${TVEC_PAGE_SIZE:-100}
+  TVEC_MAX_PAGES: ${TVEC_MAX_PAGES:-2}
+services:
+  api:
+    env_file: !override
+      - ${TVEC_DEV_ENV_FILE:?Protected DEV env file required}
+    environment: *tvec-env
+  migrate:
+    env_file: !override
+      - ${TVEC_DEV_ENV_FILE:?Protected DEV env file required}
+    environment: *tvec-env
+  worker:
+    env_file: !override
+      - ${TVEC_DEV_ENV_FILE:?Protected DEV env file required}
+    environment: *tvec-env
+    command: celery -A app.workers.celery_app.celery_app worker -Q celery,matches,compatibility-shadow,evaluation --concurrency=2 --loglevel=info
+  tvec-worker:
+    profiles: [tvec]
+    build: ./backend
+    env_file: !override
+      - ${TVEC_DEV_ENV_FILE:?Protected DEV env file required}
+    environment: *tvec-env
+    command: celery -A app.workers.celery_app.celery_app worker -Q tvec --concurrency=1 --prefetch-multiplier=1 --loglevel=info
+    restart: unless-stopped

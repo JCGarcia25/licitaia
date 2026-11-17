@@ -10,7 +10,7 @@ Notas de diseño:
 from datetime import date, datetime, timezone
 
 from sqlalchemy import (
-    JSON, Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint,
+    JSON, Boolean, Column, Date, DateTime, Float, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 
@@ -568,3 +568,81 @@ def _evaluation_history_immutable(session,context,instances):
             raise ValueError('Sealed evaluation history cannot be modified')
         if isinstance(obj,EvaluationDataGrant) and any(sa_inspect(obj).attrs[k].history.has_changes() for k in ('owner_user_id','administrator_user_id','run_id','payload','expires_at')):
             raise ValueError('Authorization provenance immutable; revoke and create a new grant')
+
+
+class TvecPurchaseOrder(Base):
+    """Public purchase history. Intentionally no relationship to Opportunity."""
+    __tablename__ = 'tvec_purchase_orders'
+    id = Column(Integer, primary_key=True)
+    official_id = Column(String(255), nullable=False, unique=True)
+    source_row_id = Column(String(255), nullable=False)
+    buyer = Column(Text)
+    buyer_nit = Column(String(100))
+    supplier = Column(Text)
+    supplier_nit = Column(String(100))
+    description = Column(Text)
+    instrument = Column(Text, index=True)
+    category = Column(Text)
+    department = Column(String(255), index=True)
+    city = Column(String(255))
+    amount = Column(Numeric(30, 6))
+    currency = Column(String(3))
+    issued_at = Column(DateTime, index=True)
+    expires_at = Column(DateTime)
+    initial_request_at = Column(DateTime)
+    status = Column(String(255), index=True)
+    official_url = Column(Text)
+    raw_json = Column(JSON, nullable=False)
+    version = Column(String(64), nullable=False)
+    seen_cycle = Column(String(36), nullable=False, index=True)
+    synced_at = Column(DateTime, nullable=False)
+
+
+class TvecOrderRevision(Base):
+    __tablename__ = 'tvec_order_revisions'
+    id = Column(Integer, primary_key=True)
+    order_id = Column(Integer, ForeignKey('tvec_purchase_orders.id'), nullable=False, index=True)
+    version = Column(String(64), nullable=False)
+    payload = Column(JSON, nullable=False)
+    recorded_at = Column(DateTime, nullable=False)
+
+
+class TvecSourceMetadata(Base):
+    __tablename__ = 'tvec_source_metadata'
+    dataset_id = Column(String(20), primary_key=True)
+    schema_hash = Column(String(64), nullable=False)
+    columns = Column(JSON, nullable=False)
+    source_updated_at = Column(DateTime)
+    checked_at = Column(DateTime, nullable=False)
+    declared_frequency = Column(String(80))
+    source_count = Column(Integer)
+
+
+class TvecSyncState(Base):
+    __tablename__ = 'tvec_sync_states'
+    dataset_id = Column(String(20), primary_key=True)
+    cursor_id = Column(String(255))
+    cycle_id = Column(String(36), nullable=False)
+    cycle_rows = Column(Integer, nullable=False, default=0)
+    completed_cycles = Column(Integer, nullable=False, default=0)
+    source_generation = Column(String(64))
+    lease_token = Column(String(36))
+    lease_until = Column(DateTime)
+    status = Column(String(24), nullable=False, default='IDLE')
+    last_complete_at = Column(DateTime)
+    error_count = Column(Integer, nullable=False, default=0)
+
+
+class TvecSyncRun(Base):
+    __tablename__ = 'tvec_sync_runs'
+    id = Column(String(36), primary_key=True)
+    state = Column(String(24), nullable=False)
+    max_pages = Column(Integer, nullable=False)
+    pages = Column(Integer, nullable=False, default=0)
+    processed = Column(Integer, nullable=False, default=0)
+    inserted = Column(Integer, nullable=False, default=0)
+    updated = Column(Integer, nullable=False, default=0)
+    unchanged = Column(Integer, nullable=False, default=0)
+    error_type = Column(String(80))
+    created_at = Column(DateTime, nullable=False)
+    finished_at = Column(DateTime)

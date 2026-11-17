@@ -54,6 +54,13 @@ class Settings(BaseSettings):
         'affinity':25., 'experience':20., 'financial':15., 'technical':15.,
         'geography':10., 'amount':10., 'preferences':5.})
     evaluation_enabled: bool = False
+    tvec_enabled: bool = False
+    tvec_ingest_enabled: bool = False
+    tvec_dev_targets: list[dict[str, str]] = Field(default_factory=list)
+    tvec_api_origin: str = "http://localhost:8000"
+    tvec_page_size: int = Field(default=100, ge=1, le=200)
+    tvec_max_pages: int = Field(default=2, ge=1, le=5)
+    tvec_lease_seconds: int = Field(default=180, ge=60, le=600)
     evaluation_api_origin: str = "http://localhost:8000"
     evaluation_dev_targets: list[dict[str,str]] = Field(default_factory=list)
     evaluation_max_universe: int = Field(default=500,ge=1,le=1000)

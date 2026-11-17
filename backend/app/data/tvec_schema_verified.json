@@ -1,0 +1,185 @@
+{
+  "dataset_id": "rgxm-mmea",
+  "name": "Tienda Virtual del Estado Colombiano - Consolidado",
+  "source_url": "https://www.datos.gov.co/api/views/rgxm-mmea.json",
+  "verified_on": "2026-11-16",
+  "rows_updated_at": 1793177887,
+  "declared_frequency": "Diaria",
+  "columns": [
+    {
+      "fieldName": "a_o",
+      "name": "Año",
+      "dataTypeName": "number",
+      "description": "Año de la Orden de compra"
+    },
+    {
+      "fieldName": "identificador_de_la_orden",
+      "name": "Identificador de la Orden",
+      "dataTypeName": "text",
+      "description": "Identificador de la Orden de Compra"
+    },
+    {
+      "fieldName": "rama_de_la_entidad",
+      "name": "Rama de la Entidad",
+      "dataTypeName": "text",
+      "description": "Rama del estado de la Entidad que genera la Orden de Compra"
+    },
+    {
+      "fieldName": "orden_de_la_entidad",
+      "name": "Orden de la Entidad",
+      "dataTypeName": "text",
+      "description": "Orden territorial de la Entidad"
+    },
+    {
+      "fieldName": "sector_de_la_entidad",
+      "name": "Sector de la Entidad",
+      "dataTypeName": "text",
+      "description": "Sector Estatal de la Entidad que genera la Orden de Compra"
+    },
+    {
+      "fieldName": "entidad",
+      "name": "Entidad",
+      "dataTypeName": "text",
+      "description": "Entidad Pública que genera la Orden de compra"
+    },
+    {
+      "fieldName": "solicitante",
+      "name": "Solicitante",
+      "dataTypeName": "text",
+      "description": "Persona que hace la solicitud a nombre de la Entidad"
+    },
+    {
+      "fieldName": "fecha",
+      "name": "Fecha",
+      "dataTypeName": "calendar_date",
+      "description": "Fecha de la Orden"
+    },
+    {
+      "fieldName": "fecha_vence",
+      "name": "Fecha vence",
+      "dataTypeName": "calendar_date",
+      "description": "Fecha en la que se vence la orden de compra"
+    },
+    {
+      "fieldName": "proveedor",
+      "name": "Proveedor",
+      "dataTypeName": "text",
+      "description": "Proveedor al cual se hace la solicitud de compra pública"
+    },
+    {
+      "fieldName": "estado",
+      "name": "Estado",
+      "dataTypeName": "text",
+      "description": "Estado de la Orden "
+    },
+    {
+      "fieldName": "solicitud",
+      "name": "Solicitud",
+      "dataTypeName": "number",
+      "description": "Identificador de la Solicitud de Compra"
+    },
+    {
+      "fieldName": "items",
+      "name": "Items",
+      "dataTypeName": "text",
+      "description": "Items relacionados en la orden de compra"
+    },
+    {
+      "fieldName": "total",
+      "name": "Total",
+      "dataTypeName": "number",
+      "description": "Valor total de la Orden de compra"
+    },
+    {
+      "fieldName": "agregacion",
+      "name": "Agregacion",
+      "dataTypeName": "text",
+      "description": "Agregacion a la que corresponde la Orden de compra"
+    },
+    {
+      "fieldName": "ciudad",
+      "name": "Ciudad",
+      "dataTypeName": "text",
+      "description": "Ciudad registrada en la orden de compra"
+    },
+    {
+      "fieldName": "entidad_obigada",
+      "name": "Entidad Obigada",
+      "dataTypeName": "text",
+      "description": "Determina si la entidad esta obligada a hacer unso de la Tienda Virtual del Estado Colombiano"
+    },
+    {
+      "fieldName": "espostconflicto",
+      "name": "EsPostconflicto",
+      "dataTypeName": "text",
+      "description": "Determina si la orden de compra corresponde con procesos de compra pública asociados a eventos de postconflicto en el marco del proceso de paz "
+    },
+    {
+      "fieldName": "nit_proveedor",
+      "name": "NIT Proveedor",
+      "dataTypeName": "text",
+      "description": "NIT del proveedor"
+    },
+    {
+      "fieldName": "actividad_economica_proveedor",
+      "name": "Actividad Economica Proveedor",
+      "dataTypeName": "text",
+      "description": "Descreibe la actividad economica del proveedor al que se adjudicó la orden de compra"
+    },
+    {
+      "fieldName": "nit_entidad",
+      "name": "NIT Entidad",
+      "dataTypeName": "text",
+      "description": "El identificador NIT de la entidad"
+    },
+    {
+      "fieldName": "id_entidad",
+      "name": "ID Entidad",
+      "dataTypeName": "text",
+      "description": "ID de la entidad en la plataforma Coupa"
+    },
+    {
+      "fieldName": "departamento",
+      "name": "Departamento",
+      "dataTypeName": "text",
+      "description": "Departamento de la entidad dueña de la orden de compra"
+    },
+    {
+      "fieldName": "items_solicitud_inicial",
+      "name": "Items solicitud inicial",
+      "dataTypeName": "text",
+      "description": "Items solicitados desde la solicitud inicial"
+    },
+    {
+      "fieldName": "total_solicitud_inicial",
+      "name": "Total solicitud inicial",
+      "dataTypeName": "number",
+      "description": "Total estimado en la solicitud inicial"
+    },
+    {
+      "fieldName": "fecha_creacion_solicitud_inicial",
+      "name": "Fecha creacion solicitud inicial",
+      "dataTypeName": "calendar_date",
+      "description": "Fecha de creación de la solicitud inicial"
+    },
+    {
+      "fieldName": "destinacion_gasto",
+      "name": "Destinacion_Gasto",
+      "dataTypeName": "text",
+      "description": "Categorización del origen del gasto de la solicitud inicial"
+    },
+    {
+      "fieldName": "origen_recursos",
+      "name": "Origen_Recursos",
+      "dataTypeName": "text",
+      "description": "Origen de los recursos de la orgen de compra"
+    }
+  ],
+  "observation_unit": "one_purchase_order",
+  "aggregate": {
+    "rows": "169444",
+    "orders": "169444",
+    "max_date": "2026-10-26T00:00:00.000",
+    "min_date": "2013-10-17T00:00:00.000"
+  }
+}

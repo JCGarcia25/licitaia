@@ -111,7 +111,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="mx-3 mt-4 rounded-lg border border-base bg-[var(--bg)] p-3 text-[11px] leading-relaxed text-muted">
-            Fuente de datos: SECOP II (datos.gov.co). La fuente oficial es siempre la referencia definitiva.
+            Fuentes: SECOP y Tienda Virtual (datos.gov.co). Consulta siempre el registro oficial. Las compras TVEC no son convocatorias abiertas.
           </div>
         </aside>
 
