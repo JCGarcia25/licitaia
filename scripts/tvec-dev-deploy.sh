@@ -101,11 +101,17 @@ with create_engine(s.database_url).connect() as c:
         identity=row.id
 print(json.dumps([dict(database=make_url(s.database_url)._replace(password=None).render_as_string(hide_password=False),broker=make_url(s.redis_url)._replace(password=None).render_as_string(hide_password=False),api_origin='https://dev.mysecop.co',identity=identity)]))
 PY
-  python3 - "$backup/tvec-target.json" <<'PY'
+  docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}} {{end}}' "$api" > "$backup/proxy-gateways.txt"
+  python3 - "$backup/tvec-target.json" "$backup/proxy-gateways.txt" <<'PY'
 import json,sys
 from pathlib import Path
 target=json.loads(Path(sys.argv[1]).read_text())
-updates={'TVEC_ENABLED':'true','TVEC_INGEST_ENABLED':'false','TVEC_API_ORIGIN':'https://dev.mysecop.co','TVEC_DEV_TARGETS':"'"+json.dumps(target,separators=(',',':'))+"'"}
+import ipaddress
+gateways=[str(ipaddress.ip_address(g)) for g in Path(sys.argv[2]).read_text().split()]
+assert gateways
+# Trust only the host gateway of this already-verified private DEV network.
+proxy_ips=','.join(['127.0.0.1','::1']+gateways)
+updates={'FORWARDED_ALLOW_IPS':proxy_ips,'TVEC_ENABLED':'true','TVEC_INGEST_ENABLED':'false','TVEC_API_ORIGIN':'https://dev.mysecop.co','TVEC_DEV_TARGETS':"'"+json.dumps(target,separators=(',',':'))+"'"}
 p=Path('.env'); lines=p.read_text().splitlines()
 lines=[line for line in lines if line.split('=',1)[0] not in updates]
 p.write_text('\n'.join(lines+[f'{k}={v}' for k,v in updates.items()])+'\n')
@@ -115,6 +121,34 @@ PY
   "${compose[@]}" up -d --no-deps api worker beat
   "${compose[@]}" exec -T api python scripts/tvec_admin.py --verify-database < /dev/null
   "${compose[@]}" exec -T api python -c 'from app.core.config import get_settings;s=get_settings();assert s.tvec_enabled and not s.tvec_ingest_enabled;print("TVEC DEV enabled; ingestion remains disabled; no sync scheduled")' < /dev/null
+  "${compose[@]}" exec -T api python - <<'PY'
+import json,ssl,time,urllib.request,urllib.error
+import certifi
+from sqlalchemy import select
+from app.db.session import SessionLocal
+from app.db.models import User
+from app.core.security import create_access_token
+from app.routers.admin import SUPERADMIN_EMAIL
+with SessionLocal() as db:
+    email=db.execute(select(User.email).where(User.email==SUPERADMIN_EMAIL,User.is_active.is_(True))).scalar_one()
+# A one-minute token stays in process memory; no account changes or token logging.
+token=create_access_token(email,expires_minutes=1)
+context=ssl.create_default_context(cafile=certifi.where())
+for attempt in range(10):
+    request=urllib.request.Request('https://dev.mysecop.co/api/tvec/orders?limit=1',headers={'Authorization':'Bearer '+token})
+    try:
+        with urllib.request.urlopen(request,context=context,timeout=15) as response:
+            assert response.status==200
+            payload=json.load(response)
+            assert payload["provenance"]["source"]=="TVEC" and len(payload["items"])<=1
+        print('TVEC authenticated HTTPS read verified through DEV proxy; no ingestion or account changes')
+        break
+    except urllib.error.HTTPError as error:
+        if error.code not in {502,503,504} or attempt==9:
+            raise RuntimeError('TVEC HTTPS read failed with status '+str(error.code)) from None
+        time.sleep(2)
+else:raise RuntimeError('TVEC HTTPS read unavailable')
+PY
 else
   exit 2
 fi

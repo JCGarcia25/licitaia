@@ -15,7 +15,10 @@ Ningún respaldo ni credencial se publica en GitHub. Si falla, no migra ni despl
 Después del despliegue estándar y migración aditiva 0015, construye una lista exacta
 de destinos sin contraseñas, registra una identidad aislada (reutiliza una identidad
 existente con igual huella y propósito, sin sobrescribirla), habilita TVEC en DEV y
-verifica el guard con la base real. Mantiene TVEC_INGEST_ENABLED=false, sin crear runs,
+verifica el guard con la base real. Configura como proxies de confianza sólo localhost
+y el gateway exacto de la red Docker de DEV, para conservar el origen HTTPS. Prueba
+una lectura TVEC por HTTPS con un token administrativo de un minuto en memoria,
+sin modificar cuentas ni imprimir tokens o datos de usuarios. Mantiene TVEC_INGEST_ENABLED=false, sin crear runs,
 importar registros ni añadir horarios. Las vistas muestran inicialmente datos vacíos.
 Si falla la activación, restaura la configuración previa y recrea sólo API/worker/beat
 DEV; conserva el esquema aditivo y cualquier identidad registrada para revisión.
