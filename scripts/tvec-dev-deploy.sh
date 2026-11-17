@@ -59,8 +59,8 @@ PY
   # Only this disposable container and its anonymous volume are removed.
   docker run -d --name "$restore" --network none -e POSTGRES_PASSWORD="$(openssl rand -hex 32)" "$(docker inspect -f '{{.Image}}' "$db")" > /dev/null
   ready=false
-  for _ in {1..30}; do
-    if docker exec "$restore" pg_isready -U postgres > /dev/null 2>&1; then ready=true; break; fi
+  for _ in {1..60}; do
+    if docker exec "$restore" pg_isready -h 127.0.0.1 -U postgres > /dev/null 2>&1; then ready=true; break; fi
     sleep 1
   done
   [[ "$ready" == true ]]
