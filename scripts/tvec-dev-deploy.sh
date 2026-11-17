@@ -54,7 +54,7 @@ if getattr(s,'tvec_ingest_enabled',False):
         assert db.query(TvecSyncState).filter(TvecSyncState.lease_until>now()).count()==0
 with create_engine(s.database_url).connect() as c:
     assert c.execute(text('select current_database()')).scalar_one()==u.database
-    assert c.execute(text('select version_num from alembic_version')).scalar_one() in {'0014_evaluation_platform','0015_tvec_orders','0016_tvec_quotations'}
+    assert c.execute(text('select version_num from alembic_version')).scalar_one() in {'0014_evaluation_platform','0015_tvec_orders','0016_tvec_quotations','0017_tvec_full_scan'}
 assert Redis.from_url(s.redis_url).ping()
 print('DEV API, PostgreSQL revision/destination and Redis verified; no active TVEC runs or leases')
 PY

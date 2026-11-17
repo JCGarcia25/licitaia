@@ -668,6 +668,7 @@ class TvecQuotationEvent(Base):
 class TvecQuotationSnapshot(Base):
     __tablename__ = 'tvec_quotation_snapshots'
     source = Column(String(32), primary_key=True)
+    scan_progress = Column(JSON, nullable=True)
     published_snapshot = Column(String(36))
     checked_at = Column(DateTime)
     status = Column(String(16), nullable=False, default='IDLE')

@@ -74,7 +74,7 @@ def kind(title):
     return 'RFQ' if rfq and not rfi else 'RFI' if rfi and not rfq else 'UNKNOWN'
 
 
-def listing(html):
+def listing(html, *, allow_missing_dates=False):
     doc=Document(); doc.feed(html)
     if HEADERS not in doc.rows: raise ValueError('Quotation table schema changed')
     data=[]; seen=set()
@@ -82,7 +82,10 @@ def listing(html):
         if row==HEADERS: continue
         if row and re.fullmatch(r'\d+',row[0]):
             if len(row)!=10 or len(row[0])>32 or row[0] in seen: raise ValueError('Invalid or repeated event')
-            seen.add(row[0]); start,end=date(row[3]),date(row[4])
+            seen.add(row[0])
+            if allow_missing_dates and (not row[3] or not row[4]):
+                start=end=datetime.min
+            else:start,end=date(row[3]),date(row[4])
             complete=start<end and all(row[i] for i in [1,2,5,6])
             if len(row[1])>4000 or len(row[2])>2000 or len(row[6])>2000: raise ValueError('Unexpected source lengths')
             data.append(dict(official_id=row[0],title=row[1],buyer=row[2],instrument=row[6],

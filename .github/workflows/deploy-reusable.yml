@@ -172,7 +172,7 @@ jobs:
           ssh -i "$HOME/.ssh/licitaia_deploy" -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
             "$VPS_USER@$VPS_HOST" "cd /home/administrator/licitaia-development && bash -s -- pilot-100 '$RELEASE_SHA'" < scripts/tvec-dev-deploy.sh
 
-      - name: TVEC DEV bounded quotations refresh
+      - name: TVEC DEV full open-quotation traversal
         if: ${{ inputs.enable_tvec_dev && inputs.environment_name == 'development' }}
         shell: bash
         env:

@@ -140,7 +140,7 @@ def sync_status(db:Session=Depends(get_db)):
 
 @router.get('/quotations')
 def quotations(db:Session=Depends(get_db),q:str=Query('',max_length=200),
-               limit:int=Query(20,ge=1,le=50),offset:int=Query(0,ge=0,le=1000)):
+               limit:int=Query(20,ge=1,le=50),offset:int=Query(0,ge=0,le=100000)):
     from datetime import timedelta
     from app.db.models import TvecQuotationEvent as Event,TvecQuotationSnapshot as Snapshot
     from app.services.tvec_quotations import configured,SOURCE,SOURCE_URL,FRESH_MINUTES
@@ -149,9 +149,10 @@ def quotations(db:Session=Depends(get_db),q:str=Query('',max_length=200),
     except EnvironmentDenied:raise HTTPException(404,'Cotizaciones TVEC no habilitadas')
     instant=now();snapshot=db.get(Snapshot,SOURCE)
     fresh=bool(snapshot and snapshot.checked_at and snapshot.checked_at>=instant-timedelta(minutes=FRESH_MINUTES))
+    progress=snapshot.scan_progress or {} if snapshot else {}
     query=db.query(Event).filter(Event.snapshot_id==snapshot.published_snapshot if snapshot and fresh else False,
         Event.kind=='RFQ',Event.detail_verified.is_(True),Event.status=='Producción',
-        Event.opens_at<=instant,Event.closes_at>instant)
+        Event.opens_at<=instant,Event.closes_at>instant,Event.checked_at>=instant-timedelta(minutes=FRESH_MINUTES))
     if q:
         value=q.replace('\\','\\\\').replace('%','\\%').replace('_','\\_')
         query=query.filter(or_(*[c.ilike('%'+value+'%',escape='\\') for c in [Event.title,Event.buyer,Event.instrument,Event.official_id]]))
@@ -167,7 +168,9 @@ def quotations(db:Session=Depends(get_db),q:str=Query('',max_length=200),
             'refresh_status':snapshot.status if snapshot else 'NOT_SYNCED',
             'scanned_pages':snapshot.scanned_pages if snapshot else 0,'scanned_rows':snapshot.scanned_rows if snapshot else 0,
             'excluded_rfi':snapshot.excluded_rfi if snapshot else 0,'excluded_unknown':snapshot.excluded_unknown if snapshot else 0,
-            'coverage':'BOUNDED_RECENT_PAGES_NOT_EXHAUSTIVE','type_evidence':'Marcador RFQ explícito en título y detalle coincidente; no es un campo estructurado oficial.',
+            'coverage':'OFFICIAL_LISTING_TRAVERSED' if progress.get('published_complete') else 'BOUNDED_RECENT_PAGES_NOT_EXHAUSTIVE',
+            'scan_progress':{'pages':progress.get('next_page',0),'total_pages':progress.get('total_pages'), 'complete':progress.get('complete',False)},
+            'excluded_unavailable':progress.get('published_counts',{}).get('unavailable',0),'type_evidence':'Marcador RFQ explícito en título y detalle coincidente; no es un campo estructurado oficial.',
             'notice':'Consulta pública con actualización diferida. Confirma el plazo y la participación en TVEC; no se garantiza recepción de ofertas en tiempo real.',
             'timezone':'America/Bogota (interpretación de las fechas publicadas sin offset)',
             'freshness_minutes':FRESH_MINUTES}}

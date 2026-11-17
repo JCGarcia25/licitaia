@@ -30,7 +30,9 @@ async def main():
       if state['mode']=='loading':await asyncio.sleep(1)
       items=[dict(official_id='SYN-1',title='RFQ - Servicios sintéticos',buyer='Entidad de prueba',instrument='Instrumento ficticio',opens_at='2026-11-17T13:00:00Z',closes_at='2027-01-01T22:00:00Z',official_url='https://operaciones.colombiacompra.gov.co/detalle-cotizacion/900001',eligibility_note='Verifica la habilitación de tu empresa.',checked_at='2026-11-17T14:00:00Z')]
       if params.get('q',[''])[0]=='NONE':items=[]
-      body=dict(items=items,total=len(items),provenance=dict(checked_at='2026-11-17T14:00:00Z',freshness='REFRESH_PENDING' if state['mode']=='stale' else 'RECENT_PUBLIC_SNAPSHOT',refresh_status='IDLE',scanned_rows=30,excluded_rfi=6,excluded_unknown=16,notice='Publicación con actualización diferida. Confirma en TVEC.',type_evidence='RFQ explícita en título y detalle coincidente.'))
+      body=dict(items=items,total=len(items),provenance=dict(checked_at='2026-11-17T14:00:00Z',freshness='REFRESH_PENDING' if state['mode']=='stale' else 'RECENT_PUBLIC_SNAPSHOT',refresh_status='IDLE',scanned_rows=33,scanned_pages=3,coverage='OFFICIAL_LISTING_TRAVERSED',scan_progress={'pages':3,'total_pages':3,'complete':True},excluded_rfi=6,excluded_unknown=16,notice='Publicación con actualización diferida. Confirma en TVEC.',type_evidence='RFQ explícita en título y detalle coincidente.'))
+      if state['mode']=='progress':
+       body['provenance']['coverage']='BOUNDED_RECENT_PAGES_NOT_EXHAUSTIVE';body['provenance']['scan_progress']={'pages':2,'total_pages':47,'complete':False}
      elif path.endswith('/auth/me'):body={'id':1,'email':'synthetic@example.com','role':'owner','full_name':'QA'}
      elif path.endswith('/billing'):body={'nombre':'QA','es_pro':True,'status':'activa'}
      elif path.endswith('/match-jobs/current'):body=None
@@ -43,6 +45,7 @@ async def main():
     await expect(page.get_by_role('heading',name='Cotizaciones TVEC vigentes',exact=True)).to_be_visible()
     await expect(page.get_by_role('heading',name='RFQ - Servicios sintéticos')).to_be_visible()
     await expect(page.get_by_text('Elegibilidad pendiente',exact=True)).to_be_visible()
+    await expect(page.get_by_text(re.compile('Recorrido completo del listado oficial'))).to_be_visible()
     assert await page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     await page.screenshot(path=str(OUT/f'{width}-quotations.png'),full_page=True)
     await page.get_by_label('Buscar cotizaciones TVEC').fill('NONE');await page.get_by_role('button',name='Buscar cotizaciones',exact=True).click()
@@ -57,6 +60,7 @@ async def main():
     await expect(page.get_by_role('heading',name='RFQ - Servicios sintéticos')).to_be_visible()
     state['mode']='error';await page.get_by_role('button',name='Buscar cotizaciones',exact=True).click();await expect(page.get_by_role('button',name='Reintentar cotizaciones',exact=True)).to_be_visible()
     state['mode']='normal';await page.get_by_role('button',name='Reintentar cotizaciones',exact=True).click();await expect(page.get_by_role('heading',name='RFQ - Servicios sintéticos')).to_be_visible()
+    state['mode']='progress';await page.get_by_role('button',name='Buscar cotizaciones',exact=True).click();await expect(page.get_by_text(re.compile('Recorrido en curso: 2 de 47'))).to_be_visible()
     state['mode']='stale';await page.get_by_role('button',name='Buscar cotizaciones',exact=True).click();await expect(page.get_by_text(re.compile('Actualización pendiente:'))).to_be_visible()
     assert not errors,errors
     await context.close()

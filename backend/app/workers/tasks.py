@@ -297,12 +297,16 @@ if celery_app is not None:
 if celery_app is not None:
     @celery_app.task(name='app.workers.tasks.refresh_tvec_quotations',acks_late=True,
                      reject_on_worker_lost=True,queue='tvec')
-    def refresh_tvec_quotations():
-        from app.services.tvec_quotations import refresh,configured
+    def refresh_tvec_quotations(scan_id=None):
+        from app.services.tvec_quotations import configured
+        from app.services.tvec_full_scan import refresh_batch
         from app.services.evaluation_guard import broker_identity
         from app.db.session import SessionLocal
         settings=configured(refresh=True)
         if broker_identity(celery_app.conf.broker_url)!=broker_identity(settings.redis_url):
             return 'ENVIRONMENT_DENIED'
         with SessionLocal() as db:
-            return refresh(db)
+            result=refresh_batch(db,expected_scan=scan_id)
+        if result['status']=='MORE':
+            celery_app.send_task('app.workers.tasks.refresh_tvec_quotations',args=[result['scan_id']],queue='tvec',countdown=2,retry=False,soft_time_limit=180,time_limit=210)
+        return result
