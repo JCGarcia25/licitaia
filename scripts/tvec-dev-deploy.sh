@@ -54,7 +54,7 @@ if getattr(s,'tvec_ingest_enabled',False):
         assert db.query(TvecSyncState).filter(TvecSyncState.lease_until>now()).count()==0
 with create_engine(s.database_url).connect() as c:
     assert c.execute(text('select current_database()')).scalar_one()==u.database
-    assert c.execute(text('select version_num from alembic_version')).scalar_one() in {'0014_evaluation_platform','0015_tvec_orders'}
+    assert c.execute(text('select version_num from alembic_version')).scalar_one() in {'0014_evaluation_platform','0015_tvec_orders','0016_tvec_quotations'}
 assert Redis.from_url(s.redis_url).ping()
 print('DEV API, PostgreSQL revision/destination and Redis verified; no active TVEC runs or leases')
 PY
@@ -121,7 +121,7 @@ gateways=[str(ipaddress.ip_address(g)) for g in Path(sys.argv[2]).read_text().sp
 assert gateways
 # Trust only the host gateway of this already-verified private DEV network.
 proxy_ips=','.join(['127.0.0.1','::1']+gateways)
-updates={'FORWARDED_ALLOW_IPS':proxy_ips,'TVEC_ENABLED':'true','TVEC_INGEST_ENABLED':'true','TVEC_PAGE_SIZE':'100','TVEC_MAX_PAGES':'1','TVEC_API_ORIGIN':'https://dev.mysecop.co','TVEC_DEV_TARGETS':"'"+json.dumps(target,separators=(',',':'))+"'"}
+updates={'FORWARDED_ALLOW_IPS':proxy_ips,'TVEC_ENABLED':'true','TVEC_EVENTS_ENABLED':'true','TVEC_EVENTS_REFRESH_ENABLED':'true','TVEC_INGEST_ENABLED':'true','TVEC_PAGE_SIZE':'100','TVEC_MAX_PAGES':'1','TVEC_API_ORIGIN':'https://dev.mysecop.co','TVEC_DEV_TARGETS':"'"+json.dumps(target,separators=(',',':'))+"'"}
 p=Path('.env'); lines=p.read_text().splitlines()
 lines=[line for line in lines if line.split('=',1)[0] not in updates]
 p.write_text('\n'.join(lines+[f'{k}={v}' for k,v in updates.items()])+'\n')
@@ -159,6 +159,9 @@ for attempt in range(10):
         time.sleep(2)
 else:raise RuntimeError('TVEC HTTPS read unavailable')
 PY
+elif [[ "$mode" == quotations-refresh ]]; then
+  [[ -s "$backup/RESTORE_VERIFIED" ]]
+  "${compose[@]}" exec -T api python scripts/tvec_quotations_admin.py --refresh --acknowledge-isolated-dev < /dev/null | tee "$backup/quotations-result.json"
 elif [[ "$mode" == pilot-100 ]]; then
   [[ -s "$backup/RESTORE_VERIFIED" ]]
   "${compose[@]}" exec -T api python scripts/tvec_dev_pilot.py --acknowledge-isolated-dev < /dev/null | tee "$backup/pilot-100-result.json"

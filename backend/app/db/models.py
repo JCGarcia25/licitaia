@@ -646,3 +646,35 @@ class TvecSyncRun(Base):
     error_type = Column(String(80))
     created_at = Column(DateTime, nullable=False)
     finished_at = Column(DateTime)
+
+
+class TvecQuotationEvent(Base):
+    __tablename__ = 'tvec_quotation_events'
+    official_id = Column(String(32), primary_key=True)
+    title = Column(Text, nullable=False)
+    buyer = Column(Text, nullable=False)
+    instrument = Column(Text, nullable=False)
+    status = Column(String(80), nullable=False)
+    kind = Column(String(12), nullable=False)
+    kind_evidence = Column(String(64), nullable=False)
+    opens_at = Column(DateTime, nullable=False)
+    closes_at = Column(DateTime, nullable=False, index=True)
+    official_url = Column(Text, nullable=False)
+    detail_verified = Column(Boolean, nullable=False, default=False)
+    checked_at = Column(DateTime, nullable=False)
+    snapshot_id = Column(String(36), nullable=False, index=True)
+
+
+class TvecQuotationSnapshot(Base):
+    __tablename__ = 'tvec_quotation_snapshots'
+    source = Column(String(32), primary_key=True)
+    published_snapshot = Column(String(36))
+    checked_at = Column(DateTime)
+    status = Column(String(16), nullable=False, default='IDLE')
+    lease_token = Column(String(36))
+    lease_until = Column(DateTime)
+    scanned_pages = Column(Integer, nullable=False, default=0)
+    scanned_rows = Column(Integer, nullable=False, default=0)
+    excluded_rfi = Column(Integer, nullable=False, default=0)
+    excluded_unknown = Column(Integer, nullable=False, default=0)
+    error_type = Column(String(80))

@@ -54,6 +54,8 @@ class Settings(BaseSettings):
         'affinity':25., 'experience':20., 'financial':15., 'technical':15.,
         'geography':10., 'amount':10., 'preferences':5.})
     evaluation_enabled: bool = False
+    tvec_events_enabled: bool = False
+    tvec_events_refresh_enabled: bool = False
     tvec_enabled: bool = False
     tvec_ingest_enabled: bool = False
     tvec_dev_targets: list[dict[str, str]] = Field(default_factory=list)

@@ -136,3 +136,38 @@ def sync_status(db:Session=Depends(get_db)):
     state=db.get(State,DATASET)
     return {'status':state.status if state else 'NOT_SYNCED','last_complete_at':state.last_complete_at if state else None,
             'errors':state.error_count if state else 0,'provenance':provenance(db)}
+
+
+@router.get('/quotations')
+def quotations(db:Session=Depends(get_db),q:str=Query('',max_length=200),
+               limit:int=Query(20,ge=1,le=50),offset:int=Query(0,ge=0,le=1000)):
+    from datetime import timedelta
+    from app.db.models import TvecQuotationEvent as Event,TvecQuotationSnapshot as Snapshot
+    from app.services.tvec_quotations import configured,SOURCE,SOURCE_URL,FRESH_MINUTES
+    from app.services.tvec_client import now
+    try:configured()
+    except EnvironmentDenied:raise HTTPException(404,'Cotizaciones TVEC no habilitadas')
+    instant=now();snapshot=db.get(Snapshot,SOURCE)
+    fresh=bool(snapshot and snapshot.checked_at and snapshot.checked_at>=instant-timedelta(minutes=FRESH_MINUTES))
+    query=db.query(Event).filter(Event.snapshot_id==snapshot.published_snapshot if snapshot and fresh else False,
+        Event.kind=='RFQ',Event.detail_verified.is_(True),Event.status=='Producción',
+        Event.opens_at<=instant,Event.closes_at>instant)
+    if q:
+        value=q.replace('\\','\\\\').replace('%','\\%').replace('_','\\_')
+        query=query.filter(or_(*[c.ilike('%'+value+'%',escape='\\') for c in [Event.title,Event.buyer,Event.instrument,Event.official_id]]))
+    total=query.count();rows=query.order_by(Event.closes_at,Event.official_id).offset(offset).limit(limit).all()
+    return {'items':[{'official_id':r.official_id,'title':r.title,'buyer':r.buyer,'instrument':r.instrument,
+        'opens_at':r.opens_at.isoformat()+'Z','closes_at':r.closes_at.isoformat()+'Z',
+        'kind':'RFQ','kind_evidence':r.kind_evidence,'status':r.status,
+        'eligibility':'PENDING_VERIFICATION','eligibility_note':'Verifica que tu empresa esté habilitada en el instrumento, categoría o región antes de cotizar.',
+        'official_url':r.official_url,'checked_at':r.checked_at.isoformat()+'Z'} for r in rows],
+        'total':total,'limit':limit,'offset':offset,'provenance':{
+            'source_url':SOURCE_URL,'checked_at':snapshot.checked_at.isoformat()+'Z' if snapshot and snapshot.checked_at else None,
+            'freshness':'RECENT_PUBLIC_SNAPSHOT' if fresh else 'REFRESH_PENDING',
+            'refresh_status':snapshot.status if snapshot else 'NOT_SYNCED',
+            'scanned_pages':snapshot.scanned_pages if snapshot else 0,'scanned_rows':snapshot.scanned_rows if snapshot else 0,
+            'excluded_rfi':snapshot.excluded_rfi if snapshot else 0,'excluded_unknown':snapshot.excluded_unknown if snapshot else 0,
+            'coverage':'BOUNDED_RECENT_PAGES_NOT_EXHAUSTIVE','type_evidence':'Marcador RFQ explícito en título y detalle coincidente; no es un campo estructurado oficial.',
+            'notice':'Consulta pública con actualización diferida. Confirma el plazo y la participación en TVEC; no se garantiza recepción de ofertas en tiempo real.',
+            'timezone':'America/Bogota (interpretación de las fechas publicadas sin offset)',
+            'freshness_minutes':FRESH_MINUTES}}

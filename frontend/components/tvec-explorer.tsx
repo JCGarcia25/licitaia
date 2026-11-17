@@ -41,7 +41,7 @@ export function TvecExplorer(){
   },[ready,active,page,view]);
   useEffect(()=>{void load();},[load]);
   const navigate=(values:Filter,next:number,kind=view)=>{
-    const url=new URL(window.location.href);Array.from(url.searchParams.keys()).filter(k=>k.startsWith('tv_')).forEach(k=>url.searchParams.delete(k));
+    const url=new URL(window.location.href);Array.from(url.searchParams.keys()).filter(k=>k.startsWith('tv_')&&k!=='tv_section').forEach(k=>url.searchParams.delete(k));
     Object.entries(values).forEach(([k,v])=>{if(v)url.searchParams.set('tv_'+k,v);});url.searchParams.set('tv_page',String(next));url.searchParams.set('tv_view',kind);
     window.history.pushState(null,'',url.pathname+url.search);sessionStorage.setItem('mysecop_source_url',url.pathname+url.search);setActive({...values});setPage(next);setView(kind);
   };
@@ -68,6 +68,6 @@ export function TvecExplorer(){
 }
 
 function TvecCard({order}:{order:TvecOrder}){
-  const back=typeof window==='undefined'?'/app/oportunidades?fuente=tvec':window.location.pathname+window.location.search;
+  const back=typeof window==='undefined'?'/app/oportunidades?fuente=tvec&tv_section=history':window.location.pathname+window.location.search;
   return <Card className="p-4 sm:p-5"><Badge tone="teal">Orden de compra TVEC</Badge><h2 className="mt-3 break-words font-semibold"><Link className="hover:text-teal-dark dark:text-teal" href={`/app/tienda-virtual/${order.id}?volver=${encodeURIComponent(back)}`}>Orden {order.official_id}</Link></h2><p className="mt-2 whitespace-pre-wrap break-words text-sm">{order.description||'Descripción no informada'}</p><dl className="mt-4 space-y-2 text-sm">{[['Entidad compradora',order.buyer],['Proveedor registrado',order.supplier],['Instrumento de compra',order.instrument],['Actividad del proveedor',order.category],['Ubicación',[order.department,order.city].filter(Boolean).join(' · ')],['Valor registrado',tvecAmount(order.amount)],['Fecha de orden',tvecDate(order.issued_at)],['Estado del registro',order.status]].map(([label,value])=><div key={label}><dt className="text-muted text-xs">{label}</dt><dd className="break-words">{value||'No informado'}</dd></div>)}</dl><p className="text-muted mt-4 text-xs">Compra registrada · Participación por verificar. No es una solicitud de cotización abierta.</p><Link href={`/app/tienda-virtual/${order.id}?volver=${encodeURIComponent(back)}`} className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-teal-dark dark:text-teal underline">Ver detalle de compra</Link></Card>;
 }

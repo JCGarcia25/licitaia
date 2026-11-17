@@ -54,7 +54,7 @@ export default function Oportunidades() {
     setError("");
     const params = new URLSearchParams();
     if (typeof window !== "undefined") {
-      new URLSearchParams(window.location.search).forEach((v,k) => { if (k === "fuente" || k.startsWith("tv_")) params.set(k,v); });
+      new URLSearchParams(window.location.search).forEach((v,k) => { if (k === "fuente" || (k.startsWith("tv_") || k.startsWith("tq_"))) params.set(k,v); });
     }
     if (consulta) params.set("q", consulta);
     if (estado.departamento) params.set("departamento", estado.departamento);
@@ -86,8 +86,8 @@ export default function Oportunidades() {
       if (typeof window !== "undefined") {
         const url = new URL(window.location.href);
         params.set("pagina", String(paginaSolicitada));
-        Array.from(params.keys()).filter(k => k === "fuente" || k.startsWith("tv_")).forEach(k => params.delete(k));
-        new URLSearchParams(window.location.search).forEach((v,k) => { if (k === "fuente" || k.startsWith("tv_")) params.set(k,v); });
+        Array.from(params.keys()).filter(k => k === "fuente" || (k.startsWith("tv_") || k.startsWith("tq_"))).forEach(k => params.delete(k));
+        new URLSearchParams(window.location.search).forEach((v,k) => { if (k === "fuente" || (k.startsWith("tv_") || k.startsWith("tq_"))) params.set(k,v); });
         url.search = params.toString();
         window.history.replaceState(null, "", url.toString());
         if (params.has("fuente")) sessionStorage.setItem("mysecop_source_url", url.pathname + url.search);

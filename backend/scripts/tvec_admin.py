@@ -31,8 +31,9 @@ def main():
         from app.db.models import EvaluationEnvironmentIdentity,AuditLog
         from sqlalchemy import text
         with SessionLocal() as db:
-            if db.execute(text('SELECT version_num FROM alembic_version')).scalar_one()!='0015_tvec_orders':
-                raise ValueError('Expected 0015; review different revision before operating')
+            revision=db.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
+            if revision not in {'0015_tvec_orders','0016_tvec_quotations'}:
+                raise ValueError('Expected reviewed 0015/0016; review different revision before operating')
             if a.register_identity:
                 marker=db.get(EvaluationEnvironmentIdentity,identity)
                 if marker and (marker.fingerprint!=fingerprint or marker.purpose!='isolated-development'):raise ValueError('Identity mismatch; no overwrite')
@@ -47,7 +48,7 @@ def main():
                     run=create_run(db,a.max_pages);identifier=run.id;db.commit()
                 task=enqueue(identifier)
                 print(json.dumps({'run_id':identifier,'task_id':task,'queue':'tvec'}))
-            else:print(json.dumps({'status':'VERIFIED_DEV','revision':'0015_tvec_orders','identity':identity}))
+            else:print(json.dumps({'status':'VERIFIED_DEV','revision':revision,'identity':identity}))
         return 0
     except Exception as error:
         # Do not print exception messages containing connection strings/SQL values.

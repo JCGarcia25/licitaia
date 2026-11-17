@@ -43,7 +43,7 @@ async def main():
                 await asyncio.sleep(.2)
             else:raise RuntimeError('Next timeout')
         async with async_playwright() as pw:
-            browser=await pw.chromium.launch(headless=True)
+            browser=await pw.chromium.launch(headless=True,executable_path=os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE"))
             for width,height in [(390,844),(768,1024),(1440,900),(320,760)]:
                 context=await browser.new_context(viewport={'width':width,'height':height})
                 await context.add_init_script("localStorage.setItem('licitaia_token','synthetic-token');")
@@ -88,7 +88,7 @@ async def main():
                         await page.screenshot(path=str(out/f'{width}-{name}.png'),full_page=False)
                     if name=='todas' and width==1440:
                         await page.screenshot(path=str(out/f'{width}-{name}-full.png'),full_page=True)
-                await page.goto(origin+'/app/oportunidades');await expect(page.get_by_text('Proceso SECOP sintético',exact=True)).to_be_visible()
+                await page.goto(origin+'/app/oportunidades?fuente=secop&tv_section=history');await expect(page.get_by_text('Proceso SECOP sintético',exact=True)).to_be_visible()
                 await capture('secop')
                 await page.get_by_role('button',name='Todas',exact=True).click();await expect(page.get_by_role('heading',name='Orden SYN-100',exact=True)).to_be_visible();await capture('todas')
                 await page.get_by_role('button',name='Tienda Virtual',exact=True).click();await expect(page.get_by_role('button',name='Tienda Virtual',exact=True)).to_have_attribute('aria-pressed','true');await expect(page.get_by_text('Proceso SECOP sintético',exact=True)).not_to_be_visible();await capture('tvec')

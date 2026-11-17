@@ -8,7 +8,7 @@ import { TvecOrder, tvecDate, tvecAmount } from "@/components/tvec-explorer";
 
 export default function TvecDetail(){
   const {id}=useParams<{id:string}>();const params=useSearchParams();const candidate=params.get('volver');
-  const back=candidate?.startsWith('/app/oportunidades?')&&candidate.length<5000?candidate:'/app/oportunidades?fuente=tvec';
+  const back=candidate?.startsWith('/app/oportunidades?')&&candidate.length<5000?candidate:'/app/oportunidades?fuente=tvec&tv_section=history';
   const [order,setOrder]=useState<TvecOrder|null>(null),[error,setError]=useState('');
   useEffect(()=>{let active=true;api<{order:TvecOrder}>('/api/tvec/orders/'+encodeURIComponent(id)).then(r=>{if(active)setOrder(r.order);}).catch(e=>{if(active)setError(e instanceof Error?e.message:'No se pudo consultar la orden.');});return()=>{active=false;};},[id]);
   return <div className="space-y-4"><Link href={back} className="inline-flex min-h-11 items-center text-sm text-teal-dark dark:text-teal underline">← Volver a compras y fuentes</Link>

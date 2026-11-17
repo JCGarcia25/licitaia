@@ -53,6 +53,11 @@ try:
             "options": {"expires": 3600},
         },
     }
+    if settings.environment=='development' and settings.tvec_events_enabled and settings.tvec_events_refresh_enabled:
+        celery_app.conf.beat_schedule['tvec-quotations-bounded-every-15-minutes'] = {
+            'task':'app.workers.tasks.refresh_tvec_quotations','schedule':900,
+            'options':{'queue':'tvec','soft_time_limit':180,'time_limit':210,'expires':600},
+        }
 except Exception as exc:  # Redis/Celery opcional en desarrollo
     celery_app = None
     logger.warning("Celery no disponible (%s): las tareas se ejecutarán en línea", exc)

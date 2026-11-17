@@ -293,3 +293,16 @@ if celery_app is not None:
         if result in {'BUSY','FAILED'}:
             raise self.retry(countdown=settings.tvec_lease_seconds if result=='BUSY' else 10)
         return result
+
+if celery_app is not None:
+    @celery_app.task(name='app.workers.tasks.refresh_tvec_quotations',acks_late=True,
+                     reject_on_worker_lost=True,queue='tvec')
+    def refresh_tvec_quotations():
+        from app.services.tvec_quotations import refresh,configured
+        from app.services.evaluation_guard import broker_identity
+        from app.db.session import SessionLocal
+        settings=configured(refresh=True)
+        if broker_identity(celery_app.conf.broker_url)!=broker_identity(settings.redis_url):
+            return 'ENVIRONMENT_DENIED'
+        with SessionLocal() as db:
+            return refresh(db)

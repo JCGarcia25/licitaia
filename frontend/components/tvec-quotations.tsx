@@ -1,0 +1,37 @@
+"use client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { api } from "@/lib/api";
+import { Badge, Button, Card, Field, Input, Spinner } from "@/components/ui";
+
+type Event={official_id:string;title:string;buyer:string;instrument:string;opens_at:string;closes_at:string;official_url:string;eligibility_note:string;checked_at:string};
+type Result={items:Event[];total:number;provenance:{checked_at:string|null;freshness:string;refresh_status:string;scanned_rows:number;excluded_rfi:number;excluded_unknown:number;notice:string;type_evidence:string}};
+const format=(value:string)=>new Intl.DateTimeFormat('es-CO',{timeZone:'America/Bogota',dateStyle:'medium',timeStyle:'short'}).format(new Date(value));
+
+export function TvecQuotations(){
+  const [draft,setDraft]=useState(''),[query,setQuery]=useState(''),[page,setPage]=useState(1),[ready,setReady]=useState(false);
+  const [data,setData]=useState<Result|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(false);
+  const sequence=useRef(0);
+  useEffect(()=>{
+    const restore=()=>{const p=new URLSearchParams(window.location.search);const q=p.get('tq_q')||'';setDraft(q);setQuery(q);setPage(Math.min(51,Math.max(1,Number(p.get('tq_page'))||1)));setReady(true);};
+    restore();window.addEventListener('popstate',restore);return()=>{sequence.current++;window.removeEventListener('popstate',restore);};
+  },[]);
+  const load=useCallback(async(background=false)=>{
+    if(!ready)return;const id=++sequence.current;if(!background)setLoading(true);setError('');
+    try{const result=await api<Result>('/api/tvec/quotations?'+new URLSearchParams({q:query,limit:'20',offset:String((page-1)*20)}));if(id===sequence.current)setData(result);}
+    catch(e){if(id===sequence.current){setData(null);setError(e instanceof Error?e.message:'No fue posible consultar las cotizaciones.');}}
+    finally{if(id===sequence.current)setLoading(false);}
+  },[ready,query,page]);
+  useEffect(()=>{void load();const timer=window.setInterval(()=>void load(true),60000);return()=>window.clearInterval(timer);},[load]);
+  const navigate=(q:string,next:number)=>{if(q===query&&next===page){void load();return;}const url=new URL(window.location.href);url.searchParams.set('tq_q',q);url.searchParams.set('tq_page',String(next));window.history.pushState(null,'',url.pathname+url.search);sessionStorage.setItem('mysecop_source_url',url.pathname+url.search);setQuery(q);setPage(next);};
+  if(!ready)return <Spinner label="Preparando cotizaciones TVEC…"/>;
+  return <div className="space-y-4">
+    <div><h1 className="text-xl font-bold">Cotizaciones TVEC vigentes</h1><p className="text-muted mt-2 text-sm">Solicitudes con RFQ explícita, detalle coincidente y plazo vigente en la publicación oficial. La habilitación de tu empresa debe verificarse en cada instrumento.</p></div>
+    <Card className="p-4"><form onSubmit={e=>{e.preventDefault();navigate(draft,1);}} className="flex flex-col gap-3 sm:flex-row"><div className="min-w-0 flex-1"><Field label="Buscar cotizaciones TVEC"><Input maxLength={200} value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Entidad, instrumento, evento o descripción"/></Field></div><Button type="submit" className="min-h-11 sm:self-end">Buscar cotizaciones</Button></form></Card>
+    {loading?<Spinner label="Consultando cotizaciones TVEC…"/>:error?<Card><div role="alert"><p>{error}</p><Button variant="outline" className="mt-3 min-h-11" onClick={()=>void load()}>Reintentar cotizaciones</Button></div></Card>:data&&<>
+      <Card className="p-4"><p className="text-sm">Última consulta: {data.provenance.checked_at?format(data.provenance.checked_at)+' (Colombia)':'Pendiente'}. {data.provenance.scanned_rows} eventos revisados en páginas recientes; cobertura parcial.</p><p className="text-muted mt-2 text-sm">{data.provenance.notice}</p>{data.provenance.refresh_status==='ERROR'&&<p className="mt-2 text-sm" role="status">El último intento de actualización falló. Consulta la fuente oficial para confirmar el estado.</p>}<details className="mt-3 text-sm"><summary className="cursor-pointer py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal">Cómo se seleccionan las cotizaciones</summary><p className="mt-2">{data.provenance.type_evidence}</p><p className="mt-2">{data.provenance.excluded_rfi} solicitudes de información (RFI) y {data.provenance.excluded_unknown} eventos sin verificación suficiente excluidos de las cotizaciones. Las fechas se muestran en hora de Colombia.</p></details></Card>
+      {data.provenance.freshness==='REFRESH_PENDING'?<Card><p role="status">Actualización pendiente: no mostramos cotizaciones de una consulta vencida. La fuente se revisa periódicamente.</p></Card>:data.items.length?<div className="grid gap-4 lg:grid-cols-2">{data.items.map(event=><Card key={event.official_id} className="min-w-0 p-4 sm:p-5"><div className="flex flex-wrap gap-2"><Badge tone="teal">TVEC · RFQ</Badge><Badge tone="amber">Elegibilidad pendiente</Badge></div><h2 className="mt-3 break-words font-semibold">{event.title}</h2><p className="mt-2 break-words text-sm">{event.buyer}</p><p className="text-muted mt-2 break-words text-sm">{event.instrument} · Evento {event.official_id}</p><p className="mt-3 text-sm font-semibold">Cierre publicado: {format(event.closes_at)} (Colombia)</p><p className="text-muted mt-2 text-sm">{event.eligibility_note}</p><a href={event.official_url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-teal-dark underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal dark:text-teal">Consultar evento en la fuente oficial<span className="sr-only"> (abre una pestaña nueva)</span></a></Card>)}</div>:<Card><h2 className="font-semibold">No hay cotizaciones verificadas con estos filtros</h2><p className="text-muted mt-2 text-sm">La revisión es parcial y no confirma que no existan otros eventos en TVEC. Puedes ajustar la búsqueda o consultar el portal oficial.</p></Card>}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm"><p role="status">{data.total} cotizaciones · Página {page} de {Math.max(1,Math.ceil(data.total/20))}</p><div className="flex gap-2"><Button className="min-h-11" variant="outline" disabled={page<=1} onClick={()=>navigate(query,page-1)}>Anterior</Button><Button className="min-h-11" variant="outline" disabled={page*20>=data.total} onClick={()=>navigate(query,page+1)}>Siguiente</Button></div></div>
+    </>}
+    <a href="https://operaciones.colombiacompra.gov.co/eventos-cotizacion-tvec" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-sm text-teal-dark underline dark:text-teal">Ver listado oficial de cotizaciones TVEC</a>
+  </div>;
+}
