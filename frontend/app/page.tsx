@@ -1,3 +1,4 @@
+import { buttonStyles } from "@/lib/button-styles";
 /* Landing comercial de MySECOP. */
 import Link from "next/link";
 import { Button } from "@/components/ui";
@@ -87,21 +88,21 @@ export default function Landing() {
       <LandingVisit />
       {/* ---------- Header ---------- */}
       <header className="sticky top-0 z-40 border-b border-base bg-[var(--bg)]/85 backdrop-blur">
-        <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
+        <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-5">
           <Link href="/" className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 text-[10px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
             <span className="text-lg font-bold tracking-tight">MySECOP</span>
           </Link>
-          <nav className="text-muted hidden items-center gap-6 text-sm md:flex">
+          <nav className="text-muted hidden items-center gap-6 text-sm xl:flex">
             <a href="#como-funciona" className="hover:text-teal transition">Cómo funciona</a>
             <a href="#funciones" className="hover:text-teal transition">Funciones</a>
             <a href="#planes" className="hover:text-teal transition">Planes</a>
             <a href="#faq" className="hover:text-teal transition">FAQ</a>
           </nav>
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
             <ThemeToggle />
-            <Link href="/iniciar-sesion"><Button variant="outline" size="sm">Iniciar sesión</Button></Link>
-            <Link href="/registro"><Button size="sm">Comenzar gratis</Button></Link>
+            <Link href="/iniciar-sesion" className={buttonStyles({variant: "outline", size: "sm"})}>Iniciar sesión</Link>
+            <Link href="/registro" className={buttonStyles({size: "sm"})}>Comenzar gratis</Link>
           </div>
         </div>
       </header>
@@ -120,8 +121,8 @@ export default function Landing() {
               Tu agente de inteligencia artificial monitorea la contratación pública, analiza requisitos y descubre oportunidades para tu empresa.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/registro"><Button className="px-6 py-3">Comenzar gratis</Button></Link>
-              <a href="#como-funciona"><Button variant="outline" className="px-6 py-3">Ver cómo funciona</Button></a>
+              <Link href="/registro" className={buttonStyles({className: "px-6 py-3"})}>Comenzar gratis</Link>
+              <a href="#como-funciona" className={buttonStyles({variant: "outline", className: "px-6 py-3"})}>Ver cómo funciona</a>
             </div>
             <p className="text-muted mt-6 text-xs">
               MySECOP no es una plataforma oficial del Gobierno colombiano. Consulta fuentes públicas y siempre muestra el expediente original.
@@ -188,7 +189,7 @@ export default function Landing() {
           <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {BENEFICIOS.map((b) => (
               <div key={b.t} className="rounded-xl border border-white/10 bg-white/5 p-6">
-                <h3 className="font-semibold text-teal">{b.t}</h3>
+                <h3 className="font-semibold text-teal-light">{b.t}</h3>
                 <p className="mt-2 text-sm text-white/80">{b.d}</p>
               </div>
             ))}

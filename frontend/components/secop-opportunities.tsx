@@ -164,28 +164,28 @@ export default function Oportunidades() {
       <Card className="space-y-3 p-4">
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && cargar()}
-            placeholder='Búsqueda: texto libre o en lenguaje natural ("procesos abiertos de software en Bogotá superiores a 200 millones")' />
+            aria-label="Buscar procesos SECOP" placeholder="¿Qué producto o servicio buscas?" />
           <Button onClick={nuevaBusqueda} className="w-full shrink-0 whitespace-nowrap sm:w-auto sm:min-w-24">Buscar</Button>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-6">
-          <Select value={departamento} onChange={(e) => { setDepartamento(e.target.value); setMunicipio(""); }}>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <Select aria-label="Departamento" value={departamento} onChange={(e) => { setDepartamento(e.target.value); setMunicipio(""); }}>
             <option value="">Toda Colombia</option>
             {DEPARTAMENTOS.map((d) => <option key={d} value={d}>{d}</option>)}
           </Select>
-          <Input value={municipio} onChange={(e) => setMunicipio(e.target.value)} placeholder="Municipio" />
-          <Select value={modalidad} onChange={(e) => setModalidad(e.target.value)}>
+          <Input aria-label="Municipio" value={municipio} onChange={(e) => setMunicipio(e.target.value)} placeholder="Municipio" />
+          <Select aria-label="Modalidad de contratación" value={modalidad} onChange={(e) => setModalidad(e.target.value)}>
             <option value="">Toda modalidad</option>
             {["Licitación Pública", "Contratación Directa", "Contratación Mínima Cuantía", "Selección Abreviada", "Concurso de Méritos", "Régimen Especial", "Subasta"].map((mo) => (
               <option key={mo} value={mo}>{mo}</option>
             ))}
           </Select>
-          <Input value={valorMin} onChange={(e) => setValorMin(e.target.value)} placeholder="Valor mínimo (COP)" />
-          <Select value={scoreMin} onChange={(e) => setScoreMin(e.target.value)}>
+          <Input aria-label="Presupuesto mínimo en pesos colombianos" inputMode="numeric" value={valorMin} onChange={(e) => setValorMin(e.target.value)} placeholder="Valor mínimo (COP)" />
+          <Select aria-label="Compatibilidad mínima" value={scoreMin} onChange={(e) => setScoreMin(e.target.value)}>
             <option value="">Cualquier compatibilidad</option>
             {[1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((value) => <option key={value} value={value}>≥ {value}%</option>)}
           </Select>
-          <Select value={triage} onChange={(e) => setTriage(e.target.value)}>
-            <option value="">Todo el triage</option>
+          <Select aria-label="Estado de seguimiento" value={triage} onChange={(e) => setTriage(e.target.value)}>
+            <option value="">Todos los estados de seguimiento</option>
             <option value="detectada">Detectadas</option>
             <option value="guardada">Guardadas</option>
             <option value="proyecto">Proyectos</option>
@@ -209,7 +209,7 @@ export default function Oportunidades() {
       {!items ? (
         <Spinner label="Consultando oportunidades…" />
       ) : items.length === 0 ? (
-        <Card><EmptyState title="Sin resultados" body="Ajusta los filtros o ejecuta una nueva sincronización en Sincronización SECOP." /></Card>
+        <Card><EmptyState title="Sin resultados" body="Prueba con otros filtros o revisa los datos del perfil de tu empresa." /></Card>
       ) : (
         <>
           <p className="text-muted text-xs">{total} oportunidad(es) encontrada(s)</p>

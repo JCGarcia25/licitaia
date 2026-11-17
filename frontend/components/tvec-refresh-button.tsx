@@ -37,7 +37,7 @@ export function TvecRefreshButton({onComplete}:{onComplete:()=>void}){
     <div className="min-w-0 text-sm"><p>Solicita una revisión de la fuente oficial. La actualización es compartida y conserva tus filtros.</p>
       <p className="text-muted mt-2" role="status" aria-live="polite">
         {status?.state==='RUNNING'?`Recorrido en curso: ${status.pages} de ${status.total_pages??'…'} páginas. Se reutiliza la actualización compartida.`:
-         status?.state==='PENDING'?'Solicitud recibida; esperando al worker.':
+         status?.state==='PENDING'?'Solicitud recibida. La actualización comenzará en breve.':
          status?.state==='UNCONFIRMED'?'El envío aún no está confirmado. Estamos consultando el estado antes de permitir otro intento.':
          status?.state==='ERROR'?'La actualización no terminó. Conservamos la publicación anterior y el avance para reanudarla.':
          wait>0?'La última actualización es reciente.':'La actualización automática continúa cada 15 minutos.'}

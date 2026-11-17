@@ -1,4 +1,5 @@
 "use client";
+import { buttonStyles } from "@/lib/button-styles";
 import { MatchProgress } from "@/components/match-progress";
 /* Dashboard ejecutivo: métricas, tendencia y top oportunidades. */
 import { useEffect, useState } from "react";
@@ -106,6 +107,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <div><h1 className="text-2xl font-bold tracking-tight">Resumen</h1><p className="text-muted mt-1 text-sm">Revisa tus oportunidades, alertas y tareas pendientes.</p></div>
       <MatchProgress onProgress={() => { void cargar(); }} />
       <Card className="p-4">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -133,7 +135,7 @@ export default function Dashboard() {
           <CardHeader
             title="Mejores oportunidades"
             subtitle="Ranking por compatibilidad"
-            action={<Link href={`/app/oportunidades?perfil=1&score_min=${m.umbral_compatibilidad}&solo_con_score=true`}><Button variant="outline" size="sm">Ver todas</Button></Link>}
+            action={<Link href={`/app/oportunidades?perfil=1&score_min=${m.umbral_compatibilidad}&solo_con_score=true`} className={buttonStyles({variant: "outline", size: "sm"})}>Ver todas</Link>}
           />
           {cargandoTop ? (
             <div className="flex min-h-56 flex-col items-center justify-center p-6 text-center">

@@ -2,14 +2,14 @@
 /* Estructura de la aplicación privada (barra lateral + topbar). */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { AuthProvider, RequireAuth, useAuth } from "@/components/auth";
 import { ThemeToggle } from "@/components/theme";
-import { api } from "@/lib/api";
+import { api, apiBackground } from "@/lib/api";
 import { WorkOverlay } from "@/components/ui";
 
 const NAV = [
-  { href: "/app", label: "Dashboard", icon: "▤" },
+  { href: "/app", label: "Resumen", icon: "▤" },
   { href: "/app/oportunidades", label: "Oportunidades", icon: "◎" },
   { href: "/app/ofertas", label: "Ofertas", icon: "✎" },
   { href: "/app/alertas", label: "Alertas", icon: "◔" },
@@ -33,6 +33,16 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
   const [plan, setPlan] = useState<{ nombre: string; es_pro: boolean; status: string } | null>(null);
   const [requests, setRequests] = useState(0);
   const [showWork, setShowWork] = useState(false);
+  const menu = useRef<HTMLDialogElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const closeMenu = () => menu.current?.close();
+  useEffect(() => { closeMenu(); }, [pathname]);
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const onResize = () => { if (desktop.matches) closeMenu(); };
+    desktop.addEventListener("change", onResize);
+    return () => desktop.removeEventListener("change", onResize);
+  }, []);
 
   useEffect(() => {
     let timer: number | undefined;
@@ -74,7 +84,7 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    const ping = () => api("/api/admin/presence", { method: "POST", body: JSON.stringify({ path: window.location.pathname }) }).catch(() => undefined);
+    const ping = () => apiBackground("/api/admin/presence", { method: "POST", body: JSON.stringify({ path: window.location.pathname }) }).catch(() => undefined);
     ping();
     const timer = window.setInterval(ping, 45000);
     return () => window.clearInterval(timer);
@@ -83,6 +93,13 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
   return (
       <RequireAuth>
       {showWork && requests > 0 ? <WorkOverlay /> : null}
+      <a href="#contenido-principal" className="skip-link">Saltar al contenido</a>
+      <dialog ref={menu} aria-labelledby="menu-title" className="app-menu surface-card m-0 h-dvh max-h-dvh w-[min(90vw,22rem)] max-w-none rounded-none p-4" onClose={() => { document.body.style.overflow = ""; trigger.current?.focus(); }} onClick={(event) => { if (event.target === event.currentTarget && event.clientX > event.currentTarget.getBoundingClientRect().right) closeMenu(); }}>
+        <div className="mb-4 flex items-center justify-between gap-3"><h2 id="menu-title" className="text-lg font-bold">MySECOP</h2><button type="button" onClick={closeMenu} className="min-h-11 rounded-lg border border-base px-3">Cerrar menú</button></div>
+        <nav aria-label="Menú principal móvil" className="space-y-1">{NAV.map(n => <Link key={n.href} href={n.href} onClick={closeMenu} aria-current={(n.href === "/app" ? pathname === n.href : pathname.startsWith(n.href)) ? "page" : undefined} className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 hover:bg-teal/10 aria-[current=page]:bg-teal/10 aria-[current=page]:font-semibold"><span aria-hidden="true">{n.icon}</span>{n.label}</Link>)}</nav>
+        <Link href="/app/plan" onClick={closeMenu} className="mt-4 flex min-h-11 items-center rounded-lg border border-base px-3 text-sm">{plan?.nombre || "MySECOP Free"}</Link>
+        {user?.email?.toLowerCase() === "jorge@zorbagames.com" && <Link href="/app/admin" onClick={closeMenu} className="mt-2 flex min-h-11 items-center px-3 text-sm">Centro de control</Link>}
+      </dialog>
       <div className="flex min-h-screen bg-[var(--bg)]">
         {/* Sidebar */}
         <aside className="hidden w-64 shrink-0 border-r border-base bg-[var(--surface)] lg:block">
@@ -90,14 +107,15 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-900 text-[9px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
             <span className="font-bold tracking-tight">MySECOP</span>
           </div>
-          <nav className="space-y-1.5 p-4">
+          <nav aria-label="Menú principal" className="space-y-1.5 p-4">
             {NAV.map((n) => {
               const activo = n.href === "/app" ? pathname === "/app" : pathname.startsWith(n.href);
               return (
                 <Link
                   key={n.href}
                   href={n.href}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                  aria-current={activo ? "page" : undefined}
+                  className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
                     activo
                       ? "bg-teal/10 font-semibold text-teal dark:bg-slate-800 dark:text-teal"
                       : "text-muted hover:bg-brand-50 hover:text-[var(--text)] dark:hover:bg-slate-800"
@@ -111,36 +129,29 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="mx-3 mt-4 rounded-lg border border-base bg-[var(--bg)] p-3 text-[11px] leading-relaxed text-muted">
-            Fuentes: SECOP y Tienda Virtual (datos.gov.co). Consulta siempre el registro oficial. Las compras TVEC no son convocatorias abiertas.
+            Información pública de SECOP y TVEC. Confirma los requisitos y los plazos en la fuente oficial.
           </div>
         </aside>
 
         {/* Contenido */}
         <div className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-base bg-[var(--bg)]/90 px-4 py-3 backdrop-blur sm:px-6">
-            <div className="order-2 grid w-full grid-cols-2 gap-2 border-t border-base pt-3 lg:order-1 lg:hidden">
-              {NAV.map((n) => (
-                <Link key={n.href} href={n.href} className={`flex min-w-0 items-center gap-2 rounded-xl border border-base px-3 py-2.5 text-xs transition hover:border-teal hover:bg-teal/10 ${pathname === n.href || (n.href !== "/app" && pathname.startsWith(n.href)) ? "border-teal/60 bg-teal/10 text-teal" : "text-muted"}`}>
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-[11px] dark:bg-slate-700">{n.icon}</span><span className="truncate">{n.label}</span>
-                </Link>
-              ))}
-              {user?.email?.toLowerCase() === "jorge@zorbagames.com" ? <Link href="/app/admin" className={`flex min-w-0 items-center gap-2 rounded-xl border border-teal/40 px-3 py-2.5 text-xs text-teal transition hover:bg-teal/10 ${pathname.startsWith("/app/admin") ? "bg-teal/10" : ""}`}><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-teal/15 text-[11px]">◈</span><span className="truncate">Centro de control</span></Link> : null}
-            </div>
+          <header className="sticky top-0 z-30 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-base bg-[var(--bg)]/90 px-4 py-3 backdrop-blur sm:px-6">
+            <button ref={trigger} type="button" aria-haspopup="dialog" onClick={() => { menu.current?.showModal(); document.body.style.overflow = "hidden"; }} className="flex min-h-11 items-center gap-2 rounded-lg border border-base px-3 text-sm font-semibold lg:hidden"><span aria-hidden="true">☰</span> Menú</button>
             <div className="hidden lg:block" />
             <div className="order-1 ml-auto flex items-center gap-2 sm:gap-3 lg:order-2">
-              <Link href="/app" className="mr-1 flex items-center gap-2 font-semibold lg:hidden"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal text-[9px] font-bold text-slate-950">MS</span><span className="hidden xs:inline">MySECOP</span></Link>
+              <Link href="/app" className="mr-1 flex items-center gap-2 font-semibold lg:hidden"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal text-[9px] font-bold text-slate-950">MS</span><span className="hidden sm:inline">MySECOP</span></Link>
               <ThemeToggle />
               <Link href="/app/plan" className={`hidden rounded-full border px-3 py-1 text-[11px] font-semibold sm:inline ${plan?.es_pro ? "border-teal/40 bg-teal/10 text-teal" : "border-amber-300/60 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200"}`}>
                 {plan?.nombre || "MySECOP Free"}
               </Link>
               {user?.email?.toLowerCase() === "jorge@zorbagames.com" ? <Link href="/app/admin" className="hidden rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal sm:inline">Centro de control</Link> : null}
               <span className="text-muted hidden text-xs lg:inline">{user?.email}</span>
-              <button onClick={logout} className="border-base rounded-lg border px-3 py-1.5 text-xs font-medium transition hover:text-red-600">
+              <button onClick={logout} className="border-base rounded-lg border min-h-11 px-3 py-1.5 text-xs font-medium transition hover:text-red-600">
                 Salir
               </button>
             </div>
           </header>
-          <main className="app-main mx-auto w-full max-w-7xl min-w-0 overflow-x-hidden p-4 sm:p-6 lg:p-8">
+          <main id="contenido-principal" tabIndex={-1} className="app-main mx-auto w-full max-w-7xl min-w-0 p-4 sm:p-6 lg:p-8">
             {plan && !plan.es_pro && <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/50 bg-amber-50/80 px-4 py-3 text-xs text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/25 dark:text-amber-100">
               <span><strong>MySECOP Free:</strong> análisis de pliegos, alertas por correo, sincronización avanzada y preparador de ofertas están identificados como funciones Pro.</span>
               <Link href="/app/plan" className="font-bold underline underline-offset-2">Ver MySECOP Pro</Link>

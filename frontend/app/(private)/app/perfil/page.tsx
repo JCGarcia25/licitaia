@@ -146,7 +146,7 @@ export default function Perfil() {
         </div>
       </Card>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar perfil"}</Button>
         {msg ? <p className="text-muted text-xs">{msg}</p> : null}
       </div>

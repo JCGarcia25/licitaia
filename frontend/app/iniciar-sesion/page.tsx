@@ -41,8 +41,8 @@ export default function IniciarSesion() {
   }
 
   return (
-      <div className="hero-grid flex min-h-screen items-center justify-center px-5">
-      <div className="surface-card shadow-lift w-full max-w-md p-8">
+      <main className="hero-grid flex min-h-[100svh] items-center justify-center px-5 py-8">
+      <div className="surface-card shadow-lift w-full max-w-md p-5 sm:p-8">
         <Link href="/" className="mb-6 flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 text-[10px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
           <span className="text-lg font-bold">MySECOP</span>
@@ -51,13 +51,13 @@ export default function IniciarSesion() {
         <p className="text-muted mt-1 text-sm">Accede a tu tablero de oportunidades.</p>
         <form onSubmit={enviar} className="mt-6 space-y-4">
           <Field label="Correo electrónico">
-            <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@empresa.co" />
+            <Input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@empresa.co" />
           </Field>
           <Field label="Contraseña">
-            <div className="relative"><Input type={mostrarPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pr-20" /><button type="button" onClick={() => setMostrarPassword((visible) => !visible)} className="text-muted absolute inset-y-0 right-3 text-xs hover:text-teal">{mostrarPassword ? "Ocultar" : "Ver"}</button></div>
+            <div className="relative"><Input autoComplete="current-password" type={mostrarPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="pr-20" /><button type="button" aria-label={mostrarPassword ? "Ocultar contraseña" : "Mostrar contraseña"} aria-pressed={mostrarPassword} onClick={() => setMostrarPassword((visible) => !visible)} className="text-muted absolute inset-y-0 right-1 min-w-14 text-xs hover:text-teal">{mostrarPassword ? "Ocultar" : "Ver"}</button></div>
           </Field>
           <label className="text-muted flex items-center gap-2 text-xs"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="accent-teal" /> Recordarme en este dispositivo</label>
-          {error ? <p className="text-xs text-red-600">{error}</p> : null}
+          {error ? <p role="alert" className="text-xs text-red-600">{error}</p> : null}
           <Button type="submit" disabled={cargando} className="w-full">{cargando ? "Ingresando…" : "Ingresar"}</Button>
         </form>
         <button type="button" onClick={() => setRecuperacion((value) => !value)} className="text-teal mt-4 text-xs font-medium hover:underline">¿Olvidaste tu contraseña?</button>
@@ -66,6 +66,6 @@ export default function IniciarSesion() {
           ¿No tienes cuenta? <Link href="/registro" className="text-teal font-medium hover:underline">Regístrate gratis</Link>
         </p>
       </div>
-      </div>
+      </main>
   );
 }

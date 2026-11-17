@@ -95,7 +95,7 @@ export default function Alertas() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold tracking-tight">Alertas</h1>
-          <p className="text-muted text-sm">Notificaciones in-app y resumen diario opcional por correo (07:00, hora de Bogotá).</p>
+          <p className="text-muted text-sm">Notificaciones en MySECOP y resumen diario opcional por correo (07:00, hora de Bogotá).</p>
         </div>
         <div className="flex w-full flex-wrap gap-2 sm:w-auto">
           <Button size="sm" variant="outline" onClick={ejecutarCiclo}>Actualizar alertas ahora</Button>
