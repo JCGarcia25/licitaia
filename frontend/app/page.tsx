@@ -306,7 +306,7 @@ export default function Landing() {
               <a href="#" className="hover:text-teal">Términos y condiciones</a>
               <a href="#" className="hover:text-teal">Política de privacidad</a>
               <a href="#" className="hover:text-teal">Tratamiento de datos (Ley 1581)</a>
-              <a href="#contacto" className="hover:text-teal">Contacto</a>
+              <Link href="/contacto" className="hover:text-teal">Contacto</Link>
             </nav>
           </div>
           <p className="max-w-3xl leading-relaxed">
