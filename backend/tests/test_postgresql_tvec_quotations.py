@@ -91,3 +91,46 @@ def test_pg_full_scan_resume_json_fencing_and_migration_preserves_data(configure
         assert db.execute(text('select score from user_opportunities')).scalar_one()==81
     refused=migrate('downgrade','0016_tvec_quotations')
     assert refused.returncode!=0 and 'Preserve TVEC scan progress' in refused.stderr
+
+
+def test_pg_real_redis_manual_request_is_shared_and_atomic(configured,monkeypatch):
+    import importlib.util,json,subprocess,tempfile,time
+    from pathlib import Path
+    from types import SimpleNamespace
+    from threading import Lock
+    from redis import Redis
+    from evaluation_test_support import authorize
+    from app.services import tvec_refresh_requests as manual
+    factory,_=configured;s=get_settings();directory=Path(tempfile.mkdtemp(prefix='mysecop-manual-redis-'))
+    spec=importlib.util.find_spec('redislite');assert spec
+    binary=Path(spec.origin).parent/'bin/redis-server'
+    process=subprocess.Popen([str(binary),'--port','0','--unixsocket',str(directory/'redis.sock'),'--unixsocketperm','700','--dir',str(directory),'--save',''],stdout=open(directory/'redis.log','w'),stderr=subprocess.STDOUT)
+    client=Redis(unix_socket_path=str(directory/'redis.sock'),decode_responses=True,socket_timeout=1)
+    try:
+        for _ in range(100):
+            try:
+                if client.ping():break
+            except Exception:time.sleep(.05)
+        else:raise RuntimeError('Disposable Redis did not start')
+        broker=f'redis+socket://{directory}/redis.sock?virtual_host=0'
+        with factory() as db:
+            db.query(Snapshot).delete();db.commit()
+            authorize(db,monkeypatch,database=os.environ['MYSECOP_TEST_POSTGRES_URL'],broker=broker,origin='http://isolated.local')
+        for k,v in dict(tvec_enabled=True,tvec_events_enabled=True,tvec_events_refresh_enabled=True,tvec_dev_targets=s.evaluation_dev_targets,tvec_api_origin='http://isolated.local').items():monkeypatch.setattr(s,k,v)
+        sent=[];lock=Lock()
+        def publish(*a,**k):
+            with lock:sent.append((a,k))
+        queue=SimpleNamespace(conf=SimpleNamespace(broker_url=broker),send_task=publish)
+        monkeypatch.setattr('app.workers.celery_app.celery_app',queue)
+        def request():
+            with factory() as db:return manual.request(db)
+        with ThreadPoolExecutor(max_workers=8) as pool:responses=list(pool.map(lambda _:request(),range(8)))
+        assert sum(r['accepted'] for r in responses)==1 and len(sent)==1
+        assert all(r['state'] in {'PENDING','UNCONFIRMED'} for r in responses)
+        key=client.keys('tvec:manual-refresh:*')[0]
+        assert 0<client.ttl(key)<=300 and json.loads(client.get(key))['state']=='CONFIRMED'
+        with factory() as db:
+            assert manual.status(db)['state']=='PENDING'
+            assert db.execute(text('select score from user_opportunities')).scalar_one()==81
+    finally:
+        client.close();process.terminate();process.wait(timeout=10)

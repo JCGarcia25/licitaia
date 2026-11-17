@@ -174,3 +174,21 @@ def quotations(db:Session=Depends(get_db),q:str=Query('',max_length=200),
             'notice':'Consulta pública con actualización diferida. Confirma el plazo y la participación en TVEC; no se garantiza recepción de ofertas en tiempo real.',
             'timezone':'America/Bogota (interpretación de las fechas publicadas sin offset)',
             'freshness_minutes':FRESH_MINUTES}}
+
+
+@router.get('/quotations/refresh-status')
+def quotation_refresh_status(db:Session=Depends(get_db)):
+    from app.services.tvec_refresh_requests import status,RefreshUnavailable
+    try:return status(db)
+    except EnvironmentDenied:raise HTTPException(404,'Actualización TVEC no habilitada')
+    except RefreshUnavailable:raise HTTPException(503,'No pudimos consultar el estado de actualización TVEC.')
+
+
+@router.post('/quotations/refresh',status_code=202)
+def request_quotation_refresh(db:Session=Depends(get_db)):
+    from app.services.tvec_refresh_requests import request as enqueue_request,RefreshUnavailable,COOLDOWN_SECONDS
+    try:return enqueue_request(db)
+    except EnvironmentDenied:raise HTTPException(404,'Actualización TVEC no habilitada')
+    except RefreshUnavailable:raise HTTPException(503,
+        'No pudimos confirmar la solicitud. La protección contra duplicados sigue activa; consulta el estado antes de reintentar.',
+        headers={'Retry-After':str(COOLDOWN_SECONDS)})

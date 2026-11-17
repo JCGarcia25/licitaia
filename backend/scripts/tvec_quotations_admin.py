@@ -33,22 +33,35 @@ def main():
         with SessionLocal() as db:
             require_target(db)
             assert db.execute(text('SELECT version_num FROM alembic_version')).scalar_one()=='0017_tvec_full_scan'
+        with SessionLocal() as db:
+            email=db.execute(select(User.email).where(User.email==SUPERADMIN_EMAIL,User.is_active.is_(True))).scalar_one()
+        def browser_request(path,post=False):
+            token=create_access_token(email,expires_minutes=1)
+            request=urllib.request.Request(s.tvec_api_origin+path,data=b'{}' if post else None,
+                headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'},method='POST' if post else 'GET')
+            with urllib.request.urlopen(request,context=ssl.create_default_context(cafile=certifi.where()),timeout=20) as response:
+                assert response.status in {200,202};return json.load(response)
         operation_started=now()
-        task=celery_app.send_task('app.workers.tasks.refresh_tvec_quotations',queue='tvec',retry=False,soft_time_limit=180,time_limit=210)
-        result=task.get(timeout=240,propagate=False)
-        assert isinstance(result,dict) and result['status'] in {'DONE','MORE','BUSY'}
+        manual=browser_request('/api/tvec/quotations/refresh',post=True)
+        duplicate=browser_request('/api/tvec/quotations/refresh',post=True)
+        assert duplicate['accepted'] is False
+        assert manual['state'] in {'PENDING','RUNNING','COOLDOWN'}
+        result={'status':'DONE' if manual['state']=='COOLDOWN' or duplicate['state']=='COOLDOWN' else 'MORE'}
         last_kick=time.monotonic();last_pages=None;progress={}
         for _ in range(400):
             with SessionLocal() as db:
                 require_target(db);snapshot=db.get(Snapshot,SOURCE)
                 progress=dict(snapshot.scan_progress or {}) if snapshot else {}
-                if progress.get('published_complete') and snapshot.checked_at and (snapshot.checked_at>=operation_started or (result['status']=='DONE' and snapshot.checked_at>=now()-timedelta(minutes=2))):break
-                if snapshot and snapshot.status=='ERROR':raise RuntimeError('Full traversal failed; cursor preserved')
+                if progress.get('published_complete') and snapshot.checked_at and (snapshot.checked_at>=operation_started or (result['status']=='DONE' and snapshot.checked_at>=now()-timedelta(minutes=5))):break
+                db_error=bool(snapshot and snapshot.status=='ERROR')
                 pages=progress.get('next_page',0)
                 if pages!=last_pages:
                     print(json.dumps({'status':'QUOTATION_SCAN_PROGRESS','pages':pages,'total_pages':progress.get('total_pages'),'rows':progress.get('counts',{}).get('rows',0)}),flush=True)
                     last_pages=pages
                 can_resume=not snapshot or not snapshot.lease_until or snapshot.lease_until<=now()
+            if db_error and time.monotonic()-last_kick>15:
+                current_request=browser_request('/api/tvec/quotations/refresh-status')
+                if current_request['state']=='ERROR':raise RuntimeError('Full traversal failed; cursor preserved')
             if can_resume and time.monotonic()-last_kick>30:
                 celery_app.send_task('app.workers.tasks.refresh_tvec_quotations',args=[progress.get('id')],queue='tvec',retry=False,soft_time_limit=180,time_limit=210)
                 last_kick=time.monotonic()
@@ -65,7 +78,9 @@ def main():
         assert snapshot.scanned_rows==sum(progress['published_counts'][k] for k in ['rfi','unknown','unavailable','detail_failed','qualified'])
         for item in payload['items']:
             assert item['kind']=='RFQ' and item['eligibility']=='PENDING_VERIFICATION'
-        print(json.dumps({'status':'QUOTATIONS_DEV_VERIFIED','task_id':task.id,'available_rfq':payload['total'],
+        manual_status=browser_request('/api/tvec/quotations/refresh-status')
+        assert manual_status['state'] in {'COOLDOWN','IDLE','RUNNING'}
+        print(json.dumps({'status':'QUOTATIONS_DEV_VERIFIED','manual_button_verified':True,'manual_request':manual,'duplicate_request':duplicate,'manual_status':manual_status,'available_rfq':payload['total'],
             'ids':[r['official_id'] for r in payload['items']], 'provenance':payload['provenance'],
             'full_listing_traversal':True,'counts':progress.get('published_counts'),'scanned_pages':snapshot.scanned_pages,'automatic_refresh_seconds':900,'historical_order_ingestion_requested':False}))
         return 0
