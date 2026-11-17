@@ -41,12 +41,22 @@ s=get_settings(); u=make_url(s.database_url); r=make_url(s.redis_url)
 assert s.environment=='development' and s.frontend_url.rstrip('/')=='https://dev.mysecop.co'
 assert u.get_backend_name()=='postgresql' and u.host=='db' and not u.query
 assert r.host=='redis' and r.database=='0' and not r.query
-assert len(s.secret_key)>=32 and not getattr(s,'tvec_ingest_enabled',False)
+assert len(s.secret_key)>=32
+if getattr(s,'tvec_ingest_enabled',False):
+    from app.db.session import SessionLocal
+    from app.db.models import TvecSyncRun,TvecSyncState
+    from app.services.tvec_guard import require_target
+    from app.services.tvec_client import now
+    assert s.tvec_page_size==100 and s.tvec_max_pages==1
+    with SessionLocal() as db:
+        require_target(db,ingestion=True)
+        assert db.query(TvecSyncRun).filter(TvecSyncRun.state.in_(['PENDING','RUNNING'])).count()==0
+        assert db.query(TvecSyncState).filter(TvecSyncState.lease_until>now()).count()==0
 with create_engine(s.database_url).connect() as c:
     assert c.execute(text('select current_database()')).scalar_one()==u.database
     assert c.execute(text('select version_num from alembic_version')).scalar_one() in {'0014_evaluation_platform','0015_tvec_orders'}
 assert Redis.from_url(s.redis_url).ping()
-print('DEV API, PostgreSQL revision/destination and Redis verified; ingestion disabled')
+print('DEV API, PostgreSQL revision/destination and Redis verified; no active TVEC runs or leases')
 PY
   curl -fsS http://127.0.0.1:8002/health | python3 -c 'import json,sys; assert json.load(sys.stdin)["environment"]=="development"'
   # A full logical dump is retained on the server, never printed or uploaded to GitHub.
@@ -111,7 +121,7 @@ gateways=[str(ipaddress.ip_address(g)) for g in Path(sys.argv[2]).read_text().sp
 assert gateways
 # Trust only the host gateway of this already-verified private DEV network.
 proxy_ips=','.join(['127.0.0.1','::1']+gateways)
-updates={'FORWARDED_ALLOW_IPS':proxy_ips,'TVEC_ENABLED':'true','TVEC_INGEST_ENABLED':'false','TVEC_API_ORIGIN':'https://dev.mysecop.co','TVEC_DEV_TARGETS':"'"+json.dumps(target,separators=(',',':'))+"'"}
+updates={'FORWARDED_ALLOW_IPS':proxy_ips,'TVEC_ENABLED':'true','TVEC_INGEST_ENABLED':'true','TVEC_PAGE_SIZE':'100','TVEC_MAX_PAGES':'1','TVEC_API_ORIGIN':'https://dev.mysecop.co','TVEC_DEV_TARGETS':"'"+json.dumps(target,separators=(',',':'))+"'"}
 p=Path('.env'); lines=p.read_text().splitlines()
 lines=[line for line in lines if line.split('=',1)[0] not in updates]
 p.write_text('\n'.join(lines+[f'{k}={v}' for k,v in updates.items()])+'\n')
@@ -120,7 +130,7 @@ PY
   "${compose[@]}" run --rm --no-deps -T api python scripts/tvec_admin.py --register-identity "$identity" --acknowledge-isolated-dev < /dev/null
   "${compose[@]}" up -d --no-deps api worker beat
   "${compose[@]}" exec -T api python scripts/tvec_admin.py --verify-database < /dev/null
-  "${compose[@]}" exec -T api python -c 'from app.core.config import get_settings;s=get_settings();assert s.tvec_enabled and not s.tvec_ingest_enabled;print("TVEC DEV enabled; ingestion remains disabled; no sync scheduled")' < /dev/null
+  "${compose[@]}" exec -T api python -c 'from app.core.config import get_settings;s=get_settings();assert s.tvec_enabled and s.tvec_ingest_enabled and s.tvec_page_size==100 and s.tvec_max_pages==1;print("TVEC DEV ingestion enabled: at most 1 page of 100 orders per run; no sync scheduled")' < /dev/null
   "${compose[@]}" exec -T api python - <<'PY'
 import json,ssl,time,urllib.request,urllib.error
 import certifi
@@ -141,7 +151,7 @@ for attempt in range(10):
             assert response.status==200
             payload=json.load(response)
             assert payload["provenance"]["source"]=="TVEC" and len(payload["items"])<=1
-        print('TVEC authenticated HTTPS read verified through DEV proxy; no ingestion or account changes')
+        print('TVEC authenticated HTTPS read verified through DEV proxy; read-only check, no account changes')
         break
     except urllib.error.HTTPError as error:
         if error.code not in {502,503,504} or attempt==9:
@@ -149,6 +159,9 @@ for attempt in range(10):
         time.sleep(2)
 else:raise RuntimeError('TVEC HTTPS read unavailable')
 PY
+elif [[ "$mode" == pilot-100 ]]; then
+  [[ -s "$backup/RESTORE_VERIFIED" ]]
+  "${compose[@]}" exec -T api python scripts/tvec_dev_pilot.py --acknowledge-isolated-dev < /dev/null | tee "$backup/pilot-100-result.json"
 else
   exit 2
 fi

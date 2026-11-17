@@ -2,6 +2,7 @@ name: Reusable VPS deployment
 on:
   workflow_call:
     inputs:
+      tvec_pilot_100: { required: false, type: boolean, default: false }
       enable_tvec_dev: { required: false, type: boolean, default: false }
       environment_name: { required: true, type: string }
       domain: { required: true, type: string }
@@ -156,3 +157,17 @@ jobs:
           : "${VPS_PORT:=22}"
           ssh -i "$HOME/.ssh/licitaia_deploy" -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
             "$VPS_USER@$VPS_HOST" "cd /home/administrator/licitaia-development && bash -s -- activate '$RELEASE_SHA'" < scripts/tvec-dev-deploy.sh
+
+      - name: TVEC DEV controlled pilot (100 orders maximum)
+        if: ${{ inputs.tvec_pilot_100 && inputs.enable_tvec_dev && inputs.environment_name == 'development' }}
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+          : "${VPS_PORT:=22}"
+          ssh -i "$HOME/.ssh/licitaia_deploy" -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            "$VPS_USER@$VPS_HOST" "cd /home/administrator/licitaia-development && bash -s -- pilot-100 '$RELEASE_SHA'" < scripts/tvec-dev-deploy.sh
