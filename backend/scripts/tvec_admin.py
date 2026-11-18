@@ -32,7 +32,7 @@ def main():
         from sqlalchemy import text
         with SessionLocal() as db:
             revision=db.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-            if revision not in {'0015_tvec_orders','0016_tvec_quotations','0017_tvec_full_scan'}:
+            if revision not in {'0015_tvec_orders','0016_tvec_quotations','0017_tvec_full_scan','0018_offer_closing_reminders'}:
                 raise ValueError('Expected reviewed 0015/0016/0017; review different revision before operating')
             if a.register_identity:
                 marker=db.get(EvaluationEnvironmentIdentity,identity)

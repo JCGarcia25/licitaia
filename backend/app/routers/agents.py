@@ -267,6 +267,7 @@ def create_project(payload: dict, user: User = Depends(get_current_user), db: Se
     if not uo:
         uo = UserOpportunity(user_id=user.id, opportunity_id=opp.id, score=None, reasons=[])
         db.add(uo)
+    uo.is_saved = True
     uo.triage = "proyecto"
     db.commit()
     return {"id": project.id, "name": project.name, "checklist": project.checklist, "cronograma": project.cronograma}
@@ -274,8 +275,11 @@ def create_project(payload: dict, user: User = Depends(get_current_user), db: Se
 
 @router.get("/offer-projects")
 def list_projects(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    rows = db.query(OfferProject).filter(OfferProject.user_id == user.id).order_by(OfferProject.updated_at.desc()).all()
-    return [{"id": p.id, "name": p.name, "opportunity_id": p.opportunity_id,
+    from app.services.saved_opportunities import is_saved, saved_first
+    query=db.query(OfferProject).outerjoin(Opportunity,OfferProject.opportunity_id==Opportunity.id).filter(OfferProject.user_id==user.id)
+    rows=saved_first(query,user.id).order_by(OfferProject.updated_at.desc(),OfferProject.id.desc()).all()
+    saved={row.opportunity_id:row for row in db.query(UserOpportunity).filter(UserOpportunity.user_id==user.id,UserOpportunity.opportunity_id.in_([p.opportunity_id for p in rows])).all()}
+    return [{"id": p.id, "name": p.name, "opportunity_id": p.opportunity_id, "is_saved":is_saved(saved.get(p.opportunity_id)),
              "url_oficial": (db.query(Opportunity.url_oficial).filter(Opportunity.id == p.opportunity_id).scalar()), "status": p.status,
              "version": p.version, "updated_at": p.updated_at,
              "pendientes": sum(1 for c in (p.checklist or []) if c.get("estado") != "listo")} for p in rows]
@@ -289,7 +293,7 @@ def get_project(project_id: int, user: User = Depends(get_current_user), db: Ses
     opp = db.query(Opportunity).filter(Opportunity.id == p.opportunity_id).first()
     return {
         "id": p.id, "name": p.name, "status": p.status, "version": p.version, "approved_by": p.approved_by,
-        "opportunity": {"id": opp.id, "objeto": opp.objeto, "entidad": opp.entidad, "url_oficial": opp.url_oficial} if opp else None,
+        "opportunity": {"id": opp.id, "objeto": opp.objeto, "entidad": opp.entidad, "url_oficial": opp.url_oficial, "fecha_cierre": opp.fecha_cierre.isoformat()+"Z" if opp.fecha_cierre and not opp.fecha_cierre.tzinfo else opp.fecha_cierre.isoformat() if opp.fecha_cierre else None} if opp else None,
         "checklist": p.checklist, "matriz_cumplimiento": p.matriz_cumplimiento,
         "borradores": p.borradores, "cronograma": p.cronograma, "comentarios": p.comentarios,
     }
@@ -300,6 +304,10 @@ def delete_project(project_id: int, user: User = Depends(get_current_user), db: 
     p = db.query(OfferProject).filter(OfferProject.id == project_id, OfferProject.user_id == user.id).first()
     if not p:
         raise HTTPException(404, "Oferta no encontrada")
+    from app.db.models import OfferClosingReminder
+    reminder=db.query(OfferClosingReminder).filter_by(project_id=p.id).with_for_update().first()
+    if reminder and reminder.status=="SENDING":raise HTTPException(409,"Hay un recordatorio en envío. Intenta eliminar la oferta en unos minutos.")
+    if reminder:db.delete(reminder)
     db.delete(p)
     db.commit()
     return Response(status_code=204)

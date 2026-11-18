@@ -35,6 +35,7 @@ try:
                      'app.workers.tasks.rescore_all_task': {'queue': 'matches'}},
     )
     celery_app.conf.beat_schedule = {
+        "offer-closing-reminders-every-minute": {"task": "app.workers.tasks.deliver_offer_reminders", "schedule": 60},
         "matching-recovery-every-minute": {
             "task": "app.workers.tasks.rescore_all_task", "schedule": 60,
         },

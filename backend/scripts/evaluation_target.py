@@ -27,7 +27,7 @@ def main():
             with SessionLocal() as db:
                 if database_identity(str(db.get_bind().url))!=database_identity(s.database_url):raise EnvironmentDenied('Session target differs')
                 revision=db.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
-                if revision not in {'0014_evaluation_platform','0015_tvec_orders','0016_tvec_quotations','0017_tvec_full_scan'}:raise EnvironmentDenied('Expected reviewed migration 0014/0015/0016/0017; review other revisions manually')
+                if revision not in {'0014_evaluation_platform','0015_tvec_orders','0016_tvec_quotations','0017_tvec_full_scan','0018_offer_closing_reminders'}:raise EnvironmentDenied('Expected reviewed migration 0014/0015/0016/0017/0018; review other revisions manually')
                 if args.register_identity:
                     existing=db.get(Identity,identifier)
                     if existing and (existing.fingerprint!=fingerprint or existing.purpose!='isolated-development'):raise EnvironmentDenied('Existing identity differs; no overwrite')

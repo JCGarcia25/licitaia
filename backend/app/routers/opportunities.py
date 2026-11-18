@@ -20,6 +20,8 @@ from app.services.match_versions import current_score_condition, calculation_sta
 from app.services.opportunity_filters import _location_condition, _text_variants, _modality_condition, profile_constraints
 from pydantic import BaseModel
 
+from app.services.saved_opportunities import saved_first, saved_condition, is_saved
+
 router = APIRouter(prefix="/api", tags=["dashboard"])
 
 class OpportunitySearchState(BaseModel):
@@ -113,6 +115,7 @@ def _serialize(opp: Opportunity, uo: UserOpportunity | None) -> dict:
         "score": uo.score if uo and match_state == "CURRENT" else None,
         "score_state": match_state,
         "triage": uo.triage if uo else "detectada",
+        "is_saved": is_saved(uo),
         "reasons": uo.reasons if uo and match_state == "CURRENT" else [],
     }
 
@@ -134,10 +137,11 @@ def list_opportunities(
     offset: int = Query(default=0, ge=0),
     solo_con_score: bool = False,
     profile_match: bool = False,
+    prioritize_saved: bool = True,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    query = db.query(Opportunity)
+    query = saved_first(db.query(Opportunity), user.id) if prioritize_saved else db.query(Opportunity)
     profile = db.query(CompanyProfile).filter(CompanyProfile.user_id == user.id).first()
     # Al abrir Oportunidades, el perfil es el filtro de entrada. Los filtros
     # escritos por el usuario tienen prioridad para permitir explorar después.
@@ -216,7 +220,7 @@ def list_opportunities(
         min_score = (score_min if score_min is not None else PROFILE_MATCH_MIN_SCORE) if profile_match else 0
         query = query.filter(user_opp.filter(current_score_condition(), UserOpportunity.score >= min_score).exists())
     if triage == "guardada":
-        query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "guardada").exists(), user_project.exists()))
+        query = query.filter(user_opp.filter(saved_condition()).exists())
     elif triage == "proyecto":
         query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "proyecto").exists(), user_project.exists()))
     elif triage == "detectada":
@@ -231,7 +235,9 @@ def list_opportunities(
         # contrario se muestran coincidencias genéricas o no las de mayor score.
         # La afinidad léxica utiliza domain_terms en Python; el recorrido por
         # lotes limita memoria sin paginar antes de aplicar ese criterio.
-        ranked = (query.order_by(None).join(UserOpportunity, and_(
+        ranked_query = query.order_by(None)
+        if prioritize_saved: ranked_query = saved_first(ranked_query, user.id)
+        ranked = (ranked_query.join(UserOpportunity, and_(
             UserOpportunity.opportunity_id == Opportunity.id,
             UserOpportunity.user_id == user.id,
         )).with_entities(Opportunity, UserOpportunity)
@@ -245,7 +251,7 @@ def list_opportunities(
                 items.append(_serialize(opp, score))
             total += 1
         return {"total": total, "items": items, "profile_configured": True, "profile_required": False}
-    total = query.count()
+    total = query.order_by(None).count()
     rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
     scores = _user_scores(db, user.id, [opp.id for opp in rows])
     items = [_serialize(opp, scores.get(opp.id)) for opp in rows]
@@ -270,6 +276,27 @@ def get_opportunity(opportunity_id: int, user: User = Depends(get_current_user),
     return data
 
 
+class SavedIn(BaseModel):
+    saved: bool
+
+@router.patch("/opportunities/{opportunity_id}/saved")
+def save_opportunity(opportunity_id:int,body:SavedIn,user:User=Depends(get_current_user),db:Session=Depends(get_db)):
+    from sqlalchemy.exc import IntegrityError
+    if db.get(Opportunity,opportunity_id) is None:raise HTTPException(404,"Oportunidad no encontrada")
+    row=db.query(UserOpportunity).filter_by(user_id=user.id,opportunity_id=opportunity_id).first()
+    if row is None:
+        row=UserOpportunity(user_id=user.id,opportunity_id=opportunity_id,score=None,reasons=[])
+        db.add(row)
+        try:db.flush()
+        except IntegrityError:
+            db.rollback();row=db.query(UserOpportunity).filter_by(user_id=user.id,opportunity_id=opportunity_id).one()
+    row.is_saved=body.saved
+    if body.saved and row.triage != "proyecto":row.triage="guardada"
+    elif not body.saved and row.triage=="guardada":row.triage="detectada"
+    db.commit()
+    return {"id":opportunity_id,"is_saved":body.saved,"triage":row.triage}
+
+
 @router.post("/opportunities/{opportunity_id}/triaje")
 def set_triaje(opportunity_id: int, data: TriajeIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     opp = db.query(Opportunity).filter(Opportunity.id == opportunity_id).first()
@@ -281,6 +308,8 @@ def set_triaje(opportunity_id: int, data: TriajeIn, user: User = Depends(get_cur
     if not uo:
         uo = UserOpportunity(user_id=user.id, opportunity_id=opp.id, score=None, reasons=[])
         db.add(uo)
+    if data.triage == "guardada": uo.is_saved = True
+    elif data.triage in {"detectada", "descartada"}: uo.is_saved = False
     uo.triage = data.triage
     db.commit()
     return {"id": opp.id, "triage": uo.triage}
@@ -324,7 +353,7 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         if payload.get(key): filtros[key] = payload[key]
     if payload.get("valor_min"):
         filtros["valor_min"] = float(payload["valor_min"])
-    query = db.query(Opportunity)
+    query = saved_first(db.query(Opportunity), user.id)
     if not filtros.get("estado") or filtros.get("estado") == "abiertos":
         query = query.filter(_vigente_condition())
     if filtros.get("q"):
@@ -385,14 +414,14 @@ def smart_search(payload: dict, user: User = Depends(get_current_user), db: Sess
         except (TypeError, ValueError):
             raise HTTPException(422, "El puntaje mínimo no es válido")
     if triage == "guardada":
-        query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "guardada").exists(), user_project.exists()))
+        query = query.filter(user_opp.filter(saved_condition()).exists())
     elif triage == "proyecto":
         query = query.filter(or_(user_opp.filter(UserOpportunity.triage == "proyecto").exists(), user_project.exists()))
     elif triage == "detectada":
         query = query.filter(or_(~user_opp.exists(), user_opp.filter(UserOpportunity.triage == "detectada").exists()))
     elif triage:
         query = query.filter(user_opp.filter(UserOpportunity.triage == triage).exists())
-    total = query.count()
+    total = query.order_by(None).count()
     rows = query.order_by(Opportunity.updated_at.desc(), Opportunity.id.desc()).offset(offset).limit(limit).all()
     scores = _user_scores(db, user.id, [opp.id for opp in rows])
     return {"filtros_interpretados": filtros, "total": total,
