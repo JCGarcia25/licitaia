@@ -63,3 +63,27 @@ if os.environ.get('MYSECOP_TVEC_FAKE_SOURCE')=='1':
                 while flags().get('tvec_hold'):time.sleep(.05)
             return super().page(after)
     tvec_ingest.TvecClient=IsolatedTvecClient
+
+# Quotation recovery fixture: one network failure after a committed batch.
+# This module has already verified the disposable DB and owned control path.
+if os.environ.get('MYSECOP_TVEC_QUOTATIONS_FAKE_SOURCE')=='1':
+    import httpx
+    from app.services import tvec_full_scan
+    from test_tvec_full_scan import Pages
+    class IsolatedQuotationClient(Pages):
+        def __init__(self):
+            super().__init__()
+            from datetime import datetime,timezone
+            from test_tvec_quotations import INSTANT
+            shift=datetime.fromisoformat(control.with_suffix('.quotation-clock').read_text())-INSTANT
+            for page in self.pages:
+                for row in page:
+                    for index in (3,4):
+                        row[index]=(datetime.fromisoformat(row[index])+shift).strftime('%Y-%m-%d %H:%M:%S.%f')
+        def get(self,path,params=None):
+            failed=control.with_suffix('.quotation-failed')
+            if params and params.get('page')=='2' and not failed.exists():
+                failed.write_text('synthetic connection failure')
+                raise httpx.ConnectError('synthetic quotation interruption')
+            return super().get(path,params)
+    tvec_full_scan.Client=IsolatedQuotationClient

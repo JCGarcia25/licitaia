@@ -47,7 +47,7 @@ def main():
         assert duplicate['accepted'] is False
         assert manual['state'] in {'PENDING','RUNNING','COOLDOWN'}
         result={'status':'DONE' if manual['state']=='COOLDOWN' or duplicate['state']=='COOLDOWN' else 'MORE'}
-        last_kick=time.monotonic();last_pages=None;progress={}
+        last_kick=time.monotonic();last_pages=None;progress={};error_since=None
         for _ in range(400):
             with SessionLocal() as db:
                 require_target(db);snapshot=db.get(Snapshot,SOURCE)
@@ -59,10 +59,19 @@ def main():
                     print(json.dumps({'status':'QUOTATION_SCAN_PROGRESS','pages':pages,'total_pages':progress.get('total_pages'),'rows':progress.get('counts',{}).get('rows',0)}),flush=True)
                     last_pages=pages
                 can_resume=not snapshot or not snapshot.lease_until or snapshot.lease_until<=now()
-            if db_error and time.monotonic()-last_kick>15:
+            if db_error:
+                if error_since is None:error_since=time.monotonic()
+            else:error_since=None
+            # Allow the worker's bounded transient retries (10/20/40 seconds)
+            # before declaring the preserved cursor terminally failed.
+            if db_error and time.monotonic()-error_since>120:
                 current_request=browser_request('/api/tvec/quotations/refresh-status')
-                if current_request['state']=='ERROR':raise RuntimeError('Full traversal failed; cursor preserved')
-            if can_resume and time.monotonic()-last_kick>30:
+                if current_request['state']=='ERROR':
+                    print(json.dumps({'status':'QUOTATION_SCAN_FAILED','scan_id':progress.get('id'),
+                        'pages':progress.get('next_page',0),'total_pages':progress.get('total_pages'),
+                        'error_type':snapshot.error_type,'cursor_preserved':True}),flush=True)
+                    raise RuntimeError('Full traversal failed; cursor preserved')
+            if can_resume and not db_error and time.monotonic()-last_kick>30:
                 celery_app.send_task('app.workers.tasks.refresh_tvec_quotations',args=[progress.get('id')],queue='tvec',retry=False,soft_time_limit=180,time_limit=210)
                 last_kick=time.monotonic()
             time.sleep(3)

@@ -48,3 +48,37 @@ def test_real_tvec_queue_duplicate_broker_restart_and_worker_kill(services,monke
     with s.factory() as db:
         assert db.query(Order).count()==3
         assert db.query(Opportunity).count()==0 and db.query(UserOpportunity).count()==0
+
+
+def test_quotation_network_failure_recovers_automatically_on_same_cursor(services,monkeypatch):
+    from evaluation_test_support import authorize
+    from app.db.models import TvecQuotationSnapshot as Snapshot,TvecQuotationEvent as Event
+    from app.services.tvec_quotations import SOURCE
+    settings=get_settings();s=services;url=os.environ['MYSECOP_TEST_POSTGRES_URL']
+    with s.factory() as db:
+        authorize(db,monkeypatch,database=url,broker=s.broker,origin='http://isolated.local')
+        previous_opportunities=db.query(Opportunity).count()
+    env={'TVEC_ENABLED':'true','TVEC_EVENTS_ENABLED':'true','TVEC_EVENTS_REFRESH_ENABLED':'true',
+         'TVEC_DEV_TARGETS':json.dumps(settings.evaluation_dev_targets),
+         'TVEC_API_ORIGIN':'http://isolated.local','MYSECOP_TVEC_QUOTATIONS_FAKE_SOURCE':'1'}
+    from datetime import datetime,timezone
+    s.control.with_suffix('.quotation-clock').write_text(datetime.now(timezone.utc).replace(tzinfo=None).isoformat())
+    s.worker_stop();s.worker_start(queues='tvec',extra_env=env)
+    # Exactly one initial task; the task must arrange its own retry/continuation.
+    s.application.send_task('app.workers.tasks.refresh_tvec_quotations',queue='tvec')
+    wait(lambda:s.control.with_suffix('.quotation-failed').exists(),20)
+    with s.factory() as db:
+        state=db.get(Snapshot,SOURCE)
+        assert state.scan_progress['next_page']==2 and state.published_snapshot is None
+        generation=state.scan_progress['id']
+    def completed():
+        with s.factory() as db:
+            state=db.get(Snapshot,SOURCE)
+            return state and state.status=='IDLE' and state.scan_progress.get('complete')
+    wait(completed,40)
+    with s.factory() as db:
+        state=db.get(Snapshot,SOURCE)
+        assert state.scan_progress['id']==generation
+        assert state.scanned_pages==3 and state.scanned_rows==33
+        assert db.query(Event).filter_by(snapshot_id=generation).count()==2
+        assert db.query(Opportunity).count()==previous_opportunities

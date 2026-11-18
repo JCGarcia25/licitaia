@@ -296,8 +296,8 @@ if celery_app is not None:
 
 if celery_app is not None:
     @celery_app.task(name='app.workers.tasks.refresh_tvec_quotations',acks_late=True,
-                     reject_on_worker_lost=True,queue='tvec')
-    def refresh_tvec_quotations(scan_id=None):
+                     reject_on_worker_lost=True,queue='tvec',bind=True,max_retries=3)
+    def refresh_tvec_quotations(self,scan_id=None):
         from app.services.tvec_quotations import configured
         from app.services.tvec_full_scan import refresh_batch
         from app.services.evaluation_guard import broker_identity
@@ -305,8 +305,27 @@ if celery_app is not None:
         settings=configured(refresh=True)
         if broker_identity(celery_app.conf.broker_url)!=broker_identity(settings.redis_url):
             return 'ENVIRONMENT_DENIED'
-        with SessionLocal() as db:
-            result=refresh_batch(db,expected_scan=scan_id)
+        from sqlalchemy.exc import OperationalError as DatabaseUnavailable
+        from kombu.exceptions import OperationalError as BrokerUnavailable
+        try:
+            with SessionLocal() as db:
+                result=refresh_batch(db,expected_scan=scan_id)
+        except (httpx.TransportError, httpx.HTTPStatusError, TimeoutError, DatabaseUnavailable) as error:
+            status=error.response.status_code if isinstance(error,httpx.HTTPStatusError) else None
+            if status is not None and status not in {408,429,500,502,503,504}:
+                raise
+            logger.warning('tvec_quotation_batch_retry scan=%s attempt=%s error_type=%s http_status=%s',
+                           scan_id,self.request.retries+1,type(error).__name__,status)
+            raise self.retry(exc=error,countdown=min(60,10 * 2**self.request.retries))
+        if result['status']=='BUSY':
+            raise self.retry(countdown=15)
         if result['status']=='MORE':
-            celery_app.send_task('app.workers.tasks.refresh_tvec_quotations',args=[result['scan_id']],queue='tvec',countdown=2,retry=False,soft_time_limit=180,time_limit=210)
+            try:
+                celery_app.send_task('app.workers.tasks.refresh_tvec_quotations',args=[result['scan_id']],queue='tvec',countdown=2,retry=False,soft_time_limit=180,time_limit=210)
+            except BrokerUnavailable as error:
+                # Publication may be ambiguous. Redelivery uses this generation;
+                # leases and its committed cursor make duplicate delivery safe.
+                logger.warning('tvec_quotation_publish_retry scan=%s attempt=%s error_type=%s',
+                               result['scan_id'],self.request.retries+1,type(error).__name__)
+                raise self.retry(exc=error,args=[result['scan_id']],countdown=min(60,10 * 2**self.request.retries))
         return result

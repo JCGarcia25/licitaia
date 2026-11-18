@@ -304,9 +304,9 @@ export default function Landing() {
               MySECOP
             </span>
             <nav className="flex flex-wrap gap-5">
-              <a href="#" className="hover:text-teal">Términos y condiciones</a>
-              <a href="#" className="hover:text-teal">Política de privacidad</a>
-              <a href="#" className="hover:text-teal">Tratamiento de datos (Ley 1581)</a>
+              <Link href="/legal/terminos-y-condiciones" className="hover:text-teal">Términos y condiciones</Link>
+              <Link href="/legal/politica-de-privacidad" className="hover:text-teal">Política de privacidad</Link>
+              <Link href="/legal/tratamiento-de-datos" className="hover:text-teal">Tratamiento de datos (Ley 1581)</Link>
               <Link href="/contacto" className="hover:text-teal">Contacto</Link>
             </nav>
           </div>
