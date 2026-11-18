@@ -5,6 +5,7 @@ import { publicMetadata } from "@/lib/seo";
 export const metadata = publicMetadata("/", "Licitaciones y oportunidades SECOP en Colombia", "Encuentra oportunidades de contratación pública en Colombia, compara procesos de SECOP y organiza tus propuestas con MySECOP. Consulta planes y funciones.");
 import { ThemeToggle } from "@/components/theme";
 import { ContactForm } from "@/components/contact-form";
+import { InstagramLink, INSTAGRAM_URL } from "@/components/instagram-link";
 import { LandingVisit } from "@/components/landing-visit";
 
 // Keep the public landing out of the static client-provider fallback. The
@@ -78,7 +79,7 @@ export default function Landing() {
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Organization", name: "MySECOP", legalName: "Zorba Games Studios S.A.S.", telephone: "+573204930650", url: "https://mysecop.co", logo: "https://mysecop.co/icon.svg", email: "info@zorbagames.com" },
+      { "@type": "Organization", name: "MySECOP", legalName: "Zorba Games Studios S.A.S.", telephone: "+573204930650", url: "https://mysecop.co", logo: "https://mysecop.co/icon.svg", email: "info@zorbagames.com", sameAs: [INSTAGRAM_URL] },
       { "@type": "WebSite", name: "MySECOP", url: "https://mysecop.co", description: "Inteligencia para encontrar y analizar oportunidades de contratación pública en Colombia." },
       { "@type": "SoftwareApplication", name: "MySECOP", applicationCategory: "BusinessApplication", operatingSystem: "Web", offers: [{ "@type": "Offer", price: "0", priceCurrency: "COP" }, { "@type": "Offer", price: "59900", priceCurrency: "COP" }] },
     ],
@@ -312,6 +313,10 @@ export default function Landing() {
               <Link href="/legal/tratamiento-de-datos" className="hover:text-teal">Tratamiento de datos (Ley 1581)</Link>
               <Link href="/contacto" className="hover:text-teal">Contacto</Link>
             </nav>
+          </div>
+          <div className="flex flex-col items-start gap-3 border-t border-base pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm">Síguenos y conoce las novedades de MySECOP.</p>
+            <InstagramLink />
           </div>
           <p className="max-w-3xl leading-relaxed">
             Aviso legal: MySECOP es un producto independiente de análisis de información pública y <strong>no es una plataforma
