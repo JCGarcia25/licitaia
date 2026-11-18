@@ -146,11 +146,11 @@ function AuthenticatedLayout({ children }: { children: ReactNode }) {
             <div className="order-1 ml-auto flex items-center gap-2 sm:gap-3 lg:order-2">
               <Link href="/app" className="mr-1 flex items-center gap-2 font-semibold lg:hidden"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal text-[9px] font-bold text-slate-950">MS</span><span className="hidden sm:inline">MySECOP</span></Link>
               <ThemeToggle />
-              <Link href="/app/plan" className={`hidden rounded-full border px-3 py-1 text-[11px] font-semibold sm:inline ${plan?.es_pro ? "border-teal/40 bg-teal/10 text-teal" : "border-amber-300/60 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200"}`}>
+              <Link href="/app/plan" className={`hidden min-h-11 items-center rounded-full border px-3 py-2 text-xs font-semibold sm:inline-flex ${plan?.es_pro ? "border-teal/40 bg-teal/10 text-teal" : "border-amber-300/60 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200"}`}>
                 {plan?.nombre || "MySECOP Free"}
               </Link>
-              {user?.email?.toLowerCase() === "jorge@zorbagames.com" ? <Link href="/app/admin" className="hidden rounded-lg border border-teal/40 px-3 py-1.5 text-xs font-semibold text-teal sm:inline">Centro de control</Link> : null}
-              <span className="text-muted hidden text-xs lg:inline">{user?.email}</span>
+              {user?.email?.toLowerCase() === "jorge@zorbagames.com" ? <Link href="/app/admin" className="hidden min-h-11 items-center rounded-lg border border-teal/40 px-3 py-2 text-xs font-semibold text-teal sm:inline-flex">Centro de control</Link> : null}
+              <span className="text-muted hidden max-w-48 truncate text-xs xl:inline">{user?.email}</span>
               <button onClick={logout} className="border-base rounded-lg border min-h-11 px-3 py-1.5 text-xs font-medium transition hover:text-red-600">
                 Salir
               </button>

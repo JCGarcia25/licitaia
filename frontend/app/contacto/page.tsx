@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { publicMetadata } from "@/lib/seo";
+export const metadata = publicMetadata("/contacto", "Contacto y soporte", "Contacta al equipo de MySECOP para conocer la plataforma, resolver dudas de contratación pública o recibir soporte por formulario y WhatsApp.");
 import { ContactForm } from "@/components/contact-form";
 
 export default function Contacto() {

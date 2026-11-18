@@ -1,4 +1,5 @@
 "use client";
+import { buttonStyles } from "@/lib/button-styles";
 /* Oportunidades: filtros, búsqueda NLQ y triage. */
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -252,8 +253,8 @@ export default function Oportunidades() {
                   </div>
                   <div className="basis-full flex w-full flex-col gap-2 sm:basis-auto sm:w-auto sm:shrink-0">
                     <div className="flex flex-wrap gap-2">
-                      <Link className="w-full sm:w-auto" href={`/app/oportunidades/${o.id}?volver=${encodeURIComponent(typeof window === "undefined" ? "/app/oportunidades" : window.location.pathname + window.location.search)}`}><Button size="sm" className="w-full sm:w-auto">Analizar</Button></Link>
-                      {o.url_oficial ? <a className="w-full sm:w-auto" href={o.url_oficial} target="_blank" rel="noopener,noreferrer"><Button size="sm" variant="outline" className="w-full sm:w-auto">Ver en SECOP ↗</Button></a> : <Button size="sm" variant="outline" className="w-full sm:w-auto" disabled>Expediente SECOP no disponible</Button>}
+                      <Link className={buttonStyles({ size: "sm", className: "w-full sm:w-auto" })} href={`/app/oportunidades/${o.id}?volver=${encodeURIComponent(typeof window === "undefined" ? "/app/oportunidades" : window.location.pathname + window.location.search)}`}>Analizar</Link>
+                      {o.url_oficial ? <a className={buttonStyles({ size: "sm", variant: "outline", className: "w-full sm:w-auto" })} href={o.url_oficial} target="_blank" rel="noopener,noreferrer">Ver en SECOP ↗</a> : <Button size="sm" variant="outline" className="w-full sm:w-auto" disabled>Expediente SECOP no disponible</Button>}
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="ghost" onClick={() => guardarProceso(o)}>{o.is_saved ? "Dejar de guardar" : "Guardar"}</Button>
@@ -265,7 +266,7 @@ export default function Oportunidades() {
               </Card>
             ))}
           </div>
-          <div className="flex items-center justify-between border-t border-base pt-4 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-base pt-4 text-sm">
             <span className="text-muted">Página {pagina} de {Math.max(1, Math.ceil(total / TAMANO_PAGINA))}</span>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" disabled={pagina <= 1} onClick={() => { const next = pagina - 1; setPagina(next); cargar(undefined, busquedaConPerfil, next); }}>Anterior</Button>
