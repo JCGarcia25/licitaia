@@ -87,3 +87,13 @@ if os.environ.get('MYSECOP_TVEC_QUOTATIONS_FAKE_SOURCE')=='1':
                 raise httpx.ConnectError('synthetic quotation interruption')
             return super().get(path,params)
     tvec_full_scan.Client=IsolatedQuotationClient
+
+
+if os.environ.get('MYSECOP_OFFER_REMINDER_MAILBOX'):
+    from app.services import offer_reminders
+    mailbox=Path(os.environ['MYSECOP_OFFER_REMINDER_MAILBOX'])
+    assert mailbox.parent==control.parent and mailbox.name=='reminder-mailbox.jsonl'
+    def capture_reminder(recipient,subject,body):
+        with mailbox.open('a') as handle:handle.write(json.dumps({'recipient':recipient,'subject':subject,'body':body})+'\n')
+        return 'SENT',None
+    offer_reminders.send=capture_reminder

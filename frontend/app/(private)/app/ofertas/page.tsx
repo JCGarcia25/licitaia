@@ -2,12 +2,13 @@
 /* Agente 4 · Preparador de Ofertas: proyectos, checklist, borradores y exportación. */
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { OfferReminderDialog } from "@/components/offer-reminder-dialog";
 import { api, descargarBlob } from "@/lib/api";
 import { Badge, Button, Card, CardHeader, EmptyState, Input, Select, Spinner, Textarea } from "@/components/ui";
 
 type Project = {
   id: number; name: string; opportunity_id: number; status: string; version: number;
-  updated_at: string; pendientes: number; url_oficial?: string | null;
+  updated_at: string; pendientes: number; is_saved: boolean; url_oficial?: string | null;
 };
 type ProjectDetail = {
   id: number; name: string; status: string; version: number; approved_by: string;
@@ -23,6 +24,7 @@ const ESTADOS = ["activo", "en_revision", "aprobado", "presentado", "archivado"]
 export default function Ofertas() {
   const [lista, setLista] = useState<Project[] | null>(null);
   const [sel, setSel] = useState<ProjectDetail | null>(null);
+  const [reminder, setReminder] = useState<Project | null>(null);
   const [comentario, setComentario] = useState("");
   const [msg, setMsg] = useState("");
 
@@ -34,7 +36,12 @@ export default function Ofertas() {
     setSel(await api<ProjectDetail>(`/api/offer-projects/${id}`));
   }, []);
 
-  useEffect(() => { cargarLista().catch(() => setLista([])); }, [cargarLista]);
+  useEffect(() => { cargarLista().catch(() => setLista([])); const id = Number(new URLSearchParams(window.location.search).get("oferta")); if (Number.isSafeInteger(id) && id > 0) void abrir(id).catch(() => setMsg("No pudimos abrir esta oferta. Selecciónala en la lista.")); }, [cargarLista, abrir]);
+
+  async function guardarProceso(p: Project) {
+    try { await api(`/api/opportunities/${p.opportunity_id}/saved`, { method: "PATCH", body: JSON.stringify({ saved: !p.is_saved }) }); await cargarLista(); setMsg(p.is_saved ? "Proceso retirado de guardados. Tu oferta se conserva." : "Proceso guardado. Aparecerá primero entre los resultados que coincidan con tu búsqueda."); }
+    catch (e) { setMsg(e instanceof Error ? e.message : "No pudimos guardar el proceso."); }
+  }
 
   async function toggleChecklist(index: number, estado: string) {
     if (!sel) return;
@@ -100,6 +107,7 @@ export default function Ofertas() {
         <p className="text-muted text-sm">Organiza la documentación de tu propuesta. Toda oferta requiere aprobación humana antes de presentarse.</p>
       </div>
 
+      {reminder && <OfferReminderDialog key={reminder.id} projectId={reminder.id} name={reminder.name} onClose={() => setReminder(null)} />}
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Lista de proyectos */}
         <div className="space-y-3">
@@ -111,9 +119,11 @@ export default function Ofertas() {
                 <button onClick={() => abrir(p.id)} className="w-full text-left">
                   <p className="text-sm font-semibold">{p.name}</p>
                   <p className="text-muted mt-1 text-[11px]">v{p.version} · {p.pendientes} pendiente(s) de checklist</p>
-                  <div className="mt-2"><Badge tone={p.status === "aprobado" ? "green" : p.status === "archivado" ? "gray" : "blue"}>{p.status}</Badge></div>
+                  <div className="mt-2 flex flex-wrap gap-2"><Badge tone={p.status === "aprobado" ? "green" : p.status === "archivado" ? "gray" : "blue"}>{p.status}</Badge>{p.is_saved && <Badge tone="purple">Proceso guardado</Badge>}</div>
                 </button>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={() => guardarProceso(p)}>{p.is_saved ? "Dejar de guardar proceso" : "Guardar proceso"}</Button>
+                  <Button size="sm" variant="outline" onClick={() => setReminder(p)}>Recordatorio de cierre</Button>
                   <Button size="sm" variant="ghost" className="text-red-600" onClick={() => eliminarOferta(p.id)}>Eliminar oferta</Button>
                   {p.url_oficial ? <a href={p.url_oficial} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}><Button size="sm" variant="outline">Ver en SECOP ↗</Button></a> : null}
                 </div>
