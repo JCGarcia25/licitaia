@@ -1,4 +1,5 @@
 "use client";
+import { buttonStyles } from "@/lib/button-styles";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
@@ -16,14 +17,14 @@ export default function Diagnostic() {
   async function refresh() { try { setRuns(await api<Run[]>(`${base}/runs`)); } catch { setError("Diagnóstico no disponible. Requiere autorización de administrador y habilitación en DEV."); } }
   useEffect(() => { void refresh(); }, []);
   async function execute(action: () => Promise<Run>) { setBusy(true); setError(""); try { setSelected(await action()); await refresh(); } catch (e) { setError(e instanceof Error ? e.message : "No fue posible consultar el diagnóstico"); } finally { setBusy(false); } }
-  return <main className="space-y-5 p-4">
+  return <div className="space-y-5">
     <h1 className="text-2xl font-semibold">Diagnóstico privado de compatibilidad V2</h1>
     <p>Índice experimental de afinidad, no probabilidad de adjudicación. Los resultados no cambian recomendaciones ni alertas.</p>
     {error && <p role="alert">{error}</p>}
-    {!error && <button disabled={busy} onClick={() => void execute(() => api<Run>(`${base}/runs`, { method: "POST", body: JSON.stringify({ limit: 10 }) }))}>Evaluar muestra de hasta 10 oportunidades</button>}
+    {!error && <button className={buttonStyles({ variant: "outline" })} disabled={busy} onClick={() => void execute(() => api<Run>(`${base}/runs`, { method: "POST", body: JSON.stringify({ limit: 10 }) }))}>Evaluar muestra de hasta 10 oportunidades</button>}
     <div className="flex flex-wrap gap-3">{runs.map(r => <button key={r.id} disabled={busy} onClick={() => void execute(() => api<Run>(`${base}/runs/${r.id}`))}>{r.id.slice(0, 8)} · {r.state} · {r.processed}/{r.total}</button>)}</div>
     {selected && <section className="space-y-4"><p>Estado: {selected.state}. Muestra histórica privada, {selected.processed}/{selected.total}.</p>
-      <button disabled={busy} onClick={() => void execute(() => api<Run>(`${base}/runs/${selected.id}`))}>Actualizar resultado</button>
+      <button className={buttonStyles({ variant: "outline" })} disabled={busy} onClick={() => void execute(() => api<Run>(`${base}/runs/${selected.id}`))}>Actualizar resultado</button>
       {selected.results?.map(r => <article key={r.opportunity_id} className="space-y-3 rounded border p-4">
         <h2 className="font-semibold">Oportunidad {r.opportunity_id}</h2>
         <p>Heredado: {number(r.legacy_score)} · V2: {number(r.v2.compatibility_score)} · Diferencia: {number(r.difference)}</p>
@@ -33,5 +34,5 @@ export default function Diagnostic() {
         <ul>{r.v2.warnings.map(w => <li key={w}>{w}</li>)}</ul><p className="break-all text-xs">Versión: {r.v2.model_version}</p>
       </article>)}
     </section>}
-  </main>;
+  </div>;
 }
