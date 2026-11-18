@@ -149,3 +149,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 input[type=checkbox] { min-width: 1.125rem; min-height: 1.125rem; }
 @media (pointer: coarse) { label:has(input[type=checkbox]) { min-height: 44px; align-content: center; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+
+.offer-reminder-dialog { color-scheme: light; }
+.dark .offer-reminder-dialog { color-scheme: dark; }

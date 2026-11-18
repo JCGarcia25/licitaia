@@ -139,6 +139,7 @@ class UserOpportunity(Base):
     match_error = Column(String(80), nullable=True)
     failed_input_versions = Column(JSON(none_as_null=True), nullable=True)
     triage = Column(String(20), default="detectada")        # detectada|guardada|descartada|proyecto
+    is_saved = Column(Boolean, nullable=True)               # independiente de triage/proyecto
     feedback = Column(Boolean, nullable=True)               # retroalimentación: útil / no útil (Fase 3)
     feedback_note = Column(String(500), default="")
     created_at = Column(DateTime, default=utcnow)
@@ -265,6 +266,24 @@ class OfferProject(Base):
     history = Column(JSON, default=list)                    # versiones guardadas
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+
+
+class OfferClosingReminder(Base):
+    """One explicitly requested email reminder per offer; UTC timestamps."""
+    __tablename__ = "offer_closing_reminders"
+    project_id = Column(Integer, ForeignKey("offer_projects.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    scheduled_at = Column(DateTime, nullable=False, index=True)
+    retry_at = Column(DateTime, nullable=True)
+    deadline_at = Column(DateTime, nullable=False)
+    recipient = Column(String(255), nullable=False)
+    status = Column(String(20), nullable=False, default="SCHEDULED", index=True)
+    attempts = Column(Integer, nullable=False, default=0)
+    claim_token = Column(String(36), nullable=True)
+    claimed_at = Column(DateTime, nullable=True)
+    sent_at = Column(DateTime, nullable=True)
+    last_error = Column(String(64), nullable=True)
+    updated_at = Column(DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
 
 class Alert(Base):

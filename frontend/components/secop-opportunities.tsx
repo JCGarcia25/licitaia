@@ -12,7 +12,7 @@ type Reason = { factor: string; detalle: string; evidencia: string };
 type Opp = {
   id: number; source?: string; entidad: string; objeto: string; descripcion: string | null; valor: number | null;
   estado: string; departamento: string | null; modalidad: string | null; fecha_publicacion: string | null;
-  score: number | null; score_state?: string; triage: string; reasons: Reason[]; url_oficial: string | null; cancelled: boolean;
+  score: number | null; score_state?: string; triage: string; is_saved: boolean; reasons: Reason[]; url_oficial: string | null; cancelled: boolean;
   documentos_publicos_disponibles?: number; url_consulta_secop?: string;
   vigencia?: { status: string };
 };
@@ -136,6 +136,14 @@ export default function Oportunidades() {
     cargar(undefined, busquedaConPerfil);
   }
 
+  async function guardarProceso(o: Opp) {
+    try {
+      await api(`/api/opportunities/${o.id}/saved`, { method: "PATCH", body: JSON.stringify({ saved: !o.is_saved }) });
+      setPagina(1);
+      await cargar(undefined, busquedaConPerfil, 1);
+    } catch (e) { setError(e instanceof Error ? e.message : "No pudimos guardar el proceso. Inténtalo de nuevo."); }
+  }
+
   function nuevaBusqueda() {
     setPagina(1);
     cargar(undefined, false, 1);
@@ -224,6 +232,7 @@ export default function Oportunidades() {
                       {o.cancelled ? <Badge tone="red">Cancelado en la fuente</Badge> : <Badge tone="blue">{o.estado || "N/D"}</Badge>}
                       {o.vigencia?.status === "UNKNOWN" && <Badge tone="amber">Vigencia por confirmar en SECOP</Badge>}
                       <Badge tone={o.documentos_publicos_disponibles ? "teal" : "amber"}>{o.documentos_publicos_disponibles ? `Pliegos disponibles (${o.documentos_publicos_disponibles})` : "Pliegos: consultar en SECOP"}</Badge>
+                      {o.is_saved && o.triage !== "guardada" ? <Badge tone="purple">Guardada</Badge> : null}
                       {o.triage !== "detectada" ? <Badge tone={o.triage === "descartada" ? "gray" : "purple"}>{o.triage}</Badge> : null}
                     </div>
                     <Link href={`/app/oportunidades/${o.id}?volver=${encodeURIComponent(typeof window === "undefined" ? "/app/oportunidades" : window.location.pathname + window.location.search)}`} className="mt-2 block text-sm font-semibold hover:text-teal">
@@ -247,7 +256,7 @@ export default function Oportunidades() {
                       {o.url_oficial ? <a className="w-full sm:w-auto" href={o.url_oficial} target="_blank" rel="noopener,noreferrer"><Button size="sm" variant="outline" className="w-full sm:w-auto">Ver en SECOP ↗</Button></a> : <Button size="sm" variant="outline" className="w-full sm:w-auto" disabled>Expediente SECOP no disponible</Button>}
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => aplicarTriage(o.id, o.triage === "guardada" ? "detectada" : "guardada")}>{o.triage === "guardada" ? "Dejar de guardar" : "Guardar"}</Button>
+                      <Button size="sm" variant="ghost" onClick={() => guardarProceso(o)}>{o.is_saved ? "Dejar de guardar" : "Guardar"}</Button>
                       <Button size="sm" variant="ghost" onClick={() => aplicarTriage(o.id, "descartada")}>Descartar</Button>
                     </div>
                     <Button size="sm" variant="outline" className="w-full" onClick={() => crearProyecto(o.id)}>Crear proyecto de propuesta</Button>

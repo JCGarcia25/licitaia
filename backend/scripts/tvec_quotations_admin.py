@@ -32,7 +32,21 @@ def main():
         assert broker_identity(celery_app.conf.broker_url)==broker_identity(s.redis_url)
         with SessionLocal() as db:
             require_target(db)
-            assert db.execute(text('SELECT version_num FROM alembic_version')).scalar_one()=='0017_tvec_full_scan'
+            revision=db.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
+            assert revision in {'0017_tvec_full_scan','0018_offer_closing_reminders'}
+            if revision=='0018_offer_closing_reminders':
+                from sqlalchemy import inspect
+                schema=inspect(db.get_bind())
+                assert schema.has_table('offer_closing_reminders')
+                assert 'is_saved' in {c['name'] for c in schema.get_columns('user_opportunities')}
+        if revision=='0018_offer_closing_reminders':
+            registered=celery_app.control.inspect(timeout=5).registered() or {}
+            worker_ready=any('app.workers.tasks.deliver_offer_reminders' in tasks for tasks in registered.values())
+            schedule=celery_app.conf.beat_schedule.get('offer-closing-reminders-every-minute',{})
+            assert worker_ready and schedule.get('task')=='app.workers.tasks.deliver_offer_reminders' and schedule.get('schedule')==60
+            print(json.dumps({'status':'OFFER_REMINDERS_DEV_READY','revision':revision,
+                'worker_registered':worker_ready,'scheduler_seconds':60,'smtp_configured':bool(s.smtp_host),
+                'read_only_check':True,'emails_requested':0}),flush=True)
         with SessionLocal() as db:
             email=db.execute(select(User.email).where(User.email==SUPERADMIN_EMAIL,User.is_active.is_(True))).scalar_one()
         def browser_request(path,post=False):

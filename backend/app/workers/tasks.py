@@ -329,3 +329,11 @@ if celery_app is not None:
                                result['scan_id'],self.request.retries+1,type(error).__name__)
                 raise self.retry(exc=error,args=[result['scan_id']],countdown=min(60,10 * 2**self.request.retries))
         return result
+
+
+if celery_app is not None:
+    @celery_app.task(name='app.workers.tasks.deliver_offer_reminders',acks_late=True,reject_on_worker_lost=True)
+    def deliver_offer_reminders():
+        from app.db.session import SessionLocal
+        from app.services.offer_reminders import deliver_due
+        return deliver_due(SessionLocal)

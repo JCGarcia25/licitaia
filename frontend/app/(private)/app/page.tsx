@@ -61,7 +61,7 @@ export default function Dashboard() {
     let metrics = await api<Metrics>(`/api/dashboard/metrics?compatibility_threshold=${umbralActual}&new_days=${diasActuales}`);
     // Mantener el mismo criterio que la vista Oportunidades: solo procesos
     // compatibles con el perfil y con una puntuación mínima significativa.
-    let res = await api<{ total: number; items: Opp[] }>(`/api/opportunities?limit=5&score_min=${umbralActual}&solo_con_score=true&profile_match=true`);
+    let res = await api<{ total: number; items: Opp[] }>(`/api/opportunities?limit=5&score_min=${umbralActual}&solo_con_score=true&profile_match=true&prioritize_saved=false`);
     setM({ ...metrics, alta_compatibilidad: res.total });
     setTop(res.items
       .filter((o) => o.score !== null)
