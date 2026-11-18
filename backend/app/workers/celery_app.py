@@ -29,7 +29,7 @@ try:
         broker_transport_options={'socket_connect_timeout': 0.5, 'socket_timeout': 0.5},
         task_publish_retry=False,
         worker_prefetch_multiplier=1,
-        task_queues=(Queue('celery'), Queue('matches'), Queue('compatibility-shadow'), Queue('evaluation')),
+        task_queues=(Queue('celery'), Queue('matches'), Queue('compatibility-shadow'), Queue('evaluation'), Queue('tvec')),
         task_routes={'app.workers.tasks.process_evaluation_campaign': {'queue': 'evaluation'},'app.workers.tasks.process_compatibility_shadow': {'queue': 'compatibility-shadow'},
                      'app.workers.tasks.process_match_batch': {'queue': 'matches'},
                      'app.workers.tasks.rescore_all_task': {'queue': 'matches'}},
@@ -53,6 +53,11 @@ try:
             "options": {"expires": 3600},
         },
     }
+    if settings.environment=='development' and settings.tvec_events_enabled and settings.tvec_events_refresh_enabled:
+        celery_app.conf.beat_schedule['tvec-quotations-bounded-every-15-minutes'] = {
+            'task':'app.workers.tasks.refresh_tvec_quotations','schedule':900,
+            'options':{'queue':'tvec','soft_time_limit':180,'time_limit':210,'expires':600},
+        }
 except Exception as exc:  # Redis/Celery opcional en desarrollo
     celery_app = None
     logger.warning("Celery no disponible (%s): las tareas se ejecutarán en línea", exc)

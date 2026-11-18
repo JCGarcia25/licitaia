@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 
-from app.routers import compatibility, evaluation
+from app.routers import compatibility, evaluation, tvec
 from app.core.config import get_settings
 from app.core.runtime_errors import record_error
 from app.routers import admin, agents, alerts, auth, billing, companies, contact, debug, documents, opportunities, profile, sync, matches
@@ -78,6 +78,7 @@ app.include_router(profile.router)
 app.include_router(matches.router)
 app.include_router(compatibility.router)
 app.include_router(evaluation.router)
+app.include_router(tvec.router)
 app.include_router(opportunities.router)
 app.include_router(agents.router)
 app.include_router(sync.router)

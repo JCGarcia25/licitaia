@@ -1,4 +1,5 @@
 "use client";
+import { buttonStyles } from "@/lib/button-styles";
 /* Componentes UI base (estilo shadcn/ui, implementación propia y ligera). */
 import { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
@@ -29,16 +30,9 @@ type ButtonProps = {
 };
 
 export function Button({ children, onClick, variant = "primary", size = "md", type = "button", disabled, className = "" }: ButtonProps) {
-  const base = "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-150 active:scale-[.98] disabled:opacity-50 disabled:cursor-not-allowed";
-  const sizes = { sm: "px-3 py-1.5 text-xs", md: "px-4 py-2 text-sm" };
-  const variants = {
-    primary: "bg-brand-900 text-white shadow-sm hover:-translate-y-px hover:bg-brand-800 dark:bg-teal dark:text-slate-950 dark:hover:bg-teal-light",
-    outline: "border border-base bg-[var(--surface)] hover:border-teal hover:bg-teal/5 dark:hover:bg-slate-800",
-    ghost: "bg-transparent hover:bg-brand-50 dark:hover:bg-slate-800",
-    danger: "bg-red-600 text-white hover:bg-red-700",
-  };
+  const styles = buttonStyles({ variant, size, className });
   return (
-    <button type={type} onClick={onClick} disabled={disabled} className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}>
+    <button type={type} onClick={onClick} disabled={disabled} className={styles}>
       {children}
     </button>
   );
@@ -61,7 +55,7 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full rounded-lg border border-base bg-transparent px-3 py-2 text-sm outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/20 ${props.className || ""}`}
+      className={`min-h-11 min-w-0 w-full rounded-lg border border-base bg-transparent px-3 py-2 text-sm outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/20 ${props.className || ""}`}
     />
   );
 }
@@ -70,7 +64,7 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       {...props}
-      className={`w-full rounded-lg border border-base bg-transparent px-3 py-2 text-sm outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/20 ${props.className || ""}`}
+      className={`min-h-11 min-w-0 w-full rounded-lg border border-base bg-transparent px-3 py-2 text-sm outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/20 ${props.className || ""}`}
     />
   );
 }
@@ -79,7 +73,7 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className={`w-full rounded-lg border border-base bg-transparent px-3 py-2 text-sm outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/20 ${props.className || ""}`}
+      className={`min-h-11 min-w-0 w-full rounded-lg border border-base bg-transparent px-3 py-2 text-sm outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/20 ${props.className || ""}`}
     />
   );
 }
@@ -96,7 +90,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 
 export function Spinner({ label = "Cargando…" }: { label?: string }) {
   return (
-    <div className="text-muted flex items-center gap-2 py-8 text-sm">
+    <div role="status" className="text-muted flex items-center gap-2 py-8 text-sm">
       <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-teal border-t-transparent" />
       {label}
     </div>
@@ -140,12 +134,12 @@ export function MessageModal({ title = "Mensaje de MySECOP", message, tone = "in
 }
 
 export function fmtCOP(valor: number | null | undefined): string {
-  if (valor === null || valor === undefined) return "N/D";
+  if (valor === null || valor === undefined) return "Sin información";
   return `$ ${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(valor)} COP`;
 }
 
 export function fmtFecha(valor: string | null | undefined): string {
-  if (!valor) return "N/D";
+  if (!valor) return "Sin información";
   const d = new Date(valor);
   if (isNaN(d.getTime())) return String(valor);
   return new Intl.DateTimeFormat("es-CO", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(d);

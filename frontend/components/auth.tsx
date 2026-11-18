@@ -79,7 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearToken();
-    if (typeof window !== "undefined") window.sessionStorage.removeItem("mysecop:oportunidades:ultima-busqueda");
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem("mysecop:oportunidades:ultima-busqueda");
+      window.sessionStorage.removeItem("mysecop_source_url");
+    }
     setUser(null);
     router.push("/iniciar-sesion");
   }, [router]);

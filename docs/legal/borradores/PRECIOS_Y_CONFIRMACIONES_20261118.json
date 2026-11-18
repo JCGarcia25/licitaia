@@ -1,0 +1,53 @@
+{
+  "date": "2026-11-18",
+  "source": "https://mysecop.co",
+  "method": "HTTPS read, HTTP 200; parsed public HTML",
+  "http_date": "Wed, 18 Nov 2026 12:40:47 GMT",
+  "currency": "COP",
+  "published_plans": [
+    {
+      "name": "Explorador",
+      "price": 0
+    },
+    {
+      "name": "Independiente",
+      "monthly_price": 59900
+    },
+    {
+      "name": "Profesional",
+      "monthly_price": 290000
+    },
+    {
+      "name": "Corporativo",
+      "monthly_price": "Por cotización"
+    }
+  ],
+  "trial_days_public_page": 14,
+  "trial_days_operator_instruction": 30,
+  "operator_information": {
+    "legal_name": "Zorba Games Studios S.A.S.",
+    "nit_as_provided": "902075854",
+    "city": "Bogotá",
+    "country": "Colombia",
+    "email": "info@zorbagames.com",
+    "phone": "+573204930650",
+    "request_handler": "Jorge Hernández"
+  },
+  "commercial_instructions": {
+    "minimum_term": false,
+    "billing_period": "monthly",
+    "automatic_renewal": true,
+    "payment_provider": "Mercado Pago",
+    "access_after_cancellation": "Until paid period ends",
+    "ordinary_refunds": "No voluntary cancellation refund; statutory exceptions preserved"
+  },
+  "publication_status": "DRAFT_NOT_PUBLISHED",
+  "pending": [
+    "Physical address",
+    "Tax treatment",
+    "Trial card requirement and included features",
+    "Provider/retention operational inventory",
+    "Legal review, approval and effective date",
+    "Resolve public trial and checkout discrepancies"
+  ]
+}

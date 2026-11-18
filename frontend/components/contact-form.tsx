@@ -43,7 +43,7 @@ export function ContactForm() {
         href="https://wa.me/573204930650?text=Hola%2C%20quiero%20conocer%20m%C3%A1s%20sobre%20MySECOP."
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
+        className="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
       >
         Escribir por WhatsApp
       </a>

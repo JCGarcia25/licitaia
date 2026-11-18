@@ -21,8 +21,9 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggle}
-      aria-label="Cambiar tema"
-      className="border-base text-muted hover:text-teal inline-flex h-8 w-8 items-center justify-center rounded-lg border transition"
+      aria-label={dark ? "Activar modo claro" : "Activar modo oscuro"}
+      aria-pressed={dark}
+      className="border-base text-muted hover:text-teal inline-flex h-11 w-11 items-center justify-center rounded-lg border transition"
     >
       {dark ? "☀" : "☾"}
     </button>
