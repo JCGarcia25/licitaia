@@ -274,3 +274,58 @@ def _process_evaluation_campaign(identifier):
 
 if celery_app is not None:
     process_evaluation_campaign=celery_app.task(name='app.workers.tasks.process_evaluation_campaign',acks_late=True,reject_on_worker_lost=True)(_process_evaluation_campaign)
+
+
+if celery_app is not None:
+    @celery_app.task(bind=True,name='app.workers.tasks.sync_tvec_orders',acks_late=True,
+                     reject_on_worker_lost=True,max_retries=3,queue='tvec')
+    def sync_tvec_orders(self,identifier):
+        from app.services.tvec_ingest import process_run
+        from app.services.tvec_guard import configuration
+        from app.services.evaluation_guard import EnvironmentDenied,broker_identity
+        from app.db.session import SessionLocal
+        try:
+            settings,_,_=configuration(ingestion=True)
+            if broker_identity(celery_app.conf.broker_url)!=broker_identity(settings.redis_url):
+                return 'ENVIRONMENT_DENIED'
+            with SessionLocal() as db:result=process_run(db,identifier)
+        except EnvironmentDenied:return 'ENVIRONMENT_DENIED'
+        if result in {'BUSY','FAILED'}:
+            raise self.retry(countdown=settings.tvec_lease_seconds if result=='BUSY' else 10)
+        return result
+
+if celery_app is not None:
+    @celery_app.task(name='app.workers.tasks.refresh_tvec_quotations',acks_late=True,
+                     reject_on_worker_lost=True,queue='tvec',bind=True,max_retries=3)
+    def refresh_tvec_quotations(self,scan_id=None):
+        from app.services.tvec_quotations import configured
+        from app.services.tvec_full_scan import refresh_batch
+        from app.services.evaluation_guard import broker_identity
+        from app.db.session import SessionLocal
+        settings=configured(refresh=True)
+        if broker_identity(celery_app.conf.broker_url)!=broker_identity(settings.redis_url):
+            return 'ENVIRONMENT_DENIED'
+        from sqlalchemy.exc import OperationalError as DatabaseUnavailable
+        from kombu.exceptions import OperationalError as BrokerUnavailable
+        try:
+            with SessionLocal() as db:
+                result=refresh_batch(db,expected_scan=scan_id)
+        except (httpx.TransportError, httpx.HTTPStatusError, TimeoutError, DatabaseUnavailable) as error:
+            status=error.response.status_code if isinstance(error,httpx.HTTPStatusError) else None
+            if status is not None and status not in {408,429,500,502,503,504}:
+                raise
+            logger.warning('tvec_quotation_batch_retry scan=%s attempt=%s error_type=%s http_status=%s',
+                           scan_id,self.request.retries+1,type(error).__name__,status)
+            raise self.retry(exc=error,countdown=min(60,10 * 2**self.request.retries))
+        if result['status']=='BUSY':
+            raise self.retry(countdown=15)
+        if result['status']=='MORE':
+            try:
+                celery_app.send_task('app.workers.tasks.refresh_tvec_quotations',args=[result['scan_id']],queue='tvec',countdown=2,retry=False,soft_time_limit=180,time_limit=210)
+            except BrokerUnavailable as error:
+                # Publication may be ambiguous. Redelivery uses this generation;
+                # leases and its committed cursor make duplicate delivery safe.
+                logger.warning('tvec_quotation_publish_retry scan=%s attempt=%s error_type=%s',
+                               result['scan_id'],self.request.retries+1,type(error).__name__)
+                raise self.retry(exc=error,args=[result['scan_id']],countdown=min(60,10 * 2**self.request.retries))
+        return result

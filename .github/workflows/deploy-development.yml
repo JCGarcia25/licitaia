@@ -7,6 +7,8 @@ jobs:
   deploy:
     uses: ./.github/workflows/deploy-reusable.yml
     with:
+      enable_tvec_dev: true
+      tvec_pilot_100: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[tvec-pilot-100]') }}
       environment_name: development
       domain: dev.mysecop.co
       app_dir: /home/administrator/licitaia-development

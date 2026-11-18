@@ -33,8 +33,8 @@ export default function Registro() {
   }
 
   return (
-      <div className="hero-grid flex min-h-screen items-center justify-center px-5">
-      <div className="surface-card shadow-lift w-full max-w-md p-8">
+      <main className="hero-grid flex min-h-[100svh] items-center justify-center px-5 py-8">
+      <div className="surface-card shadow-lift w-full max-w-md p-5 sm:p-8">
         <Link href="/" className="mb-6 flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 text-[10px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
           <span className="text-lg font-bold">MySECOP</span>
@@ -46,12 +46,12 @@ export default function Registro() {
             <Input required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Ana María Rojas" />
           </Field>
           <Field label="Correo corporativo">
-            <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ana@tuempresa.co" />
+            <Input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ana@tuempresa.co" />
           </Field>
           <Field label="Contraseña" hint="Mínimo 8 caracteres.">
-            <Input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+            <Input type="password" autoComplete="new-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
           </Field>
-          {error ? <p className="text-xs text-red-600">{error}</p> : null}
+          {error ? <p role="alert" className="text-xs text-red-600">{error}</p> : null}
           <Button type="submit" disabled={cargando} className="w-full">{cargando ? "Creando cuenta…" : "Comenzar gratis"}</Button>
         </form>
         <p className="text-muted mt-5 text-xs">
@@ -61,6 +61,6 @@ export default function Registro() {
           Al registrarte aceptas los términos y la política de privacidad. MySECOP no es una plataforma oficial del Gobierno colombiano.
         </p>
       </div>
-      </div>
+      </main>
   );
 }

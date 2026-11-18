@@ -25,7 +25,7 @@ export default function AyudaPage() {
   }
 
   return <div className="mx-auto max-w-3xl space-y-6">
-    <div><h1 className="text-2xl font-bold tracking-tight">Ayúdanos a mejorar MySECOP</h1><p className="text-muted mt-1">MySECOP evoluciona constantemente para ser tu aliado perfecto y ayudarte a ganar muchos procesos.</p></div>
+    <div><h1 className="text-2xl font-bold tracking-tight">Ayúdanos a mejorar MySECOP</h1><p className="text-muted mt-1">Cuéntanos qué necesitas, comparte una sugerencia o informa un problema. Tus comentarios nos ayudan a mejorar MySECOP.</p></div>
     <Card><CardHeader title="Sugerencias y reportes" subtitle="Tu experiencia nos ayuda a construir una herramienta más útil. Cuenta con todo nuestro acompañamiento." />
       <form onSubmit={enviar} className="space-y-4 p-5">
           <Field label="¿Qué quieres enviarnos?"><Select value={tipo} onChange={(e) => setTipo(e.target.value)}><option value="sugerencia">Sugerir una nueva funcionalidad</option><option value="error">Reportar un error</option></Select></Field>

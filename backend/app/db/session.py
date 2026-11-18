@@ -40,7 +40,7 @@ def init_db() -> None:
     from app.db import models  # noqa: F401  (registro de modelos)
 
     # Evaluation 2.1 schema is migration-only: API startup must not apply it.
-    startup_tables=[t for t in Base.metadata.tables.values() if not t.name.startswith('evaluation_')]
+    startup_tables=[t for t in Base.metadata.tables.values() if not t.name.startswith(('evaluation_', 'tvec_'))]
     Base.metadata.create_all(bind=engine,tables=startup_tables)
     # Older deployments may have been created with migration 0001 before the
     # SaaS/SECOP fields were added. Alembic's create_all does not alter existing
@@ -50,7 +50,7 @@ def init_db() -> None:
     inspector = inspect(engine)
     with engine.begin() as conn:
         for table in Base.metadata.sorted_tables:
-            if table.name.startswith('evaluation_'):
+            if table.name.startswith(('evaluation_', 'tvec_')):
                 continue
             if table.name not in inspector.get_table_names():
                 continue

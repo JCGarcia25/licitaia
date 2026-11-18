@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { api } from "@/lib/api";
+import { api, apiBackground } from "@/lib/api";
 import { Button, Card } from "@/components/ui";
 
 type Coverage = { candidate_total: number; current_scores: number; pending_scores: number; stale_scores: number; failed_scores: number; excluded_total: number; coverage_percent: number | null };
@@ -28,7 +28,7 @@ export function MatchProgress({ onProgress }: { onProgress?: () => void }) {
       polling.current = true;
       const version = epoch.current;
       try {
-        const [latest, counts] = await Promise.all([api<Job | null>("/api/match-jobs/current"), api<Coverage>("/api/matches/coverage")]);
+        const [latest, counts] = await Promise.all([apiBackground<Job | null>("/api/match-jobs/current"), apiBackground<Coverage>("/api/matches/coverage")]);
         if (stopped || version !== epoch.current) return;
         setJob(latest); setCoverage(counts); setError("");
         const signature = JSON.stringify([counts.current_scores, counts.stale_scores, counts.failed_scores, latest?.state]);
@@ -55,14 +55,14 @@ export function MatchProgress({ onProgress }: { onProgress?: () => void }) {
   }
   return <Card className="space-y-2 p-4" aria-live="polite">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <p className="text-sm font-semibold">Cobertura del Cazador</p>
+      <p className="text-sm font-semibold">Estado del análisis de compatibilidad</p>
       {active(job)
         ? <Button size="sm" variant="outline" disabled={busy} onClick={() => action("cancel")}>Cancelar cálculo</Button>
         : <Button size="sm" variant="outline" disabled={busy} onClick={() => action(job?.state === "FAILED" ? "resume" : "start")}>{job?.state === "FAILED" ? "Reintentar" : "Actualizar compatibilidad"}</Button>}
     </div>
     {coverage && <>
-      <p className="text-sm">{coverage.current_scores.toLocaleString()} de {coverage.candidate_total.toLocaleString()} candidatas con puntuación vigente · {coverage.coverage_percent === null ? "Sin oportunidades candidatas" : `${coverage.coverage_percent}% de cobertura`}</p>
-      <p className="text-xs text-muted">{coverage.pending_scores} pendientes · {coverage.stale_scores} desactualizadas · {coverage.failed_scores} con error · {coverage.excluded_total} excluidas. La cobertura mide el avance, no la compatibilidad.</p>
+      <p className="text-sm">{coverage.current_scores.toLocaleString()} de {coverage.candidate_total.toLocaleString()} procesos candidatos con análisis actualizado · {coverage.coverage_percent === null ? "Sin oportunidades candidatas" : `${coverage.coverage_percent}% de cobertura`}</p>
+      <p className="text-xs text-muted">{coverage.pending_scores} pendientes · {coverage.stale_scores} desactualizadas · {coverage.failed_scores} con error · {coverage.excluded_total} excluidas. La cobertura indica qué porcentaje de procesos candidatos ya tiene un análisis actualizado. No indica qué tan compatibles son con tu empresa.</p>
     </>}
     {active(job) && <p className="text-xs text-muted">{job?.state === "RUNNING" ? "Calculando compatibilidad por lotes…" : "Cálculo en cola; los resultados se actualizarán progresivamente."}</p>}
     {error && <p className="text-sm text-red-600">{error}</p>}

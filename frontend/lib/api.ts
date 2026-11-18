@@ -86,6 +86,11 @@ export async function api<T = any>(path: string, opts: RequestInit = {}): Promis
   }
 }
 
+/** Background polling keeps the same authentication/errors without blocking the page. */
+export async function apiBackground<T = any>(path: string, opts: RequestInit = {}): Promise<T> {
+  return requestApi<T>(path, opts);
+}
+
 export function descargarBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

@@ -1,0 +1,271 @@
+"use client";
+/* Oportunidades: filtros, búsqueda NLQ y triage. */
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import { Badge, Button, Card, EmptyState, fmtCOP, fmtFecha, Input, MessageModal, Spinner, scoreTone, Select } from "@/components/ui";
+
+import { MatchProgress, scoreLabel } from "@/components/match-progress";
+
+type Reason = { factor: string; detalle: string; evidencia: string };
+type Opp = {
+  id: number; source?: string; entidad: string; objeto: string; descripcion: string | null; valor: number | null;
+  estado: string; departamento: string | null; modalidad: string | null; fecha_publicacion: string | null;
+  score: number | null; score_state?: string; triage: string; reasons: Reason[]; url_oficial: string | null; cancelled: boolean;
+  documentos_publicos_disponibles?: number; url_consulta_secop?: string;
+  vigencia?: { status: string };
+};
+type SearchState = {
+  q?: string; departamento?: string; municipio?: string; modalidad?: string;
+  valorMin?: string; scoreMin?: string; triage?: string; soloScore?: boolean;
+};
+const DEPARTAMENTOS = ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bogotá D.C.", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "Santander", "Sucre", "Tolima", "Valle del Cauca"];
+
+export default function Oportunidades() {
+  const [items, setItems] = useState<Opp[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [q, setQ] = useState("");
+  const [departamento, setDepartamento] = useState("");
+  const [municipio, setMunicipio] = useState("");
+  const [modalidad, setModalidad] = useState("");
+  const [valorMin, setValorMin] = useState("");
+  const [scoreMin, setScoreMin] = useState("");
+  const [triage, setTriage] = useState("");
+  // Buscar y filtrar es una capacidad común de Free y Pro. La puntuación es
+  // opcional para que una cuenta nueva también vea resultados sincronizados.
+  const [soloScore, setSoloScore] = useState(false);
+  const [error, setError] = useState("");
+  const [perfilRequerido, setPerfilRequerido] = useState(false);
+  const [busquedaConPerfil, setBusquedaConPerfil] = useState(false);
+  const [modal, setModal] = useState<{ title: string; message: string; tone: "error" | "info" } | null>(null);
+  const [perfilAvisado, setPerfilAvisado] = useState(false);
+  const [pagina, setPagina] = useState(1);
+  const TAMANO_PAGINA = 25;
+  const router = useRouter();
+
+  const cargar = useCallback(async (nlq?: string, usarPerfil = false, paginaSolicitada = pagina, override?: SearchState) => {
+    const estado = override || { q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore };
+    const consulta = nlq ?? estado.q ?? "";
+    const tieneFiltros = Boolean(estado.departamento || estado.municipio || estado.modalidad || estado.valorMin || estado.scoreMin || estado.triage);
+    const esBusquedaManual = Boolean(consulta || (!usarPerfil && tieneFiltros));
+    const aplicarPerfil = !esBusquedaManual && (usarPerfil || busquedaConPerfil);
+    setBusquedaConPerfil(aplicarPerfil);
+    setError("");
+    const params = new URLSearchParams();
+    if (typeof window !== "undefined") {
+      new URLSearchParams(window.location.search).forEach((v,k) => { if (k === "fuente" || (k.startsWith("tv_") || k.startsWith("tq_"))) params.set(k,v); });
+    }
+    if (consulta) params.set("q", consulta);
+    if (estado.departamento) params.set("departamento", estado.departamento);
+    if (estado.municipio) params.set("municipio", estado.municipio);
+    if (estado.modalidad) params.set("modalidad", estado.modalidad);
+    if (estado.valorMin) params.set("valor_min", estado.valorMin.replace(/[^\d]/g, ""));
+    if (estado.scoreMin) params.set("score_min", estado.scoreMin);
+    if (estado.triage) params.set("triage", estado.triage);
+    params.set("solo_con_score", String(estado.soloScore ?? soloScore));
+    if (aplicarPerfil) params.set("perfil", "1");
+    if (esBusquedaManual) params.set("modo", "busqueda");
+    params.set("limit", String(TAMANO_PAGINA));
+    params.set("offset", String((paginaSolicitada - 1) * TAMANO_PAGINA));
+    try {
+      const searchBody = { q: consulta, departamento: estado.departamento || undefined, municipio: estado.municipio || undefined, modalidad: estado.modalidad || undefined, valor_min: estado.valorMin ? Number(estado.valorMin.replace(/[^\d]/g, "")) : undefined, score_min: estado.scoreMin ? Number(estado.scoreMin) : undefined, triage: estado.triage || undefined, solo_con_score: estado.soloScore ?? soloScore, limit: TAMANO_PAGINA, offset: (paginaSolicitada - 1) * TAMANO_PAGINA };
+      const res = consulta
+        ? await api<{ total: number; items: Opp[]; profile_required?: boolean }>("/api/search", { method: "POST", body: JSON.stringify(searchBody) })
+        : await api<{ total: number; items: Opp[]; profile_required?: boolean }>(`/api/opportunities?${params.toString()}&profile_match=${aplicarPerfil}`);
+      setPerfilRequerido(Boolean(res.profile_required));
+      if (res.profile_required && !perfilAvisado) {
+        setPerfilAvisado(true);
+        setModal({ title: "Completa tu perfil para encontrar oportunidades", message: "Antes de mostrar procesos, necesitamos conocer las actividades, productos o servicios, ubicaciones y presupuesto de tu empresa. Así MySECOP podrá mostrarte coincidencias relevantes y evitar resultados que no correspondan a tu negocio.", tone: "info" });
+      }
+      setItems(res.items);
+      setTotal(res.total);
+      if (estado.scoreMin && res.total === 0) {
+        setModal({ title: "No encontramos coincidencias", message: `No se encontraron oportunidades con una compatibilidad mínima de ${estado.scoreMin}%. Intenta con otro umbral de compatibilidad o ajusta los demás filtros.`, tone: "info" });
+      }
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        params.set("pagina", String(paginaSolicitada));
+        Array.from(params.keys()).filter(k => k === "fuente" || (k.startsWith("tv_") || k.startsWith("tq_"))).forEach(k => params.delete(k));
+        new URLSearchParams(window.location.search).forEach((v,k) => { if (k === "fuente" || (k.startsWith("tv_") || k.startsWith("tq_"))) params.set(k,v); });
+        url.search = params.toString();
+        window.history.replaceState(null, "", url.toString());
+        if (params.has("fuente")) sessionStorage.setItem("mysecop_source_url", url.pathname + url.search);
+        if (esBusquedaManual) {
+          void api("/api/opportunities/last-search", { method: "PUT", body: JSON.stringify(estado) }).catch(() => undefined);
+        }
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "No fue posible consultar las oportunidades.";
+      if (message.toLowerCase().includes("exclusiva") || message.toLowerCase().includes("mysecop pro")) {
+        setModal({ title: "Función disponible en MySECOP Pro", message: "Esta función es exclusiva de MySECOP Pro. Actualiza tu plan para continuar disfrutando el flujo completo.", tone: "info" });
+        setError("");
+      } else setError(message);
+      setItems([]);
+    }
+  }, [q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore, busquedaConPerfil, pagina]);
+
+  useEffect(() => {
+    (async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      let saved: SearchState | null = null;
+      if (!urlParams.toString()) {
+        try { saved = (await api<{ search: SearchState | null }>("/api/opportunities/last-search")).search; } catch { saved = null; }
+      }
+      const params = urlParams.toString() ? urlParams : new URLSearchParams();
+      const estadoInicial: SearchState = saved && !urlParams.toString() ? saved : {
+        q: params.get("q") || "", departamento: params.get("departamento") || "", municipio: params.get("municipio") || "",
+        modalidad: params.get("modalidad") || "", valorMin: params.get("valor_min") || "", scoreMin: params.get("score_min") || "",
+        triage: params.get("triage") || "", soloScore: params.has("solo_con_score") ? params.get("solo_con_score") === "true" : false,
+      };
+      const paginaInicial = Number(params.get("pagina") || "1");
+      setQ(estadoInicial.q || ""); setDepartamento(estadoInicial.departamento || ""); setMunicipio(estadoInicial.municipio || "");
+      setModalidad(estadoInicial.modalidad || ""); setValorMin(estadoInicial.valorMin || ""); setScoreMin(estadoInicial.scoreMin || "");
+      setTriage(estadoInicial.triage || ""); setSoloScore(Boolean(estadoInicial.soloScore)); setPagina(paginaInicial);
+      if (params.get("perfil") === "1") {
+        cargar(undefined, true, paginaInicial, estadoInicial);
+      } else if (estadoInicial.q || estadoInicial.departamento || estadoInicial.municipio || estadoInicial.modalidad || estadoInicial.valorMin || estadoInicial.scoreMin || estadoInicial.triage) {
+        cargar(estadoInicial.q || "", false, paginaInicial, estadoInicial);
+      } else cargar(undefined, true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function aplicarTriage(id: number, valor: string) {
+    await api(`/api/opportunities/${id}/triaje`, { method: "POST", body: JSON.stringify({ triage: valor }) });
+    cargar(undefined, busquedaConPerfil);
+  }
+
+  function nuevaBusqueda() {
+    setPagina(1);
+    cargar(undefined, false, 1);
+  }
+
+  async function crearProyecto(id: number) {
+    try {
+      await api("/api/offer-projects", { method: "POST", body: JSON.stringify({ opportunity_id: id }) });
+      await aplicarTriage(id, "proyecto");
+      router.push("/app/ofertas");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error creando el proyecto");
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-xl font-bold tracking-tight">Oportunidades</h1>
+        <p className="text-muted text-sm">Procesos de contratación pública puntuados para tu empresa por el Cazador de Oportunidades.</p>
+      </div>
+
+      <MatchProgress onProgress={() => { void cargar(undefined, busquedaConPerfil); }} />
+
+      {/* Filtros */}
+      <Card className="space-y-3 p-4">
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && cargar()}
+            aria-label="Buscar procesos SECOP" placeholder="¿Qué producto o servicio buscas?" />
+          <Button onClick={nuevaBusqueda} className="w-full shrink-0 whitespace-nowrap sm:w-auto sm:min-w-24">Buscar</Button>
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <Select aria-label="Departamento" value={departamento} onChange={(e) => { setDepartamento(e.target.value); setMunicipio(""); }}>
+            <option value="">Toda Colombia</option>
+            {DEPARTAMENTOS.map((d) => <option key={d} value={d}>{d}</option>)}
+          </Select>
+          <Input aria-label="Municipio" value={municipio} onChange={(e) => setMunicipio(e.target.value)} placeholder="Municipio" />
+          <Select aria-label="Modalidad de contratación" value={modalidad} onChange={(e) => setModalidad(e.target.value)}>
+            <option value="">Toda modalidad</option>
+            {["Licitación Pública", "Contratación Directa", "Contratación Mínima Cuantía", "Selección Abreviada", "Concurso de Méritos", "Régimen Especial", "Subasta"].map((mo) => (
+              <option key={mo} value={mo}>{mo}</option>
+            ))}
+          </Select>
+          <Input aria-label="Presupuesto mínimo en pesos colombianos" inputMode="numeric" value={valorMin} onChange={(e) => setValorMin(e.target.value)} placeholder="Valor mínimo (COP)" />
+          <Select aria-label="Compatibilidad mínima" value={scoreMin} onChange={(e) => setScoreMin(e.target.value)}>
+            <option value="">Cualquier compatibilidad</option>
+            {[1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((value) => <option key={value} value={value}>≥ {value}%</option>)}
+          </Select>
+          <Select aria-label="Estado de seguimiento" value={triage} onChange={(e) => setTriage(e.target.value)}>
+            <option value="">Todos los estados de seguimiento</option>
+            <option value="detectada">Detectadas</option>
+            <option value="guardada">Guardadas</option>
+            <option value="proyecto">Proyectos</option>
+            <option value="descartada">Descartadas</option>
+          </Select>
+        </div>
+        <label className="text-muted flex items-center gap-2 text-xs">
+          <input type="checkbox" checked={soloScore} onChange={(e) => {
+            const next = e.target.checked;
+            setSoloScore(next);
+            setPagina(1);
+            cargar(undefined, busquedaConPerfil, 1, { q, departamento, municipio, modalidad, valorMin, scoreMin, triage, soloScore: next });
+          }} className="accent-teal" />
+          Mostrar solo oportunidades ya puntuadas por el agente
+        </label>
+      </Card>
+
+      {error ? <p className="text-xs text-red-600">{error}</p> : null}
+      {perfilRequerido ? <Card className="border-amber-300/60 bg-amber-50/70 dark:bg-amber-950/20"><p className="text-sm font-semibold">Completa primero el perfil de tu empresa</p><p className="text-muted mt-1 text-xs">Necesitamos tus actividades, productos o servicios y ubicación de interés para mostrar oportunidades relevantes.</p><Link href="/app/perfil" className="mt-3 inline-block text-sm font-semibold text-teal underline">Ir al perfil de empresa →</Link></Card> : null}
+
+      {!items ? (
+        <Spinner label="Consultando oportunidades…" />
+      ) : items.length === 0 ? (
+        <Card><EmptyState title="Sin resultados" body="Prueba con otros filtros o revisa los datos del perfil de tu empresa." /></Card>
+      ) : (
+        <>
+          <p className="text-muted text-xs">{total} oportunidad(es) encontrada(s)</p>
+          <div className="space-y-3">
+            {items.map((o) => (
+              <Card key={o.id} className="p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge tone="gray">{o.source === "secop1" ? "Registro SECOP I" : o.source === "secop2_contratos" ? "Contrato SECOP II" : "Proceso SECOP"}</Badge>
+                      <Badge tone={scoreTone(o.score)}>{o.score !== null ? `${Math.round(o.score)}% de compatibilidad estimada` : scoreLabel(o.score_state)}</Badge>
+                      {o.cancelled ? <Badge tone="red">Cancelado en la fuente</Badge> : <Badge tone="blue">{o.estado || "N/D"}</Badge>}
+                      {o.vigencia?.status === "UNKNOWN" && <Badge tone="amber">Vigencia por confirmar en SECOP</Badge>}
+                      <Badge tone={o.documentos_publicos_disponibles ? "teal" : "amber"}>{o.documentos_publicos_disponibles ? `Pliegos disponibles (${o.documentos_publicos_disponibles})` : "Pliegos: consultar en SECOP"}</Badge>
+                      {o.triage !== "detectada" ? <Badge tone={o.triage === "descartada" ? "gray" : "purple"}>{o.triage}</Badge> : null}
+                    </div>
+                    <Link href={`/app/oportunidades/${o.id}?volver=${encodeURIComponent(typeof window === "undefined" ? "/app/oportunidades" : window.location.pathname + window.location.search)}`} className="mt-2 block text-sm font-semibold hover:text-teal">
+                      {o.objeto || "Proceso sin título"}
+                    </Link>
+                    <p className="text-muted mt-1 text-xs">{o.entidad} · {o.departamento || "N/D"} · {o.modalidad || "N/D"}</p>
+                    <p className="text-muted mt-1 text-xs font-medium">
+                      {fmtCOP(o.valor)} · Publicado: {fmtFecha(o.fecha_publicacion)}
+                    </p>
+                    {o.reasons?.length ? (
+                      <ul className="mt-2 space-y-1">
+                        {o.reasons.slice(0, 3).map((r, i) => (
+                          <li key={i} className="text-muted text-[11px]"><span className="font-medium text-teal">{r.factor}:</span> {r.detalle}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                  <div className="basis-full flex w-full flex-col gap-2 sm:basis-auto sm:w-auto sm:shrink-0">
+                    <div className="flex flex-wrap gap-2">
+                      <Link className="w-full sm:w-auto" href={`/app/oportunidades/${o.id}?volver=${encodeURIComponent(typeof window === "undefined" ? "/app/oportunidades" : window.location.pathname + window.location.search)}`}><Button size="sm" className="w-full sm:w-auto">Analizar</Button></Link>
+                      {o.url_oficial ? <a className="w-full sm:w-auto" href={o.url_oficial} target="_blank" rel="noopener,noreferrer"><Button size="sm" variant="outline" className="w-full sm:w-auto">Ver en SECOP ↗</Button></a> : <Button size="sm" variant="outline" className="w-full sm:w-auto" disabled>Expediente SECOP no disponible</Button>}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => aplicarTriage(o.id, o.triage === "guardada" ? "detectada" : "guardada")}>{o.triage === "guardada" ? "Dejar de guardar" : "Guardar"}</Button>
+                      <Button size="sm" variant="ghost" onClick={() => aplicarTriage(o.id, "descartada")}>Descartar</Button>
+                    </div>
+                    <Button size="sm" variant="outline" className="w-full" onClick={() => crearProyecto(o.id)}>Crear proyecto de propuesta</Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+          <div className="flex items-center justify-between border-t border-base pt-4 text-xs">
+            <span className="text-muted">Página {pagina} de {Math.max(1, Math.ceil(total / TAMANO_PAGINA))}</span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" disabled={pagina <= 1} onClick={() => { const next = pagina - 1; setPagina(next); cargar(undefined, busquedaConPerfil, next); }}>Anterior</Button>
+              <Button size="sm" variant="outline" disabled={pagina * TAMANO_PAGINA >= total} onClick={() => { const next = pagina + 1; setPagina(next); cargar(undefined, busquedaConPerfil, next); }}>Siguiente</Button>
+            </div>
+          </div>
+        </>
+      )}
+      {modal ? <MessageModal {...modal} onClose={() => setModal(null)} actionLabel={modal.title.startsWith("Completa") ? "Completar perfil de empresa" : undefined} onAction={modal.title.startsWith("Completa") ? () => router.push("/app/perfil") : undefined} /> : null}
+    </div>
+  );
+}
