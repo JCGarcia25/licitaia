@@ -1,5 +1,6 @@
 "use client";
 
+import { InstagramLink } from "@/components/instagram-link";
 import { FormEvent, useState } from "react";
 import { api } from "@/lib/api";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui";
@@ -48,6 +49,10 @@ export function ContactForm() {
         Escribir por WhatsApp
       </a>
       <p className="text-muted mt-2 text-xs">+57 320 493 0650 · Se abre en una nueva pestaña.</p>
+    </div>
+    <div className="mt-6 border-t border-base pt-5">
+      <p className="text-muted mb-3 text-sm">También puedes seguir nuestras novedades en Instagram.</p>
+      <InstagramLink />
     </div>
   </>;
 }
