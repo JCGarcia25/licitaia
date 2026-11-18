@@ -1,7 +1,8 @@
 "use client";
 /* Agente 4 · Preparador de Ofertas: proyectos, checklist, borradores y exportación. */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { buttonStyles } from "@/lib/button-styles";
 import { OfferReminderDialog } from "@/components/offer-reminder-dialog";
 import { api, descargarBlob } from "@/lib/api";
 import { Badge, Button, Card, CardHeader, EmptyState, Input, Select, Spinner, Textarea } from "@/components/ui";
@@ -19,11 +20,13 @@ type ProjectDetail = {
   comentarios: { autor: string; texto: string; fecha: string }[];
 };
 
-const ESTADOS = ["activo", "en_revision", "aprobado", "presentado", "archivado"];
+const ESTADOS: Record<string, string> = { activo: "Activa", en_revision: "En revisión", aprobado: "Aprobada", presentado: "Presentada", archivado: "Archivada" };
 
 export default function Ofertas() {
+  const detail = useRef<HTMLDivElement>(null);
   const [lista, setLista] = useState<Project[] | null>(null);
   const [sel, setSel] = useState<ProjectDetail | null>(null);
+  useEffect(() => { if (sel && window.matchMedia("(max-width: 1279px)").matches) detail.current?.scrollIntoView({ behavior: "instant", block: "start" }); }, [sel?.id]);
   const [reminder, setReminder] = useState<Project | null>(null);
   const [comentario, setComentario] = useState("");
   const [msg, setMsg] = useState("");
@@ -103,12 +106,12 @@ export default function Ofertas() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold tracking-tight">Preparador de Ofertas</h1>
+        <h1 className="text-xl font-bold tracking-tight">Preparador de ofertas</h1>
         <p className="text-muted text-sm">Organiza la documentación de tu propuesta. Toda oferta requiere aprobación humana antes de presentarse.</p>
       </div>
 
       {reminder && <OfferReminderDialog key={reminder.id} projectId={reminder.id} name={reminder.name} onClose={() => setReminder(null)} />}
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="offer-workspace grid gap-5 xl:grid-cols-3">
         {/* Lista de proyectos */}
         <div className="space-y-3">
           {lista.length === 0 ? (
@@ -118,25 +121,25 @@ export default function Ofertas() {
               <Card key={p.id} className={`cursor-pointer p-4 transition hover:shadow-lift ${sel?.id === p.id ? "ring-2 ring-teal" : ""}`} >
                 <button onClick={() => abrir(p.id)} className="w-full text-left">
                   <p className="text-sm font-semibold">{p.name}</p>
-                  <p className="text-muted mt-1 text-[11px]">v{p.version} · {p.pendientes} pendiente(s) de checklist</p>
-                  <div className="mt-2 flex flex-wrap gap-2"><Badge tone={p.status === "aprobado" ? "green" : p.status === "archivado" ? "gray" : "blue"}>{p.status}</Badge>{p.is_saved && <Badge tone="purple">Proceso guardado</Badge>}</div>
+                  <p className="text-muted mt-1 text-[11px]">v{p.version} · {p.pendientes} {p.pendientes === 1 ? "documento pendiente" : "documentos pendientes"}</p>
+                  <div className="mt-2 flex flex-wrap gap-2"><Badge tone={p.status === "aprobado" ? "green" : p.status === "archivado" ? "gray" : "blue"}>{ESTADOS[p.status] || p.status}</Badge>{p.is_saved && <Badge tone="purple">Proceso guardado</Badge>}</div>
                 </button>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
+                <div className="offer-card-actions mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <Button size="sm" variant="outline" onClick={() => guardarProceso(p)}>{p.is_saved ? "Dejar de guardar proceso" : "Guardar proceso"}</Button>
                   <Button size="sm" variant="outline" onClick={() => setReminder(p)}>Recordatorio de cierre</Button>
                   <Button size="sm" variant="ghost" className="text-red-600" onClick={() => eliminarOferta(p.id)}>Eliminar oferta</Button>
-                  {p.url_oficial ? <a href={p.url_oficial} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}><Button size="sm" variant="outline">Ver en SECOP ↗</Button></a> : null}
+                  {p.url_oficial ? <a href={p.url_oficial} target="_blank" rel="noopener noreferrer" className={buttonStyles({ size: "sm", variant: "outline" })}>Ver en SECOP ↗</a> : null}
                 </div>
               </Card>
             ))
           )}
-          <p className="text-muted text-[11px]">¿Necesitas uno nuevo? <Link href="/app/oportunidades" className="text-teal hover:underline">Elige una oportunidad</Link>.</p>
+          <p className="text-muted text-[11px]">¿Necesitas uno nuevo? <Link href="/app/oportunidades" className="text-teal underline underline-offset-2">Elige una oportunidad</Link>.</p>
         </div>
 
         {/* Detalle */}
-        <div className="space-y-5 lg:col-span-2">
+        <div ref={detail} className="min-w-0 scroll-mt-28 space-y-5 xl:col-span-2">
           {!sel ? (
-            <Card><EmptyState title="Selecciona un proyecto" body="A la izquierda están tus proyectos de propuesta." /></Card>
+            <Card><EmptyState title="Selecciona un proyecto" body="Elige una de tus ofertas en la lista para revisar sus documentos y tareas." /></Card>
           ) : (
             <>
               <Card className="p-5">
@@ -149,11 +152,11 @@ export default function Ofertas() {
                       </Link>
                     ) : null}
                   </div>
-                  <Select value={sel.status} onChange={(e) => cambiarEstado(e.target.value)} className="max-w-40">
-                    {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
+                  <Select aria-label="Estado de la oferta" value={sel.status} onChange={(e) => cambiarEstado(e.target.value)} className="max-w-40">
+                    {Object.entries(ESTADOS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </Select>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="offer-export-actions mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 2xl:grid-cols-4">
                   <Button size="sm" variant="outline" onClick={() => exportar("docx")}>Exportar Word</Button>
                   <Button size="sm" variant="outline" onClick={() => exportar("xlsx")}>Exportar Excel</Button>
                   <Button size="sm" variant="outline" onClick={() => exportar("pdf")}>Exportar PDF</Button>
@@ -166,9 +169,9 @@ export default function Ofertas() {
                 <CardHeader title="Checklist documental" subtitle="Marca los documentos listos" />
                 <ul className="divide-y divide-[var(--border)]">
                   {sel.checklist.map((c, i) => (
-                    <li key={i} className="flex flex-wrap items-center justify-between gap-3 px-5 py-2.5 text-sm">
-                      <button onClick={() => toggleChecklist(i, c.estado)} className="flex items-center gap-2 text-left">
-                        <span className={`flex h-5 w-5 items-center justify-center rounded-md border text-[10px] ${c.estado === "listo" ? "border-teal bg-teal text-white" : "border-base"}`}>
+                    <li key={i} className="flex flex-col items-start justify-between gap-2 px-5 py-3 text-sm sm:flex-row sm:items-center">
+                      <button onClick={() => toggleChecklist(i, c.estado)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[10px] ${c.estado === "listo" ? "border-teal bg-teal text-white" : "border-base"}`}>
                           {c.estado === "listo" ? "✓" : ""}
                         </span>
                         <span className={c.estado === "listo" ? "text-muted line-through" : ""}>{c.item}</span>
@@ -216,12 +219,13 @@ export default function Ofertas() {
                   ) : (
                     sel.borradores.slice().reverse().map((b, i) => (
                       <details key={i} className="rounded-lg border border-base px-4 py-3" open={i === 0}>
-                        <summary className="cursor-pointer text-xs font-medium">{b.tipo} · v{b.version} · {b.fecha}</summary>
+                        <summary className="cursor-pointer text-xs font-medium">{({ carta_presentacion: "Carta de presentación", matriz_cumplimiento: "Matriz de cumplimiento", respuestas_tecnicas: "Respuestas técnicas" } as Record<string, string>)[b.tipo] || b.tipo} · v{b.version} · {b.fecha}</summary>
                         <pre className="text-muted mt-2 whitespace-pre-wrap text-[11px]">{b.contenido}</pre>
                       </details>
                     ))
                   )}
                   <Textarea
+                    aria-label="Información para respuestas técnicas"
                     placeholder="Contenido para respuestas técnicas (usa información verificada de tu empresa)…"
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
@@ -240,7 +244,7 @@ export default function Ofertas() {
                     <p key={i} className="text-muted text-xs"><span className="font-medium text-[var(--text)]">{c.autor}:</span> {c.texto} <span className="text-[10px]">({c.fecha})</span></p>
                   ))}
                   <div className="flex flex-col gap-2 sm:flex-row">
-                    <Input value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder="Añadir comentario…" />
+                    <Input aria-label="Nuevo comentario" value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder="Añadir comentario…" />
                     <Button size="sm" onClick={enviarComentario} className="shrink-0">Comentar</Button>
                   </div>
                 </div>

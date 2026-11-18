@@ -167,7 +167,7 @@ export default function Sincronizacion() {
             <h3 className="text-sm font-semibold">Procesos del dataset {datasetActivo}</h3>
             {!procesos ? <Spinner label="Cargando procesos…" /> : procesos.length === 0 ? <p className="text-muted mt-2 text-sm">No hay procesos disponibles para este dataset.</p> : (
               <div className="mt-3 space-y-2">
-                {procesos.map((p) => <div key={p.id} className="rounded-lg border border-base p-3 text-xs"><Link href={`/app/oportunidades/${p.id}`} className="font-semibold hover:text-teal">{p.objeto || "Proceso sin título"}</Link><p className="text-muted mt-1">{p.entidad || "Entidad no definida"} · {p.modalidad || "Modalidad no definida"} · {p.estado || "Estado no definido"}</p>{p.url_oficial ? <a href={p.url_oficial} target="_blank" rel="noreferrer" className="mt-1 inline-block text-teal hover:underline">Abrir expediente oficial en SECOP ↗</a> : <p className="text-muted mt-1">Sin enlace oficial disponible</p>}</div>)}
+                {procesos.map((p) => <div key={p.id} className="rounded-lg border border-base p-3 text-xs"><Link href={`/app/oportunidades/${p.id}`} className="font-semibold hover:text-teal">{p.objeto || "Proceso sin título"}</Link><p className="text-muted mt-1">{p.entidad || "Entidad no definida"} · {p.modalidad || "Modalidad no definida"} · {p.estado || "Estado no definido"}</p>{p.url_oficial ? <a href={p.url_oficial} target="_blank" rel="noreferrer" className="mt-1 inline-block text-teal underline underline-offset-2">Abrir expediente oficial en SECOP ↗</a> : <p className="text-muted mt-1">Sin enlace oficial disponible</p>}</div>)}
               </div>
             )}
           </div>
@@ -177,9 +177,9 @@ export default function Sincronizacion() {
       <Card className="p-5">
         <h3 className="text-sm font-semibold">Fuentes oficiales utilizadas</h3>
         <ul className="text-muted mt-2 space-y-1 text-xs">
-          <li>• <a className="text-teal hover:underline" href="https://www.datos.gov.co/Estad-sticas-Nacionales/SECOP-II-Procesos-de-Contrataci-n/p6dx-8zbt" target="_blank" rel="noreferrer">SECOP II — Procesos de Contratación</a> (datos.gov.co, dataset p6dx-8zbt)</li>
-          <li>• <a className="text-teal hover:underline" href="https://www.datos.gov.co/Estad-sticas-Nacionales/SECOP-II-Contratos-Electr-nicos/jbjy-vk9h" target="_blank" rel="noreferrer">SECOP II — Contratos Electrónicos</a> (dataset jbjy-vk9h, análisis histórico)</li>
-          <li>• <a className="text-teal hover:underline" href="https://www.datos.gov.co/" target="_blank" rel="noreferrer">Datos Abiertos Colombia</a> y <a className="text-teal hover:underline" href="https://www.colombiacompra.gov.co/transparencia/datos-abiertos/conjuntos-de-datos-abiertos" target="_blank" rel="noreferrer">catálogo de Colombia Compra Eficiente</a></li>
+          <li>• <a className="text-teal underline underline-offset-2" href="https://www.datos.gov.co/Estad-sticas-Nacionales/SECOP-II-Procesos-de-Contrataci-n/p6dx-8zbt" target="_blank" rel="noreferrer">SECOP II — Procesos de Contratación</a> (datos.gov.co, dataset p6dx-8zbt)</li>
+          <li>• <a className="text-teal underline underline-offset-2" href="https://www.datos.gov.co/Estad-sticas-Nacionales/SECOP-II-Contratos-Electr-nicos/jbjy-vk9h" target="_blank" rel="noreferrer">SECOP II — Contratos Electrónicos</a> (dataset jbjy-vk9h, análisis histórico)</li>
+          <li>• <a className="text-teal underline underline-offset-2" href="https://www.datos.gov.co/" target="_blank" rel="noreferrer">Datos Abiertos Colombia</a> y <a className="text-teal underline underline-offset-2" href="https://www.colombiacompra.gov.co/transparencia/datos-abiertos/conjuntos-de-datos-abiertos" target="_blank" rel="noreferrer">catálogo de Colombia Compra Eficiente</a></li>
         </ul>
         <p className="text-muted mt-3 text-[11px] leading-relaxed">
           Nota: el dataset de procesos no expone la fecha de cierre; los recordatorios usan la fecha analizada en pliegos o

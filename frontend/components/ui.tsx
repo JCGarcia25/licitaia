@@ -10,7 +10,7 @@ export function Card({ children, className = "" }: { children: ReactNode; classN
 export function CardHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3 border-b border-base px-5 py-4">
-      <div>
+      <div className="min-w-0 flex-1">
         <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
         {subtitle ? <p className="text-muted mt-0.5 text-xs">{subtitle}</p> : null}
       </div>
@@ -48,7 +48,7 @@ export function Badge({ children, tone = "blue" }: { children: ReactNode; tone?:
     purple: "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
     gray: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
   };
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${tones[tone]}`}>{children}</span>;
+  return <span className={`inline-flex items-center max-w-full whitespace-normal break-words rounded-full px-2 py-1 text-xs leading-snug font-medium ${tones[tone]}`}>{children}</span>;
 }
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {

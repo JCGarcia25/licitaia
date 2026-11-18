@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next";
+import { indexPublicPages, siteUrl } from "@/lib/seo";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://mysecop.co";
-  const now = new Date();
+  if (!indexPublicPages) return [];
+  // Only canonical public content. Do not invent a lastModified timestamp on
+  // every request or include private screens, account forms or legal placeholders.
   return [
-    { url: `${base}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
-    { url: `${base}/contacto`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${base}/iniciar-sesion`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
-    { url: `${base}/registro`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${siteUrl}/`, changeFrequency: "weekly", priority: 1 },
+    { url: `${siteUrl}/contacto`, changeFrequency: "monthly", priority: 0.6 },
   ];
 }

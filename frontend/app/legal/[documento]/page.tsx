@@ -1,4 +1,9 @@
 import Link from "next/link";
+import { noIndex } from "@/lib/seo";
+export async function generateMetadata({ params }: { params: Promise<{ documento: string }> }) {
+  const { documento } = await params;
+  return { title: Object.hasOwn(LEGAL_DOCUMENTS, documento) ? LEGAL_DOCUMENTS[documento as keyof typeof LEGAL_DOCUMENTS] : "Documento no encontrado", robots: noIndex, alternates: { canonical: `/legal/${documento}` } };
+}
 import { notFound } from "next/navigation";
 import { LEGAL_DOCUMENTS } from "../documents";
 import { buttonStyles } from "@/lib/button-styles";

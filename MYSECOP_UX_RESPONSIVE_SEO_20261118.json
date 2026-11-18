@@ -1,0 +1,132 @@
+{
+  "date": "2026-11-18",
+  "status": "LOCAL_VALIDATION_PASSED_NOT_DEPLOYED",
+  "production_baseline": "b04b45ddd00667fd65b3b04a9f2794941ab26f05",
+  "views": 26,
+  "view_checks": 590,
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "viewports": [
+    [
+      320,
+      760
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      640,
+      900
+    ],
+    [
+      768,
+      1024
+    ],
+    [
+      820,
+      1180
+    ],
+    [
+      844,
+      390
+    ],
+    [
+      1024,
+      768
+    ],
+    [
+      1280,
+      800
+    ],
+    [
+      1440,
+      900
+    ],
+    [
+      1920,
+      1080
+    ],
+    [
+      2560,
+      1440
+    ]
+  ],
+  "horizontal_overflow": 0,
+  "javascript_errors": 0,
+  "axe_violations": 0,
+  "unknown_mock_api_routes": [],
+  "backend": "synthetic API in browser; no live service mutations",
+  "build": "PASS",
+  "typescript": "PASS",
+  "seo_environment_unit_checks": 4,
+  "seo_final_http": "PASS",
+  "files": [
+    "frontend/app/(private)/app/admin/page.tsx",
+    "frontend/app/(private)/app/diagnostico-compatibilidad/page.tsx",
+    "frontend/app/(private)/app/evaluacion-interna/page.tsx",
+    "frontend/app/(private)/app/layout.tsx",
+    "frontend/app/(private)/app/ofertas/page.tsx",
+    "frontend/app/(private)/app/sincronizacion/page.tsx",
+    "frontend/app/contacto/page.tsx",
+    "frontend/app/globals.css",
+    "frontend/app/iniciar-sesion/layout.tsx",
+    "frontend/app/layout.tsx",
+    "frontend/app/legal/[documento]/page.tsx",
+    "frontend/app/page.tsx",
+    "frontend/app/registro/layout.tsx",
+    "frontend/app/robots.ts",
+    "frontend/app/sitemap.ts",
+    "frontend/components/contact-form.tsx",
+    "frontend/components/secop-opportunities.tsx",
+    "frontend/components/ui.tsx",
+    "frontend/lib/button-styles.ts",
+    "frontend/next.config.mjs",
+    "frontend/lib/seo.ts",
+    "frontend/app/(private)/layout.tsx",
+    "frontend/app/restablecer-contrasena/layout.tsx",
+    "frontend/app/verificar-correo/layout.tsx",
+    "frontend/app/opengraph-image.tsx",
+    "frontend/scripts/verify-seo.mjs",
+    "backend/scripts/e2e_ux_seo.py"
+  ],
+  "sha256": {
+    "frontend/app/(private)/app/admin/page.tsx": "07ffeb91e668a964d95f7d8e9cc87bb2773a27d16d65f66596813a6784136fd1",
+    "frontend/app/(private)/app/diagnostico-compatibilidad/page.tsx": "2db2010a0c5b8ae56578e9fb3b5220ee1cc35895cd4b0ed02a70ac37bd04323c",
+    "frontend/app/(private)/app/evaluacion-interna/page.tsx": "ceb7fffce380c657b5367c3f6b0fe406b20d201d03e7cf8980686ffde3cb7e5c",
+    "frontend/app/(private)/app/layout.tsx": "19f75c4450f7341ed70be015a218c20f038553919a1b10c31666608f589131ba",
+    "frontend/app/(private)/app/ofertas/page.tsx": "a7286b5dbb029a3f89384ebc1cad49368f43bd2f4521a0e8c16ca6f593bb70fa",
+    "frontend/app/(private)/app/sincronizacion/page.tsx": "be804129d531ad7e002776403f4dc931ce74511c61acaebd5d6cd179cbd67878",
+    "frontend/app/contacto/page.tsx": "e602430a9d299f361eaffa28b69905d16f0836d1464a08ad41ee90255805289a",
+    "frontend/app/globals.css": "0500979f264cb5be0afe060d9b8bbf33695d10f750ed5c3004212484e096e56b",
+    "frontend/app/iniciar-sesion/layout.tsx": "dfa6b51f019884f9bfc9d1fbcec82e7493184f9b0e68b8f9fc609590f3f78770",
+    "frontend/app/layout.tsx": "12178974f8f3a02b33dcc638d6f6261b093849382487044888e158daa2be4ec7",
+    "frontend/app/legal/[documento]/page.tsx": "010faf047bfa977c988bb94c396c96a1915c6bcf79dec850364726c97ce733e7",
+    "frontend/app/page.tsx": "ca256ae09eeca467ed246666a406b271349c3a0e54245bf2c8604bb4fd5c97a3",
+    "frontend/app/registro/layout.tsx": "f1f768802ff36773b5c16c190a2d730385eacd79512fa4f4e25a8192c91d3913",
+    "frontend/app/robots.ts": "f2766ca63285ccf515951535b798f891164b584a8854199ddf24ac65e541549a",
+    "frontend/app/sitemap.ts": "66c73e652654dc928e38f3e1740785caa80c160c9f4da16fcbcd9726379a485f",
+    "frontend/components/contact-form.tsx": "0364d565a74bb0539ba403a4e623d7bc891cb876c949404f8bb29d9e6870e91e",
+    "frontend/components/secop-opportunities.tsx": "9e834d097de33720d78a44ed6c08e4036670ec074923d69cec4cc3dd2bb96d79",
+    "frontend/components/ui.tsx": "7fb87886799ef52c9d811321aecca88506a99bb8d4247b44a11e84167e417230",
+    "frontend/lib/button-styles.ts": "c2d64d88242cdeeca1219e284df45eaa487a9f04ef0e58695603c6bc9f6fea69",
+    "frontend/next.config.mjs": "24696a31ac4e8dfe48dbde826df3c005bc4d2767478fe908cd6dba4a92eaf9e7",
+    "frontend/lib/seo.ts": "03eeb224594df2a7082bdcd2b40693223fbe7785c20f3be0fbd622c569f1d159",
+    "frontend/app/(private)/layout.tsx": "66ca42996e6e4db7ede72b199b38887dcc608c37e67c3c326db40d942dd3931c",
+    "frontend/app/restablecer-contrasena/layout.tsx": "b5272b9edf7e6d7ad4146ec1cd4b4c5d98ca9396674410f1f7a132006efba54e",
+    "frontend/app/verificar-correo/layout.tsx": "6269bd604d24d59958fb9842e04e583f4c97ec44b599f925972c1409eb346de4",
+    "frontend/app/opengraph-image.tsx": "4a4b6817aeaebf71c3100e3dc98e16dd66cff062af3ceef582200a2fb6bd3930",
+    "frontend/scripts/verify-seo.mjs": "3ecd49bd2cb1f649ea6f802b358d1c1475692d53fc0cd031ce1cbc9decaf4dd7",
+    "backend/scripts/e2e_ux_seo.py": "89dbf0b18f2080dd6b63a0c25690195c93f59bdb30645e0dc0c43b855be49c76"
+  },
+  "limits": [
+    "Chrome desktop with emulated viewports, not physical devices",
+    "No Search Console access or submission",
+    "No deployment or commits",
+    "No live email sends or production changes",
+    "No new backend functional tests; production backend logic unchanged"
+  ],
+  "evidence": "backend/benchmarks/ux-seo-20261118"
+}

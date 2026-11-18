@@ -1,7 +1,8 @@
 import { buttonStyles } from "@/lib/button-styles";
 /* Landing comercial de MySECOP. */
 import Link from "next/link";
-import { Button } from "@/components/ui";
+import { publicMetadata } from "@/lib/seo";
+export const metadata = publicMetadata("/", "Licitaciones y oportunidades SECOP en Colombia", "Encuentra oportunidades de contratación pública en Colombia, compara procesos de SECOP y organiza tus propuestas con MySECOP. Consulta planes y funciones.");
 import { ThemeToggle } from "@/components/theme";
 import { ContactForm } from "@/components/contact-form";
 import { LandingVisit } from "@/components/landing-visit";
@@ -50,7 +51,7 @@ const PLANES = [
   {
     nombre: "Profesional", precio: "$ 290.000 COP", detalle: "por mes · todo el equipo comercial",
     rasgos: ["Oportunidades y alertas ilimitadas", "Análisis de pliegos ilimitado", "Evaluador de viabilidad configurable", "Preparador de ofertas y exportación", "Recordatorios de cierre y resumen diario"],
-    cta: "Probar 14 días", destacado: true,
+    cta: "Probar 30 días", destacado: true,
   },
   {
     nombre: "Independiente", precio: "$ 59.900 COP", detalle: "por mes · para una persona",
@@ -77,13 +78,14 @@ export default function Landing() {
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Organization", name: "MySECOP", url: "https://mysecop.co", logo: "https://mysecop.co/icon.svg", email: "jorge@zorbagames.com" },
+      { "@type": "Organization", name: "MySECOP", legalName: "Zorba Games Studios S.A.S.", telephone: "+573204930650", url: "https://mysecop.co", logo: "https://mysecop.co/icon.svg", email: "info@zorbagames.com" },
       { "@type": "WebSite", name: "MySECOP", url: "https://mysecop.co", description: "Inteligencia para encontrar y analizar oportunidades de contratación pública en Colombia." },
       { "@type": "SoftwareApplication", name: "MySECOP", applicationCategory: "BusinessApplication", operatingSystem: "Web", offers: [{ "@type": "Offer", price: "0", priceCurrency: "COP" }, { "@type": "Offer", price: "59900", priceCurrency: "COP" }] },
     ],
   };
   return (
-    <div className="min-h-screen">
+    <div className="public-site min-h-screen">
+      <a href="#contenido-publico" className="skip-link">Saltar al contenido</a>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <LandingVisit />
       {/* ---------- Header ---------- */}
@@ -93,11 +95,11 @@ export default function Landing() {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-900 text-[10px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
             <span className="text-lg font-bold tracking-tight">MySECOP</span>
           </Link>
-          <nav className="text-muted hidden items-center gap-6 text-sm xl:flex">
+          <nav aria-label="Secciones de MySECOP" className="text-muted hidden items-center gap-6 text-sm xl:flex">
             <a href="#como-funciona" className="hover:text-teal transition">Cómo funciona</a>
             <a href="#funciones" className="hover:text-teal transition">Funciones</a>
             <a href="#planes" className="hover:text-teal transition">Planes</a>
-            <a href="#faq" className="hover:text-teal transition">FAQ</a>
+            <a href="#faq" className="hover:text-teal transition">Preguntas frecuentes</a>
           </nav>
           <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
             <ThemeToggle />
@@ -107,6 +109,10 @@ export default function Landing() {
         </div>
       </header>
 
+      <nav aria-label="Secciones para móvil y tableta" className="public-section-nav flex flex-wrap justify-center gap-x-4 gap-y-1 border-b border-base px-4 py-2 text-sm xl:hidden">
+        <a href="#como-funciona">Cómo funciona</a><a href="#funciones">Funciones</a><a href="#planes">Planes</a><a href="#faq">Preguntas frecuentes</a><Link href="/contacto">Contacto</Link>
+      </nav>
+      <main id="contenido-publico" tabIndex={-1}>
       {/* ---------- Hero ---------- */}
       <section className="hero-grid border-b border-base">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-20 md:grid-cols-2 md:py-28">
@@ -131,7 +137,7 @@ export default function Landing() {
 
           {/* Demostración visual del agente (sección 2) */}
           <div className="surface-card shadow-lift animate-fadeUp p-5">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-semibold">Agente · Cazador de Oportunidades</span>
               <span className="flex items-center gap-1 text-[11px] text-teal"><span className="h-1.5 w-1.5 animate-pulseSoft rounded-full bg-teal" /> buscando en SECOP II</span>
             </div>
@@ -234,21 +240,19 @@ export default function Landing() {
           <p className="text-muted mt-3 text-center">Precios en pesos colombianos (COP). Sin contratos de permanencia.</p>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {PLANES.map((p) => (
-              <div key={p.nombre} className={`surface-card relative p-7 ${p.destacado ? "shadow-lift ring-2 ring-teal" : "shadow-card"}`}>
+              <div key={p.nombre} className={`surface-card relative flex flex-col p-5 xl:p-7 ${p.destacado ? "shadow-lift ring-2 ring-teal" : "shadow-card"}`}>
                 {p.destacado ? (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-teal px-3 py-1 text-[11px] font-semibold text-slate-950">Más elegido</span>
                 ) : null}
                 <h3 className="font-semibold">{p.nombre}</h3>
                 <p className="mt-2 text-2xl font-extrabold">{p.precio}</p>
                 <p className="text-muted text-xs">{p.detalle}</p>
-                <ul className="mt-5 space-y-2 text-sm">
+                <ul className="mb-6 mt-5 space-y-2 text-sm">
                   {p.rasgos.map((r) => (
                     <li key={r} className="flex gap-2"><span className="text-teal">✓</span><span className="text-muted">{r}</span></li>
                   ))}
                 </ul>
-                <Link href="/registro" className="mt-6 block">
-                  <Button variant={p.destacado ? "primary" : "outline"} className="w-full">{p.cta}</Button>
-                </Link>
+                <Link href="/registro" className={buttonStyles({ variant: p.destacado ? "primary" : "outline", className: "mt-auto min-h-14 w-full py-3" })}>{p.cta}</Link>
               </div>
             ))}
           </div>
@@ -289,13 +293,12 @@ export default function Landing() {
           <p className="text-muted mx-auto mt-3 max-w-xl">
             Crea tu cuenta gratis, describe tu empresa y deja que el agente trabaje. Sin tarjeta de crédito.
           </p>
-          <Link href="/registro" className="mt-8 inline-block">
-            <Button className="px-8 py-3 text-base">Crear cuenta gratis</Button>
-          </Link>
+          <Link href="/registro" className={buttonStyles({ className: "mt-8 px-8 py-3 text-base" })}>Crear cuenta gratis</Link>
         </div>
       </section>
 
       {/* ---------- 9. Footer legal ---------- */}
+      </main>
       <footer className="border-t border-base py-12">
         <div className="text-muted mx-auto max-w-6xl space-y-4 px-5 text-xs">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -303,7 +306,7 @@ export default function Landing() {
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-900 text-[9px] font-bold text-white dark:bg-teal dark:text-slate-950">MS</span>
               MySECOP
             </span>
-            <nav className="flex flex-wrap gap-5">
+            <nav aria-label="Información legal y contacto" className="flex flex-wrap gap-x-5 gap-y-2">
               <Link href="/legal/terminos-y-condiciones" className="hover:text-teal">Términos y condiciones</Link>
               <Link href="/legal/politica-de-privacidad" className="hover:text-teal">Política de privacidad</Link>
               <Link href="/legal/tratamiento-de-datos" className="hover:text-teal">Tratamiento de datos (Ley 1581)</Link>
